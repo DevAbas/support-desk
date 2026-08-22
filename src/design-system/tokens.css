@@ -1,0 +1,118 @@
+/*
+ * Design system tokens.
+ *
+ * The semantic scale below is the vocabulary this codebase is meant to use:
+ * `bg-primary`, `text-fg-muted`, `border-border`. Tailwind's default palette is
+ * also available, so `bg-blue-500` resolves to a real colour. The semantic
+ * tokens are a convention here, not something the build enforces.
+ *
+ * Tailwind v4 theme variables are flat: there is no nesting and no DEFAULT key.
+ * `--color-primary` produces `bg-primary`, `--color-primary-fg` produces
+ * `text-primary-fg`, and so on.
+ */
+@theme {
+  /* ---------------------------------------------------------------- colors */
+
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-inherit: inherit;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Surfaces: page background, cards, and inset areas such as table headers. */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-surface-inset: #f1f5f9;
+
+  /* Borders and dividers. */
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  /* Foreground text, in descending emphasis. */
+  --color-fg: #0f172a;
+  --color-fg-muted: #475569;
+  --color-fg-subtle: #94a3b8;
+
+  /* Muted: the neutral fill used by secondary controls and neutral badges. */
+  --color-muted: #f1f5f9;
+  --color-muted-hover: #e2e8f0;
+  --color-muted-fg: #475569;
+
+  /* Primary: the single accent colour of the product. */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-fg: #ffffff;
+  --color-primary-subtle: #eff6ff;
+  --color-primary-subtle-fg: #1d4ed8;
+  --color-primary-border: #bfdbfe;
+
+  /* Info: informational, non-urgent state. */
+  --color-info: #0891b2;
+  --color-info-hover: #0e7490;
+  --color-info-fg: #ffffff;
+  --color-info-subtle: #ecfeff;
+  --color-info-subtle-fg: #0e7490;
+  --color-info-border: #a5f3fc;
+
+  /* Danger: destructive actions and error state. */
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-fg: #ffffff;
+  --color-danger-subtle: #fef2f2;
+  --color-danger-subtle-fg: #b91c1c;
+  --color-danger-border: #fecaca;
+
+  /* Success: completed or resolved state. */
+  --color-success: #16a34a;
+  --color-success-hover: #15803d;
+  --color-success-fg: #ffffff;
+  --color-success-subtle: #f0fdf4;
+  --color-success-subtle-fg: #15803d;
+  --color-success-border: #bbf7d0;
+
+  /* Warning: needs attention but is not an error. */
+  --color-warning: #d97706;
+  --color-warning-hover: #b45309;
+  --color-warning-fg: #ffffff;
+  --color-warning-subtle: #fffbeb;
+  --color-warning-subtle-fg: #b45309;
+  --color-warning-border: #fde68a;
+
+  /* --------------------------------------------------------------- spacing */
+
+  /* Every spacing utility is a multiple of this base, so p-2 is 0.5rem and
+     gap-6 is 1.5rem. Use the scale; do not reach for arbitrary values. */
+  --spacing: 0.25rem;
+
+  /* ---------------------------------------------------------------- radii */
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* ------------------------------------------------------------ typography */
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+
+  /* --------------------------------------------------------------- shadows */
+
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.06);
+  --shadow-overlay: 0 10px 30px -10px rgb(15 23 42 / 0.3);
+}

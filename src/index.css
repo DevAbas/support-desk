@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+@import './design-system/tokens.css';
+
+/*
+ * Tailwind v4 scans every file in the project for class names, Markdown
+ * included. The design system README quotes the classes it forbids, and without
+ * this exclusion those examples would be detected as real usage and compiled
+ * into the bundle.
+ */
+@source not '../**/*.md';
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    background-color: var(--color-surface-muted);
+    color: var(--color-fg);
+  }
+}
