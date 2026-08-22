@@ -1,6 +1,6 @@
 import { screen, waitForElementToBeRemoved } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetTickets } from '../../../lib/api'
 import { renderWithProviders } from '../../../test/renderWithProviders'
 import { TicketListPage } from '../TicketListPage'
@@ -61,5 +61,75 @@ describe('TicketListPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next' }))
 
     expect(await screen.findByText('Showing 11–20 of 40')).toBeInTheDocument()
+  })
+
+  describe('CSV export', () => {
+    // jsdom has no object URLs and does not follow a download, so the two edges
+    // of downloadTextFile() are stubbed and the blob it was handed is read back.
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:tickets')
+    const revokeObjectURL = vi.fn()
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const original = { createObjectURL: URL.createObjectURL, revokeObjectURL: URL.revokeObjectURL }
+
+    beforeAll(() => {
+      Object.assign(URL, { createObjectURL, revokeObjectURL })
+      click.mockImplementation(() => {})
+    })
+
+    afterAll(() => {
+      Object.assign(URL, original)
+      click.mockRestore()
+    })
+
+    beforeEach(() => {
+      createObjectURL.mockClear()
+      revokeObjectURL.mockClear()
+      click.mockClear()
+    })
+
+    async function downloadedCsv(): Promise<string> {
+      const [blob] = createObjectURL.mock.calls[0]
+      return blob.text()
+    }
+
+    it('exports every ticket the filters match, not just the page on screen', async () => {
+      await renderList('agent')
+
+      await userEvent.click(screen.getByRole('button', { name: 'Export CSV' }))
+
+      await vi.waitFor(() => expect(click).toHaveBeenCalledOnce())
+
+      const csv = await downloadedCsv()
+
+      // A header row and all 40 tickets, while only 10 are on screen.
+      expect(csv.split('\r\n')).toHaveLength(41)
+      expect(csv.startsWith('"Ticket","Title","Status","Priority","Assignee","Created"')).toBe(true)
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:tickets')
+    })
+
+    it('narrows the export to the current filters', async () => {
+      await renderList('agent')
+
+      await userEvent.selectOptions(screen.getByLabelText('Status'), 'resolved')
+      await screen.findByText(/^Showing \d+–\d+ of \d+$/)
+
+      await userEvent.click(screen.getByRole('button', { name: 'Export CSV' }))
+      await vi.waitFor(() => expect(click).toHaveBeenCalledOnce())
+
+      const dataRows = (await downloadedCsv()).split('\r\n').slice(1)
+
+      expect(dataRows.length).toBeGreaterThan(0)
+      expect(dataRows.length).toBeLessThan(40)
+      expect(dataRows.every((row) => row.includes('"Resolved"'))).toBe(true)
+    })
+
+    it('offers nothing to export when no ticket matches', async () => {
+      await renderList('agent')
+
+      await userEvent.type(screen.getByLabelText('Search'), 'zzzzzz')
+      await screen.findByText('No tickets match these filters.')
+
+      expect(screen.getByRole('button', { name: 'Export CSV' })).toBeDisabled()
+    })
   })
 })

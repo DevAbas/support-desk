@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, CardHeader, Input, Modal, Select } from '../../design-system'
-import { bulkDeleteTickets, bulkUpdateStatus } from '../../lib/api'
+import { bulkDeleteTickets, bulkUpdateStatus, listTickets } from '../../lib/api'
+import { downloadTextFile } from '../../lib/download'
 import {
   TICKET_PRIORITIES,
   TICKET_PRIORITY_LABELS,
@@ -14,7 +15,9 @@ import { useRole } from '../roles/useRole'
 import { BulkActionsBar } from './components/BulkActionsBar'
 import { Pagination } from './components/Pagination'
 import { TicketsTable } from './components/TicketsTable'
+import { TicketsToolbar } from './components/TicketsToolbar'
 import { useTickets } from './hooks/useTickets'
+import { TICKETS_CSV_MIME_TYPE, ticketsCsvFilename, ticketsToCsv } from './ticketsCsv'
 
 const PAGE_SIZE = 10
 
@@ -45,6 +48,8 @@ export function TicketListPage() {
   const [selection, setSelection] = useState<string[]>([])
   const [isBulkBusy, setIsBulkBusy] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   const { result, isLoading, error, reload } = useTickets({
     page,
@@ -55,6 +60,7 @@ export function TicketListPage() {
   })
 
   const tickets = result?.rows ?? []
+  const total = result?.total ?? 0
 
   // Derived rather than stored, so the selection cannot go stale: rows that are
   // no longer on screen, and any selection at all once admin is lost, drop out
@@ -71,6 +77,29 @@ export function TicketListPage() {
 
   function toggleAll(selected: boolean) {
     setSelection(selected ? tickets.map((ticket) => ticket.id) : [])
+  }
+
+  // The export covers every ticket the filters match, not just the page on
+  // screen, so it means the same thing from any page.
+  async function exportCsv() {
+    setIsExporting(true)
+    setExportError(null)
+
+    try {
+      const all = await listTickets({
+        page: 1,
+        pageSize: Math.max(total, 1),
+        status,
+        priority,
+        search,
+      })
+
+      downloadTextFile(ticketsCsvFilename(), ticketsToCsv(all.rows), TICKETS_CSV_MIME_TYPE)
+    } catch (cause: unknown) {
+      setExportError(cause instanceof Error ? cause.message : 'Could not export tickets.')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   async function applyBulkStatus(nextStatus: TicketStatus) {
@@ -147,6 +176,13 @@ export function TicketListPage() {
       </Card>
 
       <Card className="overflow-hidden">
+        <TicketsToolbar
+          onExport={exportCsv}
+          isExporting={isExporting}
+          disabled={isLoading || total === 0}
+          error={exportError}
+        />
+
         {canManageTickets && selectedIds.length > 0 ? (
           <BulkActionsBar
             selectedCount={selectedIds.length}
@@ -177,7 +213,7 @@ export function TicketListPage() {
         <Pagination
           page={result?.page ?? 1}
           pageCount={result?.pageCount ?? 1}
-          total={result?.total ?? 0}
+          total={total}
           pageSize={PAGE_SIZE}
           disabled={isLoading}
           onPageChange={setPage}
