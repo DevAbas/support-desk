@@ -10,6 +10,7 @@ import {
 } from '@harness-sample/shared'
 import { ROLE_LABELS } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
+import { AssigneeForm } from './components/AssigneeForm'
 import { CommentForm } from './components/CommentForm'
 import { CommentList } from './components/CommentList'
 import { TicketPriorityBadge } from './components/TicketPriorityBadge'
@@ -50,6 +51,12 @@ export function TicketDetailPage() {
   function handleStatusChange(nextStatus: TicketStatus) {
     if (ticket) {
       updateTicket.mutate({ id: ticket.id, patch: { status: nextStatus } })
+    }
+  }
+
+  async function handleReassign(assignee: string) {
+    if (ticket) {
+      await updateTicket.mutateAsync({ id: ticket.id, patch: { assignee } })
     }
   }
 
@@ -147,19 +154,32 @@ export function TicketDetailPage() {
           </Card>
         </div>
 
-        <Card className="h-fit">
-          <CardHeader title="Status" />
-          <CardBody>
-            <Select
-              label="Current status"
-              options={statusOptions}
-              value={ticket.status}
-              disabled={updateTicket.isPending}
-              hint={updateTicket.isPending ? 'Saving…' : 'Changes are saved immediately.'}
-              onChange={(event) => handleStatusChange(event.target.value as TicketStatus)}
-            />
-          </CardBody>
-        </Card>
+        <div className="flex h-fit flex-col gap-6">
+          <Card>
+            <CardHeader title="Status" />
+            <CardBody>
+              <Select
+                label="Current status"
+                options={statusOptions}
+                value={ticket.status}
+                disabled={updateTicket.isPending}
+                hint={updateTicket.isPending ? 'Saving…' : 'Changes are saved immediately.'}
+                onChange={(event) => handleStatusChange(event.target.value as TicketStatus)}
+              />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader title="Assignee" description="Hand this ticket to someone else." />
+            <CardBody>
+              <AssigneeForm
+                assignee={ticket.assignee}
+                disabled={updateTicket.isPending}
+                onSubmit={handleReassign}
+              />
+            </CardBody>
+          </Card>
+        </div>
       </div>
 
       <Modal

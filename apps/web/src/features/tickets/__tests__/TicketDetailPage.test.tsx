@@ -61,6 +61,53 @@ describe('TicketDetailPage', () => {
     expect(screen.getByLabelText('Add a comment')).toHaveValue('')
   })
 
+  it('reassigns a ticket to someone else', async () => {
+    await renderDetail('TCK-0001')
+
+    const field = screen.getByLabelText('Assigned to')
+    expect(field).toHaveValue('Priya Raman')
+    // Nothing has been changed yet, so there is nothing to save.
+    expect(screen.getByRole('button', { name: 'Reassign' })).toBeDisabled()
+
+    await userEvent.clear(field)
+    await userEvent.type(field, 'Marco Ellis')
+    await userEvent.click(screen.getByRole('button', { name: 'Reassign' }))
+
+    // The header reads the same ticket the field does, so it moving is the
+    // proof that the change reached the cache rather than only the input.
+    expect(await screen.findByText(/Assigned to Marco Ellis/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reassign' })).toBeDisabled()
+  })
+
+  it('refuses to save an empty assignee', async () => {
+    await renderDetail('TCK-0001')
+
+    await userEvent.clear(screen.getByLabelText('Assigned to'))
+    await userEvent.click(screen.getByRole('button', { name: 'Reassign' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Assign the ticket, or enter "Unassigned".',
+    )
+    expect(screen.getByText(/Assigned to Priya Raman/)).toBeInTheDocument()
+  })
+
+  it('reports a failed reassignment in the field', async () => {
+    await renderDetail('TCK-0001')
+
+    mswServer.use(
+      http.patch('/api/tickets/:id', () => HttpResponse.json({ error: null }, { status: 500 })),
+    )
+
+    await userEvent.clear(screen.getByLabelText('Assigned to'))
+    await userEvent.type(screen.getByLabelText('Assigned to'), 'Marco Ellis')
+    await userEvent.click(screen.getByRole('button', { name: 'Reassign' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The server returned an unexpected 500 response.',
+    )
+    expect(screen.getByText(/Assigned to Priya Raman/)).toBeInTheDocument()
+  })
+
   it('reports a ticket that does not exist, and retries from Try again', async () => {
     renderWithProviders(
       <Routes>
