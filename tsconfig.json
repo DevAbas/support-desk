@@ -2,13 +2,16 @@
   "files": [],
   "references": [
     {
-      "path": "./tsconfig.app.json"
+      "path": "./packages/shared"
+    },
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./apps/web"
     },
     {
       "path": "./tsconfig.node.json"
-    },
-    {
-      "path": "./tsconfig.server.json"
     }
   ]
 }

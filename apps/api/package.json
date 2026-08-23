@@ -1,0 +1,22 @@
+{
+  "name": "@harness-sample/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./app": "./src/app.ts",
+    "./store": "./src/store.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts"
+  },
+  "dependencies": {
+    "@harness-sample/shared": "*",
+    "hono": "^4.13.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@hono/node-server": "^2.1.1",
+    "tsx": "^4.23.12"
+  }
+}
