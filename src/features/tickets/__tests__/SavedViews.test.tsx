@@ -1,7 +1,6 @@
 import { cleanup, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { resetTickets } from '../../../lib/api'
 import { renderWithProviders } from '../../../test/renderWithProviders'
 import { SAVED_VIEWS_STORAGE_KEY } from '../savedViews'
 import { TicketListPage } from '../TicketListPage'
@@ -45,7 +44,6 @@ async function setPriority(priority: string) {
 
 describe('saved views', () => {
   beforeEach(() => {
-    resetTickets()
     window.localStorage.clear()
   })
 

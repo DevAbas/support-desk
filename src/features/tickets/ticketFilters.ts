@@ -1,4 +1,5 @@
 import type { SelectOption } from '../../design-system'
+import type { ListTicketsQuery } from '../../lib/api/contract'
 import {
   TICKET_PRIORITIES,
   TICKET_PRIORITY_LABELS,
@@ -55,4 +56,27 @@ export function areFiltersEqual(a: TicketFilters, b: TicketFilters): boolean {
   return (
     a.status === b.status && a.priority === b.priority && a.search.trim() === b.search.trim()
   )
+}
+
+/**
+ * The filters as the list endpoint wants them.
+ *
+ * Every field is named, so a filter added to the contract is a compile error
+ * here rather than a filter the query — and the cache key built from it —
+ * quietly ignores. The search term is trimmed for the same reason
+ * `areFiltersEqual` trims it: trailing space is not a different question, and it
+ * should not become a different cache entry or a new request.
+ */
+export function toListTicketsQuery(
+  filters: TicketFilters,
+  page: number,
+  pageSize: number,
+): ListTicketsQuery {
+  return {
+    status: filters.status,
+    priority: filters.priority,
+    search: filters.search.trim(),
+    page,
+    pageSize,
+  }
 }

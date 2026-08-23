@@ -1,6 +1,11 @@
-export const ROLES = ['agent', 'admin'] as const
+import type { Role } from '../../lib/types'
 
-export type Role = (typeof ROLES)[number]
+/**
+ * Roles are part of the wire contract — `GET /api/me` returns one — so the values
+ * live in the shared domain vocabulary. What a role *means* to this UI stays here.
+ */
+export { ROLES } from '../../lib/types'
+export type { Role } from '../../lib/types'
 
 export const ROLE_LABELS: Record<Role, string> = {
   agent: 'Agent',

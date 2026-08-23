@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, CardHeader, Input, Modal, Select } from '../../design-system'
-import { bulkDeleteTickets, bulkUpdateStatus, listTickets } from '../../lib/api'
-import { downloadTextFile } from '../../lib/download'
+import { toErrorMessage } from '../../lib/api/http'
+import { useDebouncedValue } from '../../lib/useDebouncedValue'
 import { type TicketStatus } from '../../lib/types'
 import { useRole } from '../roles/useRole'
 import { BulkActionsBar } from './components/BulkActionsBar'
@@ -10,21 +10,27 @@ import { Pagination } from './components/Pagination'
 import { SavedViewsSidebar } from './components/SavedViewsSidebar'
 import { TicketsTable } from './components/TicketsTable'
 import { TicketsToolbar } from './components/TicketsToolbar'
+import { useBulkDeleteTickets } from './hooks/useBulkDeleteTickets'
+import { useBulkUpdateStatus } from './hooks/useBulkUpdateStatus'
 import { useSavedViews } from './hooks/useSavedViews'
 import { useTickets } from './hooks/useTickets'
+import { useTicketsExport } from './hooks/useTicketsExport'
 import type { SavedView } from './savedViews'
 import {
   areFiltersEqual,
   DEFAULT_FILTERS,
   priorityFilterOptions,
   statusFilterOptions,
+  toListTicketsQuery,
   type PriorityFilter,
   type StatusFilter,
   type TicketFilters,
 } from './ticketFilters'
-import { TICKETS_CSV_MIME_TYPE, ticketsCsvFilename, ticketsToCsv } from './ticketsCsv'
 
 const PAGE_SIZE = 10
+
+/** Long enough that typing a word is one request, short enough to feel live. */
+const SEARCH_DEBOUNCE_MS = 250
 
 export function TicketListPage() {
   const { canManageTickets } = useRole()
@@ -34,27 +40,31 @@ export function TicketListPage() {
   const [filters, setFilters] = useState<TicketFilters>(DEFAULT_FILTERS)
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
   const [selection, setSelection] = useState<string[]>([])
-  const [isBulkBusy, setIsBulkBusy] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
-  const [isExporting, setIsExporting] = useState(false)
-  const [exportError, setExportError] = useState<string | null>(null)
 
   const savedViews = useSavedViews()
 
-  const { result, isLoading, error, reload } = useTickets({
-    page,
-    pageSize: PAGE_SIZE,
-    ...filters,
-  })
+  // The field stays instant. Only the request, and the cache key built from it,
+  // wait for a pause in typing.
+  const debouncedSearch = useDebouncedValue(filters.search, SEARCH_DEBOUNCE_MS)
+  const query = toListTicketsQuery({ ...filters, search: debouncedSearch }, page, PAGE_SIZE)
 
-  const tickets = result?.rows ?? []
-  const total = result?.total ?? 0
+  const tickets = useTickets(query)
+  const bulkUpdateStatus = useBulkUpdateStatus()
+  const bulkDelete = useBulkDeleteTickets()
+
+  const rows = tickets.data?.rows ?? []
+  const total = tickets.data?.total ?? 0
+  const isBulkBusy = bulkUpdateStatus.isPending || bulkDelete.isPending
+  const loadError = tickets.isError ? toErrorMessage(tickets.error, 'Could not load tickets.') : null
+
+  const csv = useTicketsExport(query, total)
 
   // Derived rather than stored, so the selection cannot go stale: rows that are
   // no longer on screen, and any selection at all once admin is lost, drop out
   // without an effect having to reset them.
   const selectedIds = canManageTickets
-    ? selection.filter((id) => tickets.some((ticket) => ticket.id === id))
+    ? selection.filter((id) => rows.some((ticket) => ticket.id === id))
     : []
 
   // Also derived: a view deleted elsewhere in this render simply stops being
@@ -94,53 +104,26 @@ export function TicketListPage() {
   }
 
   function toggleAll(selected: boolean) {
-    setSelection(selected ? tickets.map((ticket) => ticket.id) : [])
+    setSelection(selected ? rows.map((ticket) => ticket.id) : [])
   }
 
-  // The export covers every ticket the filters match, not just the page on
-  // screen, so it means the same thing from any page.
-  async function exportCsv() {
-    setIsExporting(true)
-    setExportError(null)
-
-    try {
-      const all = await listTickets({
-        page: 1,
-        pageSize: Math.max(total, 1),
-        ...filters,
-      })
-
-      downloadTextFile(ticketsCsvFilename(), ticketsToCsv(all.rows), TICKETS_CSV_MIME_TYPE)
-    } catch (cause: unknown) {
-      setExportError(cause instanceof Error ? cause.message : 'Could not export tickets.')
-    } finally {
-      setIsExporting(false)
-    }
+  function applyBulkStatus(nextStatus: TicketStatus) {
+    bulkUpdateStatus.mutate(
+      { ids: selectedIds, status: nextStatus },
+      { onSuccess: () => setSelection([]) },
+    )
   }
 
-  async function applyBulkStatus(nextStatus: TicketStatus) {
-    setIsBulkBusy(true)
-
-    try {
-      await bulkUpdateStatus(selectedIds, nextStatus)
-      setSelection([])
-      reload()
-    } finally {
-      setIsBulkBusy(false)
-    }
-  }
-
-  async function confirmBulkDelete() {
-    setIsBulkBusy(true)
-
-    try {
-      await bulkDeleteTickets(selectedIds)
-      setSelection([])
-      setIsConfirmingDelete(false)
-      reload()
-    } finally {
-      setIsBulkBusy(false)
-    }
+  function confirmBulkDelete() {
+    bulkDelete.mutate(
+      { ids: selectedIds },
+      {
+        onSuccess: () => {
+          setSelection([])
+          setIsConfirmingDelete(false)
+        },
+      },
+    )
   }
 
   return (
@@ -200,10 +183,10 @@ export function TicketListPage() {
 
           <Card className="overflow-hidden">
             <TicketsToolbar
-              onExport={exportCsv}
-              isExporting={isExporting}
-              disabled={isLoading || total === 0}
-              error={exportError}
+              onExport={() => void csv.exportCsv()}
+              isExporting={csv.isExporting}
+              disabled={tickets.isPending || total === 0}
+              error={csv.error}
             />
 
             {canManageTickets && selectedIds.length > 0 ? (
@@ -215,18 +198,18 @@ export function TicketListPage() {
               />
             ) : null}
 
-            {error ? (
+            {loadError ? (
               <div className="flex items-center justify-between gap-4 border-b border-danger-border bg-danger-subtle px-4 py-3">
-                <p className="text-sm text-danger-subtle-fg">{error}</p>
-                <Button variant="secondary" size="sm" onClick={reload}>
+                <p className="text-sm text-danger-subtle-fg">{loadError}</p>
+                <Button variant="secondary" size="sm" onClick={() => void tickets.refetch()}>
                   Try again
                 </Button>
               </div>
             ) : null}
 
             <TicketsTable
-              tickets={tickets}
-              isLoading={isLoading}
+              tickets={rows}
+              isLoading={tickets.isPending}
               selectable={canManageTickets}
               selectedIds={selectedIds}
               onToggleTicket={toggleTicket}
@@ -234,11 +217,11 @@ export function TicketListPage() {
             />
 
             <Pagination
-              page={result?.page ?? 1}
-              pageCount={result?.pageCount ?? 1}
+              page={tickets.data?.page ?? 1}
+              pageCount={tickets.data?.pageCount ?? 1}
               total={total}
               pageSize={PAGE_SIZE}
-              disabled={isLoading}
+              disabled={tickets.isFetching}
               onPageChange={setPage}
             />
           </Card>

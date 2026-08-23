@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button, Card, CardBody, CardHeader, Modal, Select } from '../../design-system'
-import { addComment, deleteTicket, updateTicketStatus } from '../../lib/api'
+import { toErrorMessage } from '../../lib/api/http'
 import { formatDateTime } from '../../lib/format'
 import {
   TICKET_STATUSES,
@@ -14,7 +14,10 @@ import { CommentForm } from './components/CommentForm'
 import { CommentList } from './components/CommentList'
 import { TicketPriorityBadge } from './components/TicketPriorityBadge'
 import { TicketStatusBadge } from './components/TicketStatusBadge'
+import { useAddComment } from './hooks/useAddComment'
+import { useDeleteTicket } from './hooks/useDeleteTicket'
 import { useTicket } from './hooks/useTicket'
+import { useUpdateTicket } from './hooks/useUpdateTicket'
 
 const statusOptions = TICKET_STATUSES.map((status) => ({
   value: status,
@@ -25,50 +28,47 @@ export function TicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>()
   const navigate = useNavigate()
   const { role, canManageTickets } = useRole()
-  const { ticket, isLoading, error, setTicket, reload } = useTicket(ticketId)
 
-  const [isSavingStatus, setIsSavingStatus] = useState(false)
+  const query = useTicket(ticketId)
+  const updateTicket = useUpdateTicket()
+  const addComment = useAddComment()
+  const deleteTicket = useDeleteTicket()
+
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  async function handleStatusChange(nextStatus: TicketStatus) {
-    if (!ticket) {
-      return
-    }
+  const ticket = query.data
 
-    setIsSavingStatus(true)
+  // No id means a route that cannot be satisfied, so the query never runs and
+  // there is nothing to retry — the message stands in for a request failure.
+  const error =
+    ticketId === undefined
+      ? 'No ticket was requested.'
+      : query.isError
+        ? toErrorMessage(query.error, 'Could not load this ticket.')
+        : null
 
-    try {
-      setTicket(await updateTicketStatus(ticket.id, nextStatus))
-    } finally {
-      setIsSavingStatus(false)
+  function handleStatusChange(nextStatus: TicketStatus) {
+    if (ticket) {
+      updateTicket.mutate({ id: ticket.id, patch: { status: nextStatus } })
     }
   }
 
   async function handleAddComment(body: string) {
-    if (!ticket) {
-      return
-    }
-
-    setTicket(await addComment(ticket.id, { author: `You (${ROLE_LABELS[role]})`, body }))
-  }
-
-  async function handleDelete() {
-    if (!ticket) {
-      return
-    }
-
-    setIsDeleting(true)
-
-    try {
-      await deleteTicket(ticket.id)
-      navigate('/tickets')
-    } finally {
-      setIsDeleting(false)
+    if (ticket) {
+      await addComment.mutateAsync({
+        id: ticket.id,
+        body: { author: `You (${ROLE_LABELS[role]})`, body },
+      })
     }
   }
 
-  if (isLoading) {
+  function handleDelete() {
+    if (ticket) {
+      deleteTicket.mutate(ticket.id, { onSuccess: () => navigate('/tickets') })
+    }
+  }
+
+  if (ticketId !== undefined && query.isPending) {
     return (
       <p role="status" aria-live="polite" className="text-sm text-fg-muted">
         Loading ticket…
@@ -82,7 +82,7 @@ export function TicketDetailPage() {
         <CardBody className="flex flex-col items-start gap-3">
           <p className="text-sm text-danger">{error ?? 'This ticket could not be found.'}</p>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={reload}>
+            <Button variant="secondary" onClick={() => void query.refetch()}>
               Try again
             </Button>
             <Button variant="ghost" onClick={() => navigate('/tickets')}>
@@ -154,9 +154,9 @@ export function TicketDetailPage() {
               label="Current status"
               options={statusOptions}
               value={ticket.status}
-              disabled={isSavingStatus}
-              hint={isSavingStatus ? 'Saving…' : 'Changes are saved immediately.'}
-              onChange={(event) => void handleStatusChange(event.target.value as TicketStatus)}
+              disabled={updateTicket.isPending}
+              hint={updateTicket.isPending ? 'Saving…' : 'Changes are saved immediately.'}
+              onChange={(event) => handleStatusChange(event.target.value as TicketStatus)}
             />
           </CardBody>
         </Card>
@@ -172,12 +172,12 @@ export function TicketDetailPage() {
             <Button
               variant="secondary"
               onClick={() => setIsConfirmingDelete(false)}
-              disabled={isDeleting}
+              disabled={deleteTicket.isPending}
             >
               Cancel
             </Button>
-            <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
-              {isDeleting ? 'Deleting…' : 'Delete ticket'}
+            <Button variant="danger" onClick={handleDelete} disabled={deleteTicket.isPending}>
+              {deleteTicket.isPending ? 'Deleting…' : 'Delete ticket'}
             </Button>
           </>
         }

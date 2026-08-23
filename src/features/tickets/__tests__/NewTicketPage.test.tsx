@@ -1,18 +1,31 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as api from '../../../lib/api'
+import { http } from 'msw'
+import { describe, expect, it, vi } from 'vitest'
+import { forwardToApi, mswServer } from '../../../test/msw/server'
 import { renderWithProviders } from '../../../test/renderWithProviders'
 import { NewTicketPage } from '../NewTicketPage'
 
-describe('NewTicketPage', () => {
-  beforeEach(() => {
-    api.resetTickets()
-    vi.restoreAllMocks()
-  })
+/**
+ * Records what the form actually posts and still lets the real API answer, so
+ * the assertions are about the request that went out rather than about a stub.
+ */
+function recordCreateRequests(): unknown[] {
+  const bodies: unknown[] = []
 
+  mswServer.use(
+    http.post('/api/tickets', async ({ request }) => {
+      bodies.push(await request.clone().json())
+      return forwardToApi(request)
+    }),
+  )
+
+  return bodies
+}
+
+describe('NewTicketPage', () => {
   it('reports every missing field and does not call the API', async () => {
-    const createTicket = vi.spyOn(api, 'createTicket')
+    const created = recordCreateRequests()
 
     renderWithProviders(<NewTicketPage />, { initialEntries: ['/tickets/new'] })
 
@@ -23,7 +36,7 @@ describe('NewTicketPage', () => {
       screen.getByText('Describe what happened so an agent can pick this up.'),
     ).toBeInTheDocument()
     expect(screen.getByText('Choose a priority.')).toBeInTheDocument()
-    expect(createTicket).not.toHaveBeenCalled()
+    expect(created).toHaveLength(0)
   })
 
   it('rejects a title that is too short', async () => {
@@ -39,7 +52,7 @@ describe('NewTicketPage', () => {
   })
 
   it('creates a ticket when the form is valid', async () => {
-    const createTicket = vi.spyOn(api, 'createTicket')
+    const created = recordCreateRequests()
 
     renderWithProviders(<NewTicketPage />, { initialEntries: ['/tickets/new'] })
 
@@ -50,7 +63,8 @@ describe('NewTicketPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Create ticket' }))
 
-    expect(createTicket).toHaveBeenCalledWith({
+    await vi.waitFor(() => expect(created).toHaveLength(1))
+    expect(created[0]).toEqual({
       title: 'Checkout page returns a 500',
       description: 'Happens on every card payment.',
       priority: 'high',

@@ -1,4 +1,8 @@
-/** The shared domain vocabulary. The mock API and the feature screens both speak it. */
+/** The shared domain vocabulary. The API contract and the feature screens both speak it. */
+
+export const ROLES = ['agent', 'admin'] as const
+
+export type Role = (typeof ROLES)[number]
 
 export const TICKET_STATUSES = ['open', 'pending', 'resolved', 'closed'] as const
 

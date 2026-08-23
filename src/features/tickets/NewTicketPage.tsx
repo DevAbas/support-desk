@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, CardBody, CardFooter, CardHeader, Input, Select, Textarea } from '../../design-system'
-import { createTicket } from '../../lib/api'
+import { useCreateTicket } from './hooks/useCreateTicket'
 import { TICKET_PRIORITIES, TICKET_PRIORITY_LABELS, type TicketPriority } from '../../lib/types'
 
 const priorityOptions = TICKET_PRIORITIES.map((priority) => ({
@@ -53,9 +53,9 @@ function validate(values: FormValues): FormErrors {
 
 export function NewTicketPage() {
   const navigate = useNavigate()
+  const createTicket = useCreateTicket()
   const [values, setValues] = useState<FormValues>(emptyValues)
   const [errors, setErrors] = useState<FormErrors>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   function update<TField extends keyof FormValues>(field: TField, value: FormValues[TField]) {
     setValues((current) => ({ ...current, [field]: value }))
@@ -71,20 +71,14 @@ export function NewTicketPage() {
       return
     }
 
-    setIsSubmitting(true)
+    const ticket = await createTicket.mutateAsync({
+      title: values.title.trim(),
+      description: values.description.trim(),
+      priority: values.priority,
+      assignee: values.assignee.trim(),
+    })
 
-    try {
-      const ticket = await createTicket({
-        title: values.title.trim(),
-        description: values.description.trim(),
-        priority: values.priority,
-        assignee: values.assignee.trim(),
-      })
-
-      navigate(`/tickets/${ticket.id}`)
-    } finally {
-      setIsSubmitting(false)
-    }
+    navigate(`/tickets/${ticket.id}`)
   }
 
   return (
@@ -136,11 +130,11 @@ export function NewTicketPage() {
           </CardBody>
 
           <CardFooter>
-            <Button variant="secondary" onClick={() => navigate('/tickets')} disabled={isSubmitting}>
+            <Button variant="secondary" onClick={() => navigate('/tickets')} disabled={createTicket.isPending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating…' : 'Create ticket'}
+            <Button type="submit" disabled={createTicket.isPending}>
+              {createTicket.isPending ? 'Creating…' : 'Create ticket'}
             </Button>
           </CardFooter>
         </Card>

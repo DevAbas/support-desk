@@ -1,7 +1,8 @@
 import { screen, waitForElementToBeRemoved } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { resetTickets } from '../../../lib/api'
+import { mswServer } from '../../../test/msw/server'
 import { renderWithProviders } from '../../../test/renderWithProviders'
 import { TicketListPage } from '../TicketListPage'
 
@@ -11,10 +12,6 @@ async function renderList(role: 'agent' | 'admin') {
 }
 
 describe('TicketListPage', () => {
-  beforeEach(() => {
-    resetTickets()
-  })
-
   it('shows a loading state and then a page of tickets', async () => {
     renderWithProviders(<TicketListPage />, { initialEntries: ['/tickets'] })
 
@@ -61,6 +58,58 @@ describe('TicketListPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next' }))
 
     expect(await screen.findByText('Showing 11–20 of 40')).toBeInTheDocument()
+  })
+
+  it('keeps the page on screen while the next filter loads', async () => {
+    await renderList('agent')
+
+    // Slow enough that the assertion lands while the request is still open.
+    mswServer.use(
+      http.get('/api/tickets', async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        return HttpResponse.json({ rows: [], total: 0, page: 1, pageCount: 1 })
+      }),
+    )
+
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'open')
+
+    // Still the previous page, rather than a spinner or an empty table.
+    expect(screen.queryByText('Loading tickets…')).not.toBeInTheDocument()
+    expect(screen.getByText('Showing 1–10 of 40')).toBeInTheDocument()
+
+    expect(await screen.findByText('No tickets')).toBeInTheDocument()
+  })
+
+  it('reports a failed load and retries it from Try again', async () => {
+    mswServer.use(http.get('/api/tickets', () => HttpResponse.error()))
+
+    renderWithProviders(<TicketListPage />, { initialEntries: ['/tickets'] })
+
+    expect(await screen.findByText('Could not reach the server.')).toBeInTheDocument()
+
+    // Put the real API back, then use the affordance the error offers.
+    mswServer.resetHandlers()
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText('Showing 1–10 of 40')).toBeInTheDocument()
+    expect(screen.queryByText('Could not reach the server.')).not.toBeInTheDocument()
+  })
+
+  it('applies a bulk status change and shows the updated rows', async () => {
+    await renderList('admin')
+
+    // Eleven pending tickets, so closing the ten on this page leaves one.
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'pending')
+    await screen.findByText('Showing 1–10 of 11')
+
+    await userEvent.click(screen.getByLabelText('Select all tickets on this page'))
+    await userEvent.selectOptions(screen.getByLabelText('Set status to'), 'closed')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    // The rows that were on screen are no longer pending, so the list the
+    // mutation invalidated comes back shorter.
+    expect(await screen.findByText('Showing 1–1 of 1')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Bulk actions' })).not.toBeInTheDocument()
   })
 
   describe('CSV export', () => {

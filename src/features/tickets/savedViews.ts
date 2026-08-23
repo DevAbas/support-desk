@@ -4,9 +4,9 @@ import type { PriorityFilter, StatusFilter, TicketFilters } from './ticketFilter
 /**
  * Saved views: a named filter combination, kept in localStorage.
  *
- * These never reach `lib/api.ts`. The mock API knows nothing about them — a view
+ * These never reach the API, and they are not in the query cache either — a view
  * is a shortcut the person using the screen keeps for themselves, so it lives in
- * the browser rather than in the ticket store.
+ * the browser rather than on the server.
  */
 
 export interface SavedView {
