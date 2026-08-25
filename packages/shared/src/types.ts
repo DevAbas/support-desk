@@ -44,3 +44,54 @@ export const TICKET_PRIORITY_LABELS: Record<TicketPriority, string> = {
   medium: 'Medium',
   high: 'High',
 }
+
+export const CUSTOMER_PLANS = ['free', 'starter', 'pro', 'enterprise'] as const
+
+export type CustomerPlan = (typeof CUSTOMER_PLANS)[number]
+
+/**
+ * One of the customer's tickets, as much of it as a customer screen needs.
+ *
+ * Not a `Ticket`: the description and the comments belong to the ticket screens,
+ * and sending them with every customer would mean the drawer downloaded a
+ * conversation nobody opened it to read.
+ */
+export interface CustomerTicketRef {
+  id: string
+  title: string
+  status: TicketStatus
+  priority: TicketPriority
+  /** ISO 8601 timestamp. */
+  createdAt: string
+}
+
+/**
+ * A customer as a row in a list: everything the list draws, and nothing it does
+ * not. `ticketCount` is here rather than `tickets` because a row shows how many
+ * there are, and sixty rows carrying their tickets would be the whole queue
+ * fetched to render a number.
+ */
+export interface CustomerSummary {
+  id: string
+  name: string
+  company: string
+  email: string
+  /** A picture of them, or null. `Avatar` falls back to their initials. */
+  avatarUrl: string | null
+  plan: CustomerPlan
+  /** ISO 8601 calendar date, not an instant: nobody signs up at a time. */
+  signupDate: string
+  ticketCount: number
+}
+
+/** The whole customer, tickets included. What the detail endpoint answers with. */
+export interface Customer extends CustomerSummary {
+  tickets: CustomerTicketRef[]
+}
+
+export const CUSTOMER_PLAN_LABELS: Record<CustomerPlan, string> = {
+  free: 'Free',
+  starter: 'Starter',
+  pro: 'Pro',
+  enterprise: 'Enterprise',
+}

@@ -6,6 +6,7 @@ import { useRole } from '@/features/roles/useRole'
 
 const navigation = [
   { to: '/tickets', label: 'Tickets' },
+  { to: '/customers', label: 'Customers' },
   { to: '/reports', label: 'Reports' },
   { to: '/settings', label: 'Settings' },
 ]

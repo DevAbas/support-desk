@@ -41,7 +41,7 @@ proxies `/api` to it.
 server/              The API. Hono routes over an in-memory store.
 src/
 ├── design-system/   Tokens and primitives. Knows nothing about tickets.
-├── features/        The application. Tickets, roles, settings.
+├── features/        The application. Tickets, customers, reports, roles, settings.
 ├── lib/             cn(), the API client and its contract, seed data, domain types.
 └── app/             Layout, routes, providers.
 ```
@@ -61,6 +61,15 @@ failure comes back in one shape: `{ error: { code, message, details? } }`. The s
 live in `src/lib/api/contract.ts` and are imported by both ends, so the server validates
 requests and the client parses responses against the same definitions.
 
+The sixty seeded customers are generated the same way, from the same PRNG. They are
+linked to the queue by name — a ticket belongs to the customer who shares a name with
+its assignee, or, when nobody is assigned, with whoever opened the conversation on it —
+because the queue records no reporter, and inventing one would have meant changing what
+a ticket is for the sake of a screen that reads them. Ten of the sixty have raised
+something; the other fifty never have, which is also true of most customers of most
+products. A customer holds ticket *ids*, resolved through the ticket store on every
+request, so deleting a ticket removes it from the customer who raised it immediately.
+
 Requests are delayed by 150–400ms so that loading states are real states the UI has to
 handle. The knobs for working on those states:
 
@@ -73,6 +82,17 @@ handle. The knobs for working on those states:
 
 The API is deliberately not role-aware — it will delete a ticket for anyone who asks.
 Authorisation is enforced in the UI only.
+
+## Two screens, two patterns
+
+Tickets and customers are built deliberately unalike, and both patterns are meant to
+stay. Tickets are a paginated table with single-value filters and a route per ticket.
+Customers are a dense list of avatars with a cursor and a load-more, a set filter over
+plans, and a drawer that slides over the list rather than a route change — because
+opening a customer is a glance taken while working through the list, and a glance
+should not be a history entry. `src/design-system/README.md` covers why `Table` and
+`List`, `Modal` and `Drawer`, `Select` and `MultiSelect` are pairs of primitives rather
+than one primitive with a prop.
 
 ## Server state
 

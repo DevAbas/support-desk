@@ -7,6 +7,7 @@ import {
   bulkDeleteBodySchema,
   bulkUpdateBodySchema,
   createTicketBodySchema,
+  listCustomersQuerySchema,
   listTicketsQuerySchema,
   reportBreakdownQuerySchema,
   reportRangeQuerySchema,
@@ -15,6 +16,7 @@ import {
   type ApiErrorCode,
   type Role,
 } from '@harness-sample/shared'
+import { createCustomerStore, type CustomerStore } from './customerStore'
 import { buildAssignees, buildBreakdown, buildSummary } from './reports'
 import { createTicketStore, type TicketStore } from './store'
 
@@ -32,6 +34,8 @@ import { createTicketStore, type TicketStore } from './store'
 
 export interface ApiAppOptions {
   store?: TicketStore
+  /** Defaults to a store reading the queue above, so the two cannot disagree. */
+  customers?: CustomerStore
   /** Inclusive millisecond range added to every request. */
   latencyMs?: readonly [number, number]
   /** Fails every request, for exercising error states without a query param. */
@@ -78,8 +82,8 @@ function invalid(c: Context, error: z.ZodError, subject: string) {
   return fail(c, 400, 'validation_failed', `The ${subject} is not valid.`, formatIssues(error))
 }
 
-function missing(c: Context, id: string) {
-  return fail(c, 404, 'not_found', `Ticket ${id} was not found.`)
+function missing(c: Context, subject: string, id: string) {
+  return fail(c, 404, 'not_found', `${subject} ${id} was not found.`)
 }
 
 /**
@@ -97,6 +101,9 @@ async function readJsonBody(c: Context): Promise<{ ok: true; value: unknown } | 
 export function createApiApp(options: ApiAppOptions = {}) {
   const {
     store = createTicketStore(),
+    // Reads the queue above rather than a copy of it, so a ticket deleted
+    // through the routes below leaves its customer in the same breath.
+    customers = createCustomerStore(store),
     latencyMs = DEFAULT_LATENCY_MS,
     failAlways = false,
     role = 'agent',
@@ -187,7 +194,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     const id = c.req.param('id')
     const ticket = store.get(id)
 
-    return ticket ? c.json(ticket) : missing(c, id)
+    return ticket ? c.json(ticket) : missing(c, 'Ticket', id)
   })
 
   app.patch('/api/tickets/:id', async (c) => {
@@ -206,13 +213,13 @@ export function createApiApp(options: ApiAppOptions = {}) {
 
     const ticket = store.update(id, body.data)
 
-    return ticket ? c.json(ticket) : missing(c, id)
+    return ticket ? c.json(ticket) : missing(c, 'Ticket', id)
   })
 
   app.delete('/api/tickets/:id', (c) => {
     const id = c.req.param('id')
 
-    return store.remove(id) ? c.json({ deleted: 1 }) : missing(c, id)
+    return store.remove(id) ? c.json({ deleted: 1 }) : missing(c, 'Ticket', id)
   })
 
   app.post('/api/tickets/:id/comments', async (c) => {
@@ -231,7 +238,27 @@ export function createApiApp(options: ApiAppOptions = {}) {
 
     const ticket = store.addComment(id, body.data)
 
-    return ticket ? c.json(ticket, 201) : missing(c, id)
+    return ticket ? c.json(ticket, 201) : missing(c, 'Ticket', id)
+  })
+
+  // The customer endpoints. The list is a cursor rather than a page number,
+  // because the screen reading it appends rather than pages — see
+  // `customerCursorSchema` in the shared contract for why that is not an offset.
+  app.get('/api/customers', (c) => {
+    const query = listCustomersQuerySchema.safeParse(c.req.query())
+
+    if (!query.success) {
+      return invalid(c, query.error, 'query string')
+    }
+
+    return c.json(customers.list(query.data))
+  })
+
+  app.get('/api/customers/:id', (c) => {
+    const id = c.req.param('id')
+    const customer = customers.get(id)
+
+    return customer ? c.json(customer) : missing(c, 'Customer', id)
   })
 
   // The reporting endpoints. They read the whole queue and answer with figures:

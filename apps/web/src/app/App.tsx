@@ -3,6 +3,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { createQueryClient } from '@/lib/api/queryClient'
 import { RoleProvider } from '@/features/roles/RoleProvider'
+import { CustomersPage } from '@/features/customers/CustomersPage'
 import { ReportsPage } from '@/features/reports/ReportsPage'
 import { NewTicketPage } from '@/features/tickets/NewTicketPage'
 import { TicketDetailPage } from '@/features/tickets/TicketDetailPage'
@@ -28,6 +29,7 @@ export function App() {
               <Route path="tickets" element={<TicketListPage />} />
               <Route path="tickets/new" element={<NewTicketPage />} />
               <Route path="tickets/:ticketId" element={<TicketDetailPage />} />
+              <Route path="customers" element={<CustomersPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFoundPage />} />

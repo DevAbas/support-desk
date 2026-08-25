@@ -6,8 +6,13 @@ import type { Ticket, TicketComment, TicketPriority, TicketStatus } from '@harne
  * walkthroughs, where a shuffling list would make two takes disagree.
  */
 
-/** mulberry32 — a small, fast, seedable PRNG. */
-function createRandom(seed: number): () => number {
+/**
+ * mulberry32 — a small, fast, seedable PRNG.
+ *
+ * Exported so that `customerSeed.ts` generates its rows from the same one. A
+ * second copy would be a second thing to keep deterministic.
+ */
+export function createRandom(seed: number): () => number {
   let state = seed
 
   return () => {
@@ -20,7 +25,7 @@ function createRandom(seed: number): () => number {
 }
 
 /** Fixed reference point so the generated timestamps never drift. */
-const SEED_EPOCH = Date.parse('2026-08-01T09:00:00.000Z')
+export const SEED_EPOCH = Date.parse('2026-08-01T09:00:00.000Z')
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 

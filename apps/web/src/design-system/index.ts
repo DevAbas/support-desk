@@ -1,6 +1,9 @@
 export { Alert } from './Alert'
 export type { AlertProps, AlertTone } from './Alert'
 
+export { Avatar } from './Avatar'
+export type { AvatarProps, AvatarSize } from './Avatar'
+
 export { Badge } from './Badge'
 export type { BadgeProps, BadgeStatus } from './Badge'
 
@@ -16,11 +19,20 @@ export type { BarChartProps, ChartDatum, ChartTone } from './Chart'
 export { DateRangeField } from './DateRangeField'
 export type { DateRange, DateRangeFieldProps, DateRangePreset } from './DateRangeField'
 
+export { Drawer } from './Drawer'
+export type { DrawerProps, DrawerSide } from './Drawer'
+
 export { Input } from './Input'
 export type { InputProps } from './Input'
 
+export { List, ListRow } from './List'
+export type { ListProps, ListRowProps } from './List'
+
 export { Modal } from './Modal'
 export type { ModalProps } from './Modal'
+
+export { MultiSelect } from './MultiSelect'
+export type { MultiSelectProps } from './MultiSelect'
 
 export { Select } from './Select'
 export type { SelectOption, SelectProps } from './Select'
