@@ -4,9 +4,17 @@ import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { CustomerDrawer } from './components/CustomerDrawer'
 import { CustomerList } from './components/CustomerList'
+import { CustomerSegmentBar } from './components/CustomerSegmentBar'
 import { CustomersToolbar } from './components/CustomersToolbar'
-import { DEFAULT_FILTERS, toListCustomersFilters, type CustomerFilters } from './customerFilters'
+import {
+  areFiltersEqual,
+  DEFAULT_FILTERS,
+  toListCustomersFilters,
+  type CustomerFilters,
+} from './customerFilters'
+import type { CustomerSegment } from './customerSegments'
 import { useCustomers } from './hooks/useCustomers'
+import { useCustomerSegments } from './hooks/useCustomerSegments'
 
 /**
  * Everyone who uses the product.
@@ -22,6 +30,8 @@ import { useCustomers } from './hooks/useCustomers'
  *   working through the list, and a glance should not be a history entry.
  * - A set filter rather than a widened single value. "Pro and Enterprise" is a
  *   question a `<select>` cannot ask.
+ * - Saved segments as a strip over the list rather than a sidebar beside it,
+ *   because a list that is scanned wants its width — see `CustomerSegmentBar`.
  */
 
 /** Enough rows to fill a screen and a bit, so the first load-more is a choice. */
@@ -32,7 +42,10 @@ const SEARCH_DEBOUNCE_MS = 250
 
 export function CustomersPage() {
   const [filters, setFilters] = useState<CustomerFilters>(DEFAULT_FILTERS)
+  const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null)
   const [openCustomerId, setOpenCustomerId] = useState<string | null>(null)
+
+  const segments = useCustomerSegments()
 
   // The field stays instant. Only the request, and the cache key built from it,
   // wait for a pause in typing.
@@ -50,6 +63,11 @@ export function CustomersPage() {
     ? toErrorMessage(customers.error, 'Could not load customers.')
     : null
 
+  // Derived rather than stored: a segment deleted in this render simply stops
+  // being found, and the filters are compared against what is on screen now.
+  const activeSegment = segments.segments.find((segment) => segment.id === activeSegmentId) ?? null
+  const isSegmentModified = !areFiltersEqual(filters, activeSegment?.filters ?? DEFAULT_FILTERS)
+
   /**
    * No page to reset, and nothing else to tidy up. A new filter is a new list,
    * and the cache key changing is what starts it from the top.
@@ -58,9 +76,33 @@ export function CustomersPage() {
    * it does not care what the list underneath is showing — and closing it here
    * would take focus back to the row it came from while someone is still typing
    * in the search field.
+   *
+   * The active segment is left alone as well. Narrowing a segment does not
+   * unselect it, it marks it modified, so the way back to what was saved is
+   * still on screen.
    */
   function changeFilters(patch: Partial<CustomerFilters>) {
     setFilters((current) => ({ ...current, ...patch }))
+  }
+
+  /** `null` is the whole list: the segment strip's first chip. */
+  function selectSegment(segment: CustomerSegment | null) {
+    setFilters(segment ? { ...segment.filters } : DEFAULT_FILTERS)
+    setActiveSegmentId(segment?.id ?? null)
+  }
+
+  function saveSegment(name: string) {
+    setActiveSegmentId(segments.saveSegment(name, filters).id)
+  }
+
+  function deleteSegment(id: string) {
+    segments.deleteSegment(id)
+
+    // The filters on screen are the person's current work; deleting the segment
+    // they came from drops the name, not the filtering.
+    if (id === activeSegmentId) {
+      setActiveSegmentId(null)
+    }
   }
 
   return (
@@ -73,6 +115,16 @@ export function CustomersPage() {
       </div>
 
       <Card className="overflow-hidden">
+        <CustomerSegmentBar
+          segments={segments.segments}
+          activeSegmentId={activeSegmentId}
+          isModified={isSegmentModified}
+          onSelectSegment={selectSegment}
+          onSaveSegment={saveSegment}
+          onRenameSegment={segments.renameSegment}
+          onDeleteSegment={deleteSegment}
+        />
+
         <CustomersToolbar
           filters={filters}
           onChange={changeFilters}

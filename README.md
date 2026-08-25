@@ -90,7 +90,9 @@ stay. Tickets are a paginated table with single-value filters and a route per ti
 Customers are a dense list of avatars with a cursor and a load-more, a set filter over
 plans, and a drawer that slides over the list rather than a route change — because
 opening a customer is a glance taken while working through the list, and a glance
-should not be a history entry. `src/design-system/README.md` covers why `Table` and
+should not be a history entry. The filter combinations worth keeping are chips in a
+strip above the list rather than a sidebar beside it, for the same reason the filters
+themselves are one line: a list that is scanned down wants its width. `src/design-system/README.md` covers why `Table` and
 `List`, `Modal` and `Drawer`, `Select` and `MultiSelect` are pairs of primitives rather
 than one primitive with a prop.
 
@@ -102,7 +104,10 @@ in `src/lib/api/http.ts`. Cache keys are only ever built through the factory in
 `src/features/tickets/ticketKeys.ts`.
 
 Saved views are not server state. They are a shortcut a person keeps for themselves, so
-they stay in localStorage — see `src/features/tickets/savedViews.ts`.
+they stay in localStorage — see `src/features/tickets/savedViews.ts`. Saved segments are
+the same shortcut over the customer list, in a module and under a storage key of their
+own, because a segment holds a set of plans where a view holds single values widened
+with `all` — see `src/features/customers/customerSegments.ts`.
 
 Tests intercept HTTP with MSW and hand the request to the real API, so a test exercises
 the real query layer against the real routing and validation rather than agreeing with a

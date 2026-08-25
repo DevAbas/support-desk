@@ -51,3 +51,35 @@ export function toListCustomersFilters(
     limit,
   }
 }
+
+/**
+ * Plans in domain order, whatever order they arrived in.
+ *
+ * `MultiSelect` emits in options order and the contract puts the query back into
+ * domain order too, so this only ever does work for plans that came from
+ * somewhere else — a saved segment, or storage somebody edited by hand. It
+ * exists so that one set of plans is one question: Pro-then-Free and
+ * Free-then-Pro must not become two cache entries and two requests.
+ */
+export function normalizePlans(plans: readonly CustomerPlan[]): CustomerPlan[] {
+  return CUSTOMER_PLANS.filter((plan) => plans.includes(plan))
+}
+
+/**
+ * Whether two filter combinations would produce the same list.
+ *
+ * Plans are compared as the set they are, so the order they were ticked in
+ * cannot make a saved segment look modified. The search term is compared
+ * trimmed because `listCustomers` trims it too: a trailing space changes nothing
+ * on screen, so it must not change the label above it either.
+ */
+export function areFiltersEqual(a: CustomerFilters, b: CustomerFilters): boolean {
+  const plansA = normalizePlans(a.plans)
+  const plansB = normalizePlans(b.plans)
+
+  return (
+    a.search.trim() === b.search.trim() &&
+    plansA.length === plansB.length &&
+    plansA.every((plan, index) => plan === plansB[index])
+  )
+}
