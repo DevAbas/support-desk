@@ -36,4 +36,7 @@ export const handlers = [
   http.patch('/api/tickets/:id', forward),
   http.delete('/api/tickets/:id', forward),
   http.post('/api/tickets/:id/comments', forward),
+  http.get('/api/reports/summary', forward),
+  http.get('/api/reports/breakdown', forward),
+  http.get('/api/reports/assignees', forward),
 ]

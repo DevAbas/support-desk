@@ -41,6 +41,24 @@ The same applies to the other primitives. If a text field, a dropdown, a card, a
 table, or a dialog is needed, it comes from this folder. When a primitive cannot do
 what a screen needs, extend the primitive — do not build a parallel one next to it.
 
+## The charting library stays behind `Chart/`
+
+`Chart/` is the only place in this codebase that imports the charting library. Feature
+code hands it `ChartDatum[]` and reads nothing of the library's API, so replacing the
+library is a change to one component rather than to every screen that draws something.
+
+A charting library ships its own palette, and a chart drawn in it is the one thing on
+the page that does not belong to this design system. Marks take their fill from the
+token custom properties — `var(--color-success)`, never `#16a34a` and never the
+library's fourth default colour — and so do the grid, the axis and the tooltip. A chart
+that needs a colour gets it from `tokens.css` like everything else.
+
+A chart is also a picture, which is no use to anyone who cannot see it. `BarChart` hides
+the drawing from assistive technology and renders the same figures beside it as a
+`Table`, visually hidden. That is not a nicety: it is also what makes the neutral tone
+legible, because a grey mark sits below the contrast a shape needs to carry meaning on
+its own, so every bar is labelled with its value and every value is in the table.
+
 ## Badge statuses come from a fixed union
 
 `BadgeStatus` is `'neutral' | 'info' | 'success' | 'warning' | 'danger'` and nothing
@@ -51,6 +69,13 @@ Those five values are *presentation* states. They are not ticket statuses. A tic
 `status` and `priority` are domain values, and mapping them onto a badge appearance
 belongs in the feature layer — see `features/tickets/components/TicketStatusBadge.tsx`.
 The design system must not learn what a ticket is.
+
+`AlertTone`, `ChartTone` and `StatChangeIntent` are the same kind of union and carry the
+same rule. A bar is not green because it is resolved; it is green because the feature
+decided that resolved is drawn in the success tone, in
+`features/reports/reportViews.ts`. `StatCard` is the clearest case: it is handed a
+direction *and* an intent, because only the screen knows that more tickets raised is bad
+news and more resolved is good, while the arrow for both points the same way.
 
 ## No arbitrary values
 
@@ -74,9 +99,22 @@ missing a step. Both are worth resolving before the class is written.
   `scope="col"`.
 - `Modal` is a real dialog: `role="dialog"`, `aria-modal`, an accessible name from its
   title, Escape to dismiss, and focus moved in on open and restored on close.
+- `Tabs` is a real tab strip: `role="tablist"`, an accessible name from its `label`, a
+  single tab stop for the whole strip with the arrow keys moving between tabs, and each
+  tab tied to its panel through a generated pair of ids. Only the selected panel is
+  rendered, so a panel that loads its own data does not load it until it is shown.
+- `Alert` chooses its own `role` from its tone — a failure is announced assertively,
+  everything else politely — which is why `role` is not a prop.
+- `DateRangeField` is a `fieldset` with a legend, and its presets are toggle buttons
+  carrying `aria-pressed` rather than links that look pressed. It never emits a range
+  that ends before it starts: moving one end past the other takes the other with it.
+- `BarChart` requires a `caption`, in the same way and for the same reason `Table` does.
+- `StatCard` says which way a figure moved in words; the arrow beside it is decorative
+  and hidden.
 - Loading and empty states belong to `TableBody` via `isLoading` and `isEmpty`, so
   that the loading message is announced through `role="status"` in every table rather
-  than in whichever ones remembered to do it.
+  than in whichever ones remembered to do it. `StatCard` and `BarChart` own theirs the
+  same way, so a screen full of figures waits as one thing rather than as five.
 
 ## Composing classes
 

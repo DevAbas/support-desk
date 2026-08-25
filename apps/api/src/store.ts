@@ -22,6 +22,13 @@ import { createSeedTickets } from './seed'
 
 export interface TicketStore {
   list: (query: ListTicketsQuery) => ListTicketsResponse
+  /**
+   * The whole queue at once, for the reporting endpoints. Aggregating over a
+   * range is not a question a page of rows can answer, and the alternative —
+   * asking `list` for a page large enough to hold everything — would make the
+   * report silently wrong the day the queue outgrows `MAX_PAGE_SIZE`.
+   */
+  snapshot: () => Ticket[]
   get: (id: string) => Ticket | undefined
   create: (input: CreateTicketBody) => Ticket
   update: (id: string, patch: UpdateTicketBody) => Ticket | undefined
@@ -80,6 +87,10 @@ export function createTicketStore(): TicketStore {
         page: safePage,
         pageCount,
       }
+    },
+
+    snapshot() {
+      return tickets.map(cloneTicket)
     },
 
     get(id) {

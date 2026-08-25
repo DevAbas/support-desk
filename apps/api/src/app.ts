@@ -8,11 +8,14 @@ import {
   bulkUpdateBodySchema,
   createTicketBodySchema,
   listTicketsQuerySchema,
+  reportBreakdownQuerySchema,
+  reportRangeQuerySchema,
   updateTicketBodySchema,
   type ApiErrorBody,
   type ApiErrorCode,
   type Role,
 } from '@harness-sample/shared'
+import { buildAssignees, buildBreakdown, buildSummary } from './reports'
 import { createTicketStore, type TicketStore } from './store'
 
 /**
@@ -229,6 +232,39 @@ export function createApiApp(options: ApiAppOptions = {}) {
     const ticket = store.addComment(id, body.data)
 
     return ticket ? c.json(ticket, 201) : missing(c, id)
+  })
+
+  // The reporting endpoints. They read the whole queue and answer with figures:
+  // the aggregation happens here so that a client never fetches tickets in order
+  // to count them. Every one of them is bounded by the same validated range.
+  app.get('/api/reports/summary', (c) => {
+    const query = reportRangeQuerySchema.safeParse(c.req.query())
+
+    if (!query.success) {
+      return invalid(c, query.error, 'query string')
+    }
+
+    return c.json(buildSummary(store.snapshot(), query.data))
+  })
+
+  app.get('/api/reports/breakdown', (c) => {
+    const query = reportBreakdownQuerySchema.safeParse(c.req.query())
+
+    if (!query.success) {
+      return invalid(c, query.error, 'query string')
+    }
+
+    return c.json(buildBreakdown(store.snapshot(), query.data))
+  })
+
+  app.get('/api/reports/assignees', (c) => {
+    const query = reportRangeQuerySchema.safeParse(c.req.query())
+
+    if (!query.success) {
+      return invalid(c, query.error, 'query string')
+    }
+
+    return c.json(buildAssignees(store.snapshot(), query.data))
   })
 
   app.notFound((c) => fail(c, 404, 'not_found', `No route matches ${c.req.path}.`))
