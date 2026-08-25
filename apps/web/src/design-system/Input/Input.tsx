@@ -7,7 +7,7 @@ const controlClasses =
   'placeholder:text-fg-subtle focus-visible:outline-2 focus-visible:outline-offset-0 ' +
   'focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-muted'
 
-export function Input({ label, error, hint, className, ...props }: InputProps) {
+export function Input({ label, labelHidden = false, error, hint, className, ...props }: InputProps) {
   const id = useId()
   const errorId = `${id}-error`
   const hintId = `${id}-hint`
@@ -15,7 +15,7 @@ export function Input({ label, error, hint, className, ...props }: InputProps) {
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium text-fg">
+      <label htmlFor={id} className={cn('text-sm font-medium text-fg', labelHidden && 'sr-only')}>
         {label}
       </label>
       <input

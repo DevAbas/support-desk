@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { Ticket } from '@harness-sample/shared'
+import { DEFAULT_TAXONOMY, type Ticket } from '@harness-sample/shared'
 import { ticketsCsvFilename, ticketsToCsv } from '@/features/tickets/ticketsCsv'
+
+/** The labels the export writes. The screen passes in whatever the admin configured. */
+const labels = {
+  statuses: DEFAULT_TAXONOMY.statuses,
+  priorities: DEFAULT_TAXONOMY.priorities,
+}
 
 function makeTicket(overrides: Partial<Ticket> = {}): Ticket {
   return {
@@ -22,7 +28,7 @@ function rows(csv: string): string[] {
 
 describe('ticketsToCsv', () => {
   it('writes a header row and one row per ticket', () => {
-    const csv = ticketsToCsv([makeTicket(), makeTicket({ id: 'TCK-0002' })])
+    const csv = ticketsToCsv([makeTicket(), makeTicket({ id: 'TCK-0002' })], labels)
 
     expect(rows(csv)).toEqual([
       '"Ticket","Title","Status","Priority","Assignee","Created"',
@@ -32,17 +38,23 @@ describe('ticketsToCsv', () => {
   })
 
   it('writes the header alone when there is nothing to export', () => {
-    expect(ticketsToCsv([])).toBe('"Ticket","Title","Status","Priority","Assignee","Created"')
+    expect(ticketsToCsv([], labels)).toBe('"Ticket","Title","Status","Priority","Assignee","Created"')
   })
 
-  it('uses the status and priority labels rather than the raw domain values', () => {
-    const csv = ticketsToCsv([makeTicket({ status: 'pending', priority: 'medium' })])
+  it('uses the configured labels rather than the raw values', () => {
+    const csv = ticketsToCsv([makeTicket({ status: 'pending', priority: 'medium' })], labels)
 
     expect(rows(csv)[1]).toContain('"Pending","Medium"')
   })
 
+  it('writes a value the taxonomy no longer has as itself', () => {
+    const csv = ticketsToCsv([makeTicket({ status: 'escalated' })], labels)
+
+    expect(rows(csv)[1]).toContain('"escalated","High"')
+  })
+
   it('escapes quotes, commas and newlines in a title', () => {
-    const csv = ticketsToCsv([makeTicket({ title: 'He said "hi", then\nleft' })])
+    const csv = ticketsToCsv([makeTicket({ title: 'He said "hi", then\nleft' })], labels)
 
     // The newline stays inside the quoted field: still a header and one record.
     expect(rows(csv)).toHaveLength(2)
@@ -50,7 +62,7 @@ describe('ticketsToCsv', () => {
   })
 
   it('neutralises a title a spreadsheet would read as a formula', () => {
-    const csv = ticketsToCsv([makeTicket({ title: '=1+1' })])
+    const csv = ticketsToCsv([makeTicket({ title: '=1+1' })], labels)
 
     expect(rows(csv)[1]).toContain('"\'=1+1"')
   })

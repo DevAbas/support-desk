@@ -1,4 +1,3 @@
-import { TICKET_PRIORITIES, TICKET_STATUSES } from '@harness-sample/shared'
 import type { PriorityFilter, StatusFilter, TicketFilters } from './ticketFilters'
 
 /**
@@ -18,18 +17,21 @@ export interface SavedView {
 /** Exported so tests can seed and inspect what the screen actually reads. */
 export const SAVED_VIEWS_STORAGE_KEY = 'support-desk.saved-views'
 
+/**
+ * Only the shape is checked, not the membership.
+ *
+ * Which statuses exist is configuration an admin can change, and storage is read
+ * synchronously at mount, before the taxonomy has arrived — so there is nothing
+ * here to check a value against. A view naming a status that has since been
+ * removed is kept and shown as removed in the filter dropdown, rather than
+ * silently dropped; see `withUnknownValue`.
+ */
 function isStatusFilter(value: unknown): value is StatusFilter {
-  return (
-    typeof value === 'string' &&
-    (value === 'all' || TICKET_STATUSES.some((status) => status === value))
-  )
+  return typeof value === 'string' && value !== ''
 }
 
 function isPriorityFilter(value: unknown): value is PriorityFilter {
-  return (
-    typeof value === 'string' &&
-    (value === 'all' || TICKET_PRIORITIES.some((priority) => priority === value))
-  )
+  return typeof value === 'string' && value !== ''
 }
 
 function isTicketFilters(value: unknown): value is TicketFilters {
@@ -65,8 +67,7 @@ function isSavedView(value: unknown): value is SavedView {
  *
  * Storage is shared with older builds of the app and with whatever else has
  * written to this origin, so nothing that comes back is trusted: a malformed
- * entry — or a status that has since been removed from the domain — is skipped
- * rather than allowed to break the screen.
+ * entry is skipped rather than allowed to break the screen.
  */
 export function readSavedViews(): SavedView[] {
   try {

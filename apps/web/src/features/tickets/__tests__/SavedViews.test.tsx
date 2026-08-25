@@ -193,7 +193,7 @@ describe('saved views', () => {
       SAVED_VIEWS_STORAGE_KEY,
       JSON.stringify([
         { id: 'a', name: 'Fine', filters: { status: 'open', priority: 'all', search: '' } },
-        { id: 'b', name: 'Stale', filters: { status: 'escalated', priority: 'all', search: '' } },
+        { id: 'b', name: 'Stale', filters: { status: 42, priority: 'all', search: '' } },
       ]),
     )
 
@@ -201,5 +201,30 @@ describe('saved views', () => {
 
     expect(viewRow('Fine')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Stale/ })).not.toBeInTheDocument()
+  })
+
+  /**
+   * Which statuses exist is configuration an admin edits, and storage is read
+   * before the taxonomy has arrived — so a view naming a removed status cannot
+   * be told apart from a valid one at read time. It is kept and the dropdown
+   * says what happened, rather than the view disappearing without explanation.
+   */
+  it('keeps a view whose status has since been removed, and marks it removed', async () => {
+    window.localStorage.setItem(
+      SAVED_VIEWS_STORAGE_KEY,
+      JSON.stringify([
+        { id: 'a', name: 'Escalations', filters: { status: 'escalated', priority: 'all', search: '' } },
+      ]),
+    )
+
+    await renderList()
+    await userEvent.click(viewRow('Escalations'))
+    await waitForTickets()
+
+    expect(screen.getByLabelText('Status')).toHaveValue('escalated')
+    expect(
+      within(screen.getByLabelText('Status')).getByRole('option', { name: 'escalated (removed)' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('No tickets match these filters.')).toBeInTheDocument()
   })
 })

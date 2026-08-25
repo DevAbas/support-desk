@@ -1,22 +1,22 @@
-import { Badge, type BadgeStatus } from '@/design-system'
-import { TICKET_STATUS_LABELS, type TicketStatus } from '@harness-sample/shared'
+import type { TicketStatus } from '@harness-sample/shared'
+import { TaxonomyBadge } from '@/features/taxonomy/TaxonomyBadge'
+import { useTaxonomySets } from '@/features/taxonomy/useTaxonomy'
 
 /**
- * The domain-to-presentation mapping. `Badge` knows about appearances; this file
- * knows what a ticket status is. Keeping the two apart is why `Badge` never has
- * to grow a `status="pending"` case.
+ * The domain-to-presentation mapping. `Badge` knows about appearances; the
+ * taxonomy knows what a ticket status is called and how it should read. Keeping
+ * the two apart is why `Badge` never has to grow a `status="pending"` case.
+ *
+ * The label and the appearance are both configuration now — see the Settings
+ * page — so this reads them from the query cache rather than from a table
+ * compiled into the bundle.
  */
-const badgeStatusByTicketStatus: Record<TicketStatus, BadgeStatus> = {
-  open: 'info',
-  pending: 'warning',
-  resolved: 'success',
-  closed: 'neutral',
-}
-
 interface TicketStatusBadgeProps {
   status: TicketStatus
 }
 
 export function TicketStatusBadge({ status }: TicketStatusBadgeProps) {
-  return <Badge status={badgeStatusByTicketStatus[status]}>{TICKET_STATUS_LABELS[status]}</Badge>
+  const { statuses } = useTaxonomySets()
+
+  return <TaxonomyBadge entries={statuses} value={status} />
 }

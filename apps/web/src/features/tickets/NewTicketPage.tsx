@@ -1,13 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, CardBody, CardFooter, CardHeader, Input, Select, Textarea } from '@/design-system'
+import { toValueOptions } from '@/features/taxonomy/taxonomyOptions'
+import { useTaxonomySets } from '@/features/taxonomy/useTaxonomy'
 import { useCreateTicket } from './hooks/useCreateTicket'
-import { TICKET_PRIORITIES, TICKET_PRIORITY_LABELS, type TicketPriority } from '@harness-sample/shared'
-
-const priorityOptions = TICKET_PRIORITIES.map((priority) => ({
-  value: priority,
-  label: TICKET_PRIORITY_LABELS[priority],
-}))
+import { type TicketPriority } from '@harness-sample/shared'
 
 const MIN_TITLE_LENGTH = 5
 
@@ -54,6 +51,7 @@ function validate(values: FormValues): FormErrors {
 export function NewTicketPage() {
   const navigate = useNavigate()
   const createTicket = useCreateTicket()
+  const { priorities } = useTaxonomySets()
   const [values, setValues] = useState<FormValues>(emptyValues)
   const [errors, setErrors] = useState<FormErrors>({})
 
@@ -112,7 +110,7 @@ export function NewTicketPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
                 label="Priority"
-                options={priorityOptions}
+                options={toValueOptions(priorities)}
                 value={values.priority}
                 error={errors.priority}
                 placeholder="Choose a priority"

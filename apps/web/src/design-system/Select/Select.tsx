@@ -9,6 +9,7 @@ const controlClasses =
 
 export function Select<TValue extends string = string>({
   label,
+  labelHidden = false,
   options,
   error,
   hint,
@@ -23,7 +24,7 @@ export function Select<TValue extends string = string>({
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium text-fg">
+      <label htmlFor={id} className={cn('text-sm font-medium text-fg', labelHidden && 'sr-only')}>
         {label}
       </label>
       <select

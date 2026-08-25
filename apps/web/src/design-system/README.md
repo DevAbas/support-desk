@@ -48,9 +48,12 @@ else. The style table in `Badge.tsx` is keyed by that union, so adding a status
 without styling it is a compile error rather than a silently unstyled badge.
 
 Those five values are *presentation* states. They are not ticket statuses. A ticket's
-`status` and `priority` are domain values, and mapping them onto a badge appearance
-belongs in the feature layer — see `features/tickets/components/TicketStatusBadge.tsx`.
-The design system must not learn what a ticket is.
+`status` and `priority` are domain values — configuration an admin edits, in fact, so
+which ones exist is not known until the taxonomy loads. Mapping one onto a badge
+appearance belongs in the feature layer: `features/taxonomy/appearance.ts` holds the
+table, and `TicketStatusBadge` reads it. The two unions happen to use the same five
+words, and that table is what keeps it a coincidence rather than a dependency. The
+design system must not learn what a ticket is.
 
 ## No arbitrary values
 
@@ -67,6 +70,10 @@ missing a step. Both are worth resolving before the class is written.
 - Every form control has a real `<label>` bound to it. `Input`, `Select`, and
   `Textarea` take a required `label` prop and generate their own `id` with `useId`,
   which is why they omit `id` from their props — the binding cannot be forgotten.
+  A field in a table row, where the column header already names it on screen, passes
+  `labelHidden` on `Input` or `Select`: the label is rendered `sr-only` and stays the
+  control's accessible name. It is never a way to have no label, and the name should
+  still say which row it belongs to — `Label for open`, not `Label`.
 - Errors set `aria-invalid` and are wired to the control through `aria-describedby`.
   Pass the `error` prop rather than rendering error text alongside the field.
 - Icon-only controls need an `aria-label`.

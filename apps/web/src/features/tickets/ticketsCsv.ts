@@ -1,4 +1,4 @@
-import { TICKET_PRIORITY_LABELS, TICKET_STATUS_LABELS, type Ticket } from '@harness-sample/shared'
+import { taxonomyLabel, type TaxonomyEntry, type Ticket } from '@harness-sample/shared'
 
 /**
  * Serialises tickets to RFC 4180 CSV. The columns mirror the ticket table, plus
@@ -28,12 +28,25 @@ function escapeField(value: string): string {
   return `"${guarded.replaceAll('"', '""')}"`
 }
 
-export function ticketsToCsv(tickets: readonly Ticket[]): string {
+/**
+ * The taxonomy is passed in rather than read here, because this file is not a
+ * component and the labels are server state. A value with no entry is written
+ * out raw, which is the same fallback the badges use.
+ */
+export interface TicketsCsvLabels {
+  statuses: readonly TaxonomyEntry[]
+  priorities: readonly TaxonomyEntry[]
+}
+
+export function ticketsToCsv(
+  tickets: readonly Ticket[],
+  { statuses, priorities }: TicketsCsvLabels,
+): string {
   const rows = tickets.map((ticket) => [
     ticket.id,
     ticket.title,
-    TICKET_STATUS_LABELS[ticket.status],
-    TICKET_PRIORITY_LABELS[ticket.priority],
+    taxonomyLabel(statuses, ticket.status),
+    taxonomyLabel(priorities, ticket.priority),
     ticket.assignee,
     ticket.createdAt,
   ])

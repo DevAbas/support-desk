@@ -5,6 +5,8 @@ import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { type TicketStatus } from '@harness-sample/shared'
 import { useRole } from '@/features/roles/useRole'
+import { toFilterOptions, withUnknownValue } from '@/features/taxonomy/taxonomyOptions'
+import { useTaxonomySets } from '@/features/taxonomy/useTaxonomy'
 import { BulkActionsBar } from './components/BulkActionsBar'
 import { Pagination } from './components/Pagination'
 import { SavedViewsSidebar } from './components/SavedViewsSidebar'
@@ -19,8 +21,6 @@ import type { SavedView } from './savedViews'
 import {
   areFiltersEqual,
   DEFAULT_FILTERS,
-  priorityFilterOptions,
-  statusFilterOptions,
   toListTicketsQuery,
   type PriorityFilter,
   type StatusFilter,
@@ -43,6 +43,21 @@ export function TicketListPage() {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
 
   const savedViews = useSavedViews()
+  const { statuses, priorities } = useTaxonomySets()
+
+  // Built from the taxonomy rather than from a constant, and widened to keep
+  // showing a filter whose status has since been removed — a saved view can
+  // outlive the status it was built on.
+  const statusOptions = withUnknownValue(
+    toFilterOptions(statuses, 'All statuses'),
+    filters.status,
+    statuses,
+  )
+  const priorityOptions = withUnknownValue(
+    toFilterOptions(priorities, 'All priorities'),
+    filters.priority,
+    priorities,
+  )
 
   // The field stays instant. Only the request, and the cache key built from it,
   // wait for a pause in typing.
@@ -157,7 +172,7 @@ export function TicketListPage() {
             <div className="grid gap-4 px-5 py-4 sm:grid-cols-3">
               <Select
                 label="Status"
-                options={statusFilterOptions}
+                options={statusOptions}
                 value={filters.status}
                 onChange={(event) =>
                   changeFilters({ status: event.target.value as StatusFilter })
@@ -165,7 +180,7 @@ export function TicketListPage() {
               />
               <Select
                 label="Priority"
-                options={priorityFilterOptions}
+                options={priorityOptions}
                 value={filters.priority}
                 onChange={(event) =>
                   changeFilters({ priority: event.target.value as PriorityFilter })
@@ -192,6 +207,7 @@ export function TicketListPage() {
             {canManageTickets && selectedIds.length > 0 ? (
               <BulkActionsBar
                 selectedCount={selectedIds.length}
+                statuses={statuses}
                 isBusy={isBulkBusy}
                 onApplyStatus={applyBulkStatus}
                 onDelete={() => setIsConfirmingDelete(true)}

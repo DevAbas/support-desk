@@ -1,8 +1,16 @@
 import { z } from 'zod'
 import {
+  MAX_TAXONOMY_ENTRIES,
+  MAX_TAXONOMY_LABEL_LENGTH,
+  MAX_TAXONOMY_VALUE_LENGTH,
+  MIN_TAXONOMY_ENTRIES,
+  RESERVED_TAXONOMY_VALUES,
   ROLES,
-  TICKET_PRIORITIES,
-  TICKET_STATUSES,
+  TAXONOMY_VALUE_PATTERN,
+  TICKET_APPEARANCES,
+  type Taxonomy,
+  type TaxonomyEntry,
+  type TaxonomyUsage,
   type Ticket,
   type TicketComment,
 } from './types'
@@ -18,16 +26,40 @@ import {
  * vocabulary, not screen behaviour.
  */
 
-export const ticketStatusSchema = z.enum(TICKET_STATUSES)
+/**
+ * A status or priority value.
+ *
+ * This is a shape check, not a membership check: which values exist is in the
+ * taxonomy an admin edits, and this file is static — it is imported by both ends
+ * and cannot know what the store currently holds. The routes that write a status
+ * or a priority check membership against the live taxonomy and answer with the
+ * same `validation_failed` shape, so a value that parses here can still be
+ * rejected there.
+ */
+export const taxonomyValueSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(MAX_TAXONOMY_VALUE_LENGTH)
+  .regex(TAXONOMY_VALUE_PATTERN, 'Use lowercase letters, digits and hyphens.')
 
-export const ticketPrioritySchema = z.enum(TICKET_PRIORITIES)
+export const ticketStatusSchema = taxonomyValueSchema
+
+export const ticketPrioritySchema = taxonomyValueSchema
 
 export const roleSchema = z.enum(ROLES)
 
-/** `all` is the widening the list screen uses for "do not filter on this". */
-export const statusFilterSchema = z.enum([...TICKET_STATUSES, 'all'] as const)
+/**
+ * `all` is the widening the list screen uses for "do not filter on this". It is
+ * a valid value shape, so it needs no special case here.
+ *
+ * Membership is deliberately not checked on a filter. A saved view can outlive
+ * the status it was built on, and answering that with an empty list is kinder
+ * than answering with a 400 the screen would have to explain.
+ */
+export const statusFilterSchema = taxonomyValueSchema
 
-export const priorityFilterSchema = z.enum([...TICKET_PRIORITIES, 'all'] as const)
+export const priorityFilterSchema = taxonomyValueSchema
 
 /**
  * Annotated with the domain type rather than left to inference, so that adding a
@@ -137,6 +169,86 @@ export type DeletedCount = z.infer<typeof deletedCountSchema>
 export const meResponseSchema = z.object({ role: roleSchema })
 
 export type MeResponse = z.infer<typeof meResponseSchema>
+
+/**
+ * The editable statuses and priorities.
+ *
+ * Annotated with the domain types for the same reason `ticketSchema` is: a field
+ * added to `TaxonomyEntry` without being added here is a compile error rather
+ * than a field the client silently strips.
+ */
+const taxonomyEntryValueSchema = taxonomyValueSchema.refine(
+  (value) => !RESERVED_TAXONOMY_VALUES.some((reserved) => reserved === value),
+  { message: `Cannot be one of ${RESERVED_TAXONOMY_VALUES.join(', ')}.` },
+)
+
+export const taxonomyEntrySchema: z.ZodType<TaxonomyEntry> = z.object({
+  value: taxonomyEntryValueSchema,
+  label: z.string().trim().min(1).max(MAX_TAXONOMY_LABEL_LENGTH),
+  appearance: z.enum(TICKET_APPEARANCES),
+})
+
+/**
+ * One set, in display order.
+ *
+ * The lower bound is what stops a ticket being left with nothing to hold, and
+ * the uniqueness check is what stops two entries answering to the same value —
+ * which would make a filter ambiguous and a migration undecidable.
+ */
+const taxonomyEntryListSchema = z
+  .array(taxonomyEntrySchema)
+  .min(MIN_TAXONOMY_ENTRIES)
+  .max(MAX_TAXONOMY_ENTRIES)
+  .refine(
+    (entries) => new Set(entries.map((entry) => entry.value)).size === entries.length,
+    { message: 'Each value can only appear once.' },
+  )
+
+export const taxonomySchema: z.ZodType<Taxonomy> = z.object({
+  statuses: taxonomyEntryListSchema,
+  priorities: taxonomyEntryListSchema,
+})
+
+export const taxonomyUsageSchema: z.ZodType<TaxonomyUsage> = z.object({
+  statuses: z.record(z.string(), z.number().int().nonnegative()),
+  priorities: z.record(z.string(), z.number().int().nonnegative()),
+})
+
+/** The taxonomy plus how many tickets hold each value, which is what the editor shows. */
+export const taxonomyResponseSchema = z.object({
+  taxonomy: taxonomySchema,
+  usage: taxonomyUsageSchema,
+})
+
+export type TaxonomyResponse = z.infer<typeof taxonomyResponseSchema>
+
+/**
+ * Where the tickets holding a removed value should be moved, keyed by the value
+ * being removed. Removing a value nothing holds needs no entry; removing one
+ * that tickets do hold without an entry here is a validation failure, because
+ * the alternative is a ticket left pointing at a status that no longer exists.
+ */
+export const taxonomyReassignSchema = z.object({
+  statuses: z.record(z.string(), taxonomyValueSchema).default({}),
+  priorities: z.record(z.string(), taxonomyValueSchema).default({}),
+})
+
+export type TaxonomyReassign = z.infer<typeof taxonomyReassignSchema>
+
+/** A whole-set replacement rather than a patch: order is part of what is being edited. */
+export const updateTaxonomyBodySchema = z.object({
+  taxonomy: taxonomySchema,
+  reassign: taxonomyReassignSchema.default({ statuses: {}, priorities: {} }),
+})
+
+export type UpdateTaxonomyBody = z.input<typeof updateTaxonomyBodySchema>
+
+export const updateTaxonomyResponseSchema = taxonomyResponseSchema.extend({
+  /** How many tickets were moved onto a different value by this edit. */
+  migrated: z.number().int().nonnegative(),
+})
+
+export type UpdateTaxonomyResponse = z.infer<typeof updateTaxonomyResponseSchema>
 
 /**
  * Every failure the server reports shares this shape, so the client has one

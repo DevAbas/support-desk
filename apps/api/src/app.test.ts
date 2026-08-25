@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   apiErrorSchema,
   deletedCountSchema,
+  DEFAULT_TAXONOMY,
   listTicketsResponseSchema,
   meResponseSchema,
+  taxonomyResponseSchema,
   ticketSchema,
   updatedCountSchema,
+  updateTaxonomyResponseSchema,
+  type Taxonomy,
 } from '@harness-sample/shared'
 import { createApiApp, type ApiAppOptions } from './app'
 
@@ -84,13 +88,36 @@ describe('GET /api/tickets', () => {
 
   it('rejects a query string it cannot make sense of', async () => {
     const details = await expectError(
-      await createApp().request('/api/tickets?status=escalated&page=0&pageSize=99999'),
+      await createApp().request('/api/tickets?page=0&pageSize=99999'),
       400,
       'validation_failed',
     )
 
-    expect(details).toHaveLength(3)
-    expect(details.join('\n')).toContain('status:')
+    expect(details).toHaveLength(2)
+    expect(details.join('\n')).toContain('page:')
+  })
+
+  /**
+   * A filter is shape-checked but not membership-checked. A saved view can name
+   * a status an admin has since removed, and answering that with an empty list
+   * is kinder than a 400 the screen would have to explain.
+   */
+  it('answers a filter on a status that does not exist with an empty list', async () => {
+    const response = await createApp().request('/api/tickets?status=escalated')
+
+    expect(response.status).toBe(200)
+    expect(listTicketsResponseSchema.parse(await response.json())).toMatchObject({
+      rows: [],
+      total: 0,
+    })
+  })
+
+  it('still rejects a filter that is not a value at all', async () => {
+    await expectError(
+      await createApp().request('/api/tickets?status=NOT A VALUE'),
+      400,
+      'validation_failed',
+    )
   })
 })
 
@@ -308,5 +335,256 @@ describe('forced failures', () => {
 describe('an unknown route', () => {
   it('answers in the same error shape as everything else', async () => {
     await expectError(await createApp().request('/api/nope'), 404, 'not_found')
+  })
+})
+
+describe('/api/settings/taxonomy', () => {
+  async function readTaxonomy(app: ReturnType<typeof createApp>) {
+    return taxonomyResponseSchema.parse(await (await app.request('/api/settings/taxonomy')).json())
+  }
+
+  function withoutStatus(taxonomy: Taxonomy, value: string): Taxonomy {
+    return { ...taxonomy, statuses: taxonomy.statuses.filter((entry) => entry.value !== value) }
+  }
+
+  it('returns the statuses and priorities with how many tickets hold each', async () => {
+    const { taxonomy, usage } = await readTaxonomy(createApp())
+
+    expect(taxonomy).toEqual(DEFAULT_TAXONOMY)
+    expect(usage.statuses.resolved).toBe(13)
+    expect(Object.values(usage.statuses).reduce((sum, count) => sum + count, 0)).toBe(40)
+  })
+
+  it('saves a renamed label, a new appearance and a new order', async () => {
+    const app = createApp()
+    const { taxonomy } = await readTaxonomy(app)
+
+    const next: Taxonomy = {
+      ...taxonomy,
+      statuses: [
+        { value: 'pending', label: 'Awaiting reply', appearance: 'danger' },
+        ...taxonomy.statuses.filter((entry) => entry.value !== 'pending'),
+      ],
+    }
+
+    const response = await app.request(
+      '/api/settings/taxonomy',
+      jsonRequest('PUT', { taxonomy: next }),
+    )
+
+    expect(response.status).toBe(200)
+
+    const body = updateTaxonomyResponseSchema.parse(await response.json())
+    expect(body.migrated).toBe(0)
+    expect(body.taxonomy.statuses[0]).toEqual({
+      value: 'pending',
+      label: 'Awaiting reply',
+      appearance: 'danger',
+    })
+
+    // Reading it back proves it was stored rather than only echoed.
+    expect((await readTaxonomy(app)).taxonomy.statuses[0]?.label).toBe('Awaiting reply')
+  })
+
+  it('adds a status, and opens new tickets in whichever one is first', async () => {
+    const app = createApp()
+    const { taxonomy } = await readTaxonomy(app)
+
+    await app.request(
+      '/api/settings/taxonomy',
+      jsonRequest('PUT', {
+        taxonomy: {
+          ...taxonomy,
+          statuses: [
+            { value: 'triage', label: 'Triage', appearance: 'warning' },
+            ...taxonomy.statuses,
+          ],
+        },
+      }),
+    )
+
+    const created = ticketSchema.parse(
+      await (
+        await app.request(
+          '/api/tickets',
+          jsonRequest('POST', {
+            title: 'A brand new report',
+            description: 'Something is broken.',
+            priority: 'low',
+            assignee: 'Dana Whitfield',
+          }),
+        )
+      ).json(),
+    )
+
+    expect(created.status).toBe('triage')
+  })
+
+  it('refuses to remove a status tickets still hold without somewhere to send them', async () => {
+    const app = createApp()
+    const { taxonomy } = await readTaxonomy(app)
+
+    const details = await expectError(
+      await app.request(
+        '/api/settings/taxonomy',
+        jsonRequest('PUT', { taxonomy: withoutStatus(taxonomy, 'pending') }),
+      ),
+      400,
+      'validation_failed',
+    )
+
+    expect(details.join('\n')).toContain('"pending"')
+
+    // The rejected edit changed nothing.
+    expect((await readTaxonomy(app)).taxonomy.statuses).toHaveLength(4)
+  })
+
+  it('moves the tickets that held a removed status onto the one it is given', async () => {
+    const app = createApp()
+    const { taxonomy, usage } = await readTaxonomy(app)
+    const pendingCount = usage.statuses.pending ?? 0
+
+    expect(pendingCount).toBeGreaterThan(0)
+
+    const response = await app.request(
+      '/api/settings/taxonomy',
+      jsonRequest('PUT', {
+        taxonomy: withoutStatus(taxonomy, 'pending'),
+        reassign: { statuses: { pending: 'open' } },
+      }),
+    )
+
+    const body = updateTaxonomyResponseSchema.parse(await response.json())
+
+    expect(body.migrated).toBe(pendingCount)
+    expect(body.usage.statuses.pending).toBeUndefined()
+    expect(body.usage.statuses.open).toBe((usage.statuses.open ?? 0) + pendingCount)
+
+    const stillPending = listTicketsResponseSchema.parse(
+      await (await app.request('/api/tickets?status=pending&pageSize=50')).json(),
+    )
+    expect(stillPending.total).toBe(0)
+  })
+
+  it('refuses to send the tickets somewhere that will not exist either', async () => {
+    const app = createApp()
+    const { taxonomy } = await readTaxonomy(app)
+
+    const details = await expectError(
+      await app.request(
+        '/api/settings/taxonomy',
+        jsonRequest('PUT', {
+          taxonomy: withoutStatus(taxonomy, 'pending'),
+          reassign: { statuses: { pending: 'escalated' } },
+        }),
+      ),
+      400,
+      'validation_failed',
+    )
+
+    expect(details.join('\n')).toContain('"escalated"')
+  })
+
+  it('rejects an empty set, a duplicate value and the reserved one', async () => {
+    const app = createApp()
+    const { taxonomy } = await readTaxonomy(app)
+
+    await expectError(
+      await app.request(
+        '/api/settings/taxonomy',
+        jsonRequest('PUT', { taxonomy: { ...taxonomy, priorities: [] } }),
+      ),
+      400,
+      'validation_failed',
+    )
+
+    await expectError(
+      await app.request(
+        '/api/settings/taxonomy',
+        jsonRequest('PUT', {
+          taxonomy: {
+            ...taxonomy,
+            priorities: [...taxonomy.priorities, { value: 'low', label: 'Low again', appearance: 'info' }],
+          },
+        }),
+      ),
+      400,
+      'validation_failed',
+    )
+
+    await expectError(
+      await app.request(
+        '/api/settings/taxonomy',
+        jsonRequest('PUT', {
+          taxonomy: {
+            ...taxonomy,
+            priorities: [...taxonomy.priorities, { value: 'all', label: 'All', appearance: 'info' }],
+          },
+        }),
+      ),
+      400,
+      'validation_failed',
+    )
+  })
+
+  /**
+   * The contract can only check the shape of a status; which ones exist is
+   * configuration. So membership is checked by the routes that write one, and
+   * reported the same way the schema would have.
+   */
+  it('rejects writing a status the taxonomy does not have', async () => {
+    const app = createApp()
+
+    const patchDetails = await expectError(
+      await app.request('/api/tickets/TCK-0002', jsonRequest('PATCH', { status: 'escalated' })),
+      400,
+      'validation_failed',
+    )
+    expect(patchDetails.join('\n')).toContain('status: "escalated" is not one of')
+
+    await expectError(
+      await app.request(
+        '/api/tickets/bulk',
+        jsonRequest('PATCH', { ids: ['TCK-0001'], status: 'escalated' }),
+      ),
+      400,
+      'validation_failed',
+    )
+
+    await expectError(
+      await app.request(
+        '/api/tickets',
+        jsonRequest('POST', {
+          title: 'A brand new report',
+          description: 'Something is broken.',
+          priority: 'urgent',
+          assignee: 'Dana Whitfield',
+        }),
+      ),
+      400,
+      'validation_failed',
+    )
+  })
+
+  it('accepts a status that has just been added', async () => {
+    const app = createApp()
+    const { taxonomy } = await readTaxonomy(app)
+
+    await app.request(
+      '/api/settings/taxonomy',
+      jsonRequest('PUT', {
+        taxonomy: {
+          ...taxonomy,
+          statuses: [...taxonomy.statuses, { value: 'escalated', label: 'Escalated', appearance: 'danger' }],
+        },
+      }),
+    )
+
+    const response = await app.request(
+      '/api/tickets/TCK-0002',
+      jsonRequest('PATCH', { status: 'escalated' }),
+    )
+
+    expect(ticketSchema.parse(await response.json()).status).toBe('escalated')
   })
 })

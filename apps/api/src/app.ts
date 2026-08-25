@@ -8,10 +8,13 @@ import {
   bulkUpdateBodySchema,
   createTicketBodySchema,
   listTicketsQuerySchema,
+  taxonomyValues,
+  updateTaxonomyBodySchema,
   updateTicketBodySchema,
   type ApiErrorBody,
   type ApiErrorCode,
   type Role,
+  type TaxonomyEntry,
 } from '@harness-sample/shared'
 import { createTicketStore, type TicketStore } from './store'
 
@@ -80,6 +83,26 @@ function missing(c: Context, id: string) {
 }
 
 /**
+ * The membership half of validating a status or a priority.
+ *
+ * The contract can only check the shape of a value — it is static, and which
+ * values exist is configuration an admin edits. So every route that writes one
+ * checks it against the live taxonomy here, and reports it as the same
+ * `validation_failed` the schema would have.
+ */
+function unknownValues(
+  entries: readonly TaxonomyEntry[],
+  field: string,
+  value: string | undefined,
+): string[] {
+  if (value === undefined || entries.some((entry) => entry.value === value)) {
+    return []
+  }
+
+  return [`${field}: "${value}" is not one of ${taxonomyValues(entries).join(', ')}.`]
+}
+
+/**
  * Reads a JSON body without letting a malformed one become a 500. An absent or
  * unparseable body is reported as the validation failure it is.
  */
@@ -143,6 +166,16 @@ export function createApiApp(options: ApiAppOptions = {}) {
       return invalid(c, body.error, 'ticket')
     }
 
+    const unknown = unknownValues(
+      store.getTaxonomy().priorities,
+      'priority',
+      body.data.priority,
+    )
+
+    if (unknown.length > 0) {
+      return fail(c, 400, 'validation_failed', 'The ticket is not valid.', unknown)
+    }
+
     return c.json(store.create(body.data), 201)
   })
 
@@ -159,6 +192,12 @@ export function createApiApp(options: ApiAppOptions = {}) {
 
     if (!body.success) {
       return invalid(c, body.error, 'bulk update')
+    }
+
+    const unknown = unknownValues(store.getTaxonomy().statuses, 'status', body.data.status)
+
+    if (unknown.length > 0) {
+      return fail(c, 400, 'validation_failed', 'The bulk update is not valid.', unknown)
     }
 
     return c.json({ updated: store.bulkUpdateStatus(body.data.ids, body.data.status) })
@@ -201,6 +240,16 @@ export function createApiApp(options: ApiAppOptions = {}) {
       return invalid(c, body.error, 'ticket patch')
     }
 
+    const taxonomy = store.getTaxonomy()
+    const unknown = [
+      ...unknownValues(taxonomy.statuses, 'status', body.data.status),
+      ...unknownValues(taxonomy.priorities, 'priority', body.data.priority),
+    ]
+
+    if (unknown.length > 0) {
+      return fail(c, 400, 'validation_failed', 'The ticket patch is not valid.', unknown)
+    }
+
     const ticket = store.update(id, body.data)
 
     return ticket ? c.json(ticket) : missing(c, id)
@@ -229,6 +278,44 @@ export function createApiApp(options: ApiAppOptions = {}) {
     const ticket = store.addComment(id, body.data)
 
     return ticket ? c.json(ticket, 201) : missing(c, id)
+  })
+
+  /**
+   * The editable statuses and priorities.
+   *
+   * Like every other route here, this is not role-aware: it will accept an edit
+   * from anyone who asks. The Settings page is what gates it on being an admin.
+   */
+  app.get('/api/settings/taxonomy', (c) =>
+    c.json({ taxonomy: store.getTaxonomy(), usage: store.getTaxonomyUsage() }),
+  )
+
+  app.put('/api/settings/taxonomy', async (c) => {
+    const raw = await readJsonBody(c)
+
+    if (!raw.ok) {
+      return fail(c, 400, 'validation_failed', 'The request body is not valid JSON.')
+    }
+
+    const body = updateTaxonomyBodySchema.safeParse(raw.value)
+
+    if (!body.success) {
+      return invalid(c, body.error, 'taxonomy')
+    }
+
+    // Removing a value tickets still hold is refused rather than allowed to
+    // strand them, so the failure names every value that needs a destination.
+    const result = store.setTaxonomy(body.data.taxonomy, body.data.reassign)
+
+    if (!result.ok) {
+      return fail(c, 400, 'validation_failed', 'The taxonomy is not valid.', result.issues)
+    }
+
+    return c.json({
+      taxonomy: store.getTaxonomy(),
+      usage: store.getTaxonomyUsage(),
+      migrated: result.migrated,
+    })
   })
 
   app.notFound((c) => fail(c, 404, 'not_found', `No route matches ${c.req.path}.`))

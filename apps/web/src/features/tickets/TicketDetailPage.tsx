@@ -3,13 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button, Card, CardBody, CardHeader, Modal, Select } from '@/design-system'
 import { toErrorMessage } from '@/lib/api/http'
 import { formatDateTime } from '@/lib/format'
-import {
-  TICKET_STATUSES,
-  TICKET_STATUS_LABELS,
-  type TicketStatus,
-} from '@harness-sample/shared'
+import { type TicketStatus } from '@harness-sample/shared'
 import { ROLE_LABELS } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
+import { toValueOptions, withUnknownValue } from '@/features/taxonomy/taxonomyOptions'
+import { useTaxonomySets } from '@/features/taxonomy/useTaxonomy'
 import { AssigneeForm } from './components/AssigneeForm'
 import { CommentForm } from './components/CommentForm'
 import { CommentList } from './components/CommentList'
@@ -20,15 +18,12 @@ import { useDeleteTicket } from './hooks/useDeleteTicket'
 import { useTicket } from './hooks/useTicket'
 import { useUpdateTicket } from './hooks/useUpdateTicket'
 
-const statusOptions = TICKET_STATUSES.map((status) => ({
-  value: status,
-  label: TICKET_STATUS_LABELS[status],
-}))
-
 export function TicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>()
   const navigate = useNavigate()
   const { role, canManageTickets } = useRole()
+
+  const { statuses } = useTaxonomySets()
 
   const query = useTicket(ticketId)
   const updateTicket = useUpdateTicket()
@@ -160,7 +155,7 @@ export function TicketDetailPage() {
             <CardBody>
               <Select
                 label="Current status"
-                options={statusOptions}
+                options={withUnknownValue(toValueOptions(statuses), ticket.status, statuses)}
                 value={ticket.status}
                 disabled={updateTicket.isPending}
                 hint={updateTicket.isPending ? 'Saving…' : 'Changes are saved immediately.'}

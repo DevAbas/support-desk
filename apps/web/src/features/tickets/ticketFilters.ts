@@ -1,19 +1,15 @@
-import type { SelectOption } from '@/design-system'
-import {
-  TICKET_PRIORITIES,
-  TICKET_PRIORITY_LABELS,
-  TICKET_STATUSES,
-  TICKET_STATUS_LABELS,
-  type ListTicketsQuery,
-  type TicketPriority,
-  type TicketStatus,
-} from '@harness-sample/shared'
+import type { ListTicketsQuery, TicketPriority, TicketStatus } from '@harness-sample/shared'
 
 /**
  * The filter combination the ticket list is showing.
  *
- * `all` is a UI-only widening of the domain unions: it means "do not filter on
- * this". A saved view is a name attached to one of these — see `savedViews.ts`.
+ * `all` means "do not filter on this", and is the one value here that is not a
+ * status or a priority — which is why an admin cannot create one called `all`.
+ * A saved view is a name attached to one of these — see `savedViews.ts`.
+ *
+ * Which values are valid is configuration rather than a union, so the options
+ * these fill are built from the taxonomy at render time; see
+ * `features/taxonomy/taxonomyOptions.ts`.
  */
 
 export type StatusFilter = TicketStatus | 'all'
@@ -31,19 +27,6 @@ export const DEFAULT_FILTERS: TicketFilters = {
   priority: 'all',
   search: '',
 }
-
-export const statusFilterOptions: readonly SelectOption<StatusFilter>[] = [
-  { value: 'all', label: 'All statuses' },
-  ...TICKET_STATUSES.map((status) => ({ value: status, label: TICKET_STATUS_LABELS[status] })),
-]
-
-export const priorityFilterOptions: readonly SelectOption<PriorityFilter>[] = [
-  { value: 'all', label: 'All priorities' },
-  ...TICKET_PRIORITIES.map((priority) => ({
-    value: priority,
-    label: TICKET_PRIORITY_LABELS[priority],
-  })),
-]
 
 /**
  * Whether two filter combinations would produce the same list.

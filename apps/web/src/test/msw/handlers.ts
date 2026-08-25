@@ -36,4 +36,6 @@ export const handlers = [
   http.patch('/api/tickets/:id', forward),
   http.delete('/api/tickets/:id', forward),
   http.post('/api/tickets/:id/comments', forward),
+  http.get('/api/settings/taxonomy', forward),
+  http.put('/api/settings/taxonomy', forward),
 ]

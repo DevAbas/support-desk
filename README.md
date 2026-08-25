@@ -48,7 +48,8 @@ src/
 
 The dependency direction only ever runs one way: `features/` uses `design-system/`,
 never the reverse. A ticket status is a domain value; a badge appearance is a
-presentation value; the mapping between them lives in the feature layer.
+presentation value; the mapping between them lives in the feature layer — see
+`features/taxonomy/appearance.ts`.
 
 ## Data
 
@@ -92,4 +93,28 @@ second implementation of the queue. See `src/test/msw/handlers.ts`.
 
 Two roles, `agent` and `admin`. `GET /api/me` reports which one the server was started
 with, and the Settings page overrides it locally — there is no login to enforce anything
-against. Bulk actions and ticket deletion are admin-only.
+against. Bulk actions, ticket deletion and editing the taxonomy are admin-only.
+
+## Statuses and priorities
+
+What a ticket can be set to is configuration rather than a union compiled into the
+bundle. An admin edits both sets on the Settings page: the label a value reads as, the
+badge appearance it takes, the order they are offered in, and which values exist at all.
+`GET /api/settings/taxonomy` serves them alongside how many tickets hold each, and a
+`PUT` replaces both sets whole — order is part of what is being edited, and a removal
+only means anything against a complete list.
+
+`TicketStatus` and `TicketPriority` are therefore `string`, and validating one is split
+in two. The contract in `packages/shared/src/contract.ts` checks the *shape* of a value,
+because it is static and imported by both ends; the routes that write one check its
+*membership* against the live taxonomy and report a failure the same way the schema
+would have. A filter is deliberately only shape-checked: a saved view can outlive the
+status it was built on, and an empty list is a kinder answer than a 400.
+
+Removing a value that tickets still hold is refused unless the request says where those
+tickets should go. The Settings page asks for that destination in a dialog before it
+will remove the row, and the server applies the move — nothing is written unless the
+whole edit is valid, so a rejected save leaves every ticket where it was.
+
+The first status is the one a new ticket opens in, which is why reordering the set is
+part of the editor rather than a cosmetic detail.

@@ -1,16 +1,13 @@
-import { Badge, type BadgeStatus } from '@/design-system'
-import { TICKET_PRIORITY_LABELS, type TicketPriority } from '@harness-sample/shared'
-
-const badgeStatusByPriority: Record<TicketPriority, BadgeStatus> = {
-  low: 'neutral',
-  medium: 'info',
-  high: 'danger',
-}
+import type { TicketPriority } from '@harness-sample/shared'
+import { TaxonomyBadge } from '@/features/taxonomy/TaxonomyBadge'
+import { useTaxonomySets } from '@/features/taxonomy/useTaxonomy'
 
 interface TicketPriorityBadgeProps {
   priority: TicketPriority
 }
 
 export function TicketPriorityBadge({ priority }: TicketPriorityBadgeProps) {
-  return <Badge status={badgeStatusByPriority[priority]}>{TICKET_PRIORITY_LABELS[priority]}</Badge>
+  const { priorities } = useTaxonomySets()
+
+  return <TaxonomyBadge entries={priorities} value={priority} />
 }

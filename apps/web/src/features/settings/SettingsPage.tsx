@@ -1,11 +1,12 @@
 import { Card, CardBody, CardHeader, Select } from '@/design-system'
 import { ROLES, ROLE_LABELS, type Role } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
+import { TaxonomySection } from './TaxonomySection'
 
 const roleOptions = ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }))
 
 export function SettingsPage() {
-  const { role, setRole } = useRole()
+  const { role, setRole, canManageTickets } = useRole()
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,6 +33,22 @@ export function SettingsPage() {
           />
         </CardBody>
       </Card>
+
+      {/*
+        Admin-only, and gated in the UI like every other admin action here: the
+        API will take an edit from anyone who asks. Rendering nothing rather than
+        a disabled editor keeps an agent from reading it as something to unlock.
+      */}
+      {canManageTickets ? (
+        <TaxonomySection />
+      ) : (
+        <Card className="max-w-md">
+          <CardHeader
+            title="Ticket statuses and priorities"
+            description="Only admins can change what a ticket can be set to. Switch role above to edit them."
+          />
+        </Card>
+      )}
     </div>
   )
 }

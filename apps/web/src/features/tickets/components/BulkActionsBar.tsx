@@ -1,14 +1,12 @@
 import { useState } from 'react'
 import { Button, Select } from '@/design-system'
-import { TICKET_STATUSES, TICKET_STATUS_LABELS, type TicketStatus } from '@harness-sample/shared'
-
-const statusOptions = TICKET_STATUSES.map((status) => ({
-  value: status,
-  label: TICKET_STATUS_LABELS[status],
-}))
+import type { TaxonomyEntry, TicketStatus } from '@harness-sample/shared'
+import { toValueOptions } from '@/features/taxonomy/taxonomyOptions'
 
 interface BulkActionsBarProps {
   selectedCount: number
+  /** The statuses on offer, in the order an admin arranged them. */
+  statuses: readonly TaxonomyEntry[]
   onApplyStatus: (status: TicketStatus) => void
   onDelete: () => void
   isBusy?: boolean
@@ -17,11 +15,15 @@ interface BulkActionsBarProps {
 /** Admin-only. The caller decides whether to render it; see TicketListPage. */
 export function BulkActionsBar({
   selectedCount,
+  statuses,
   onApplyStatus,
   onDelete,
   isBusy = false,
 }: BulkActionsBarProps) {
-  const [status, setStatus] = useState<TicketStatus>('resolved')
+  // Held as "nothing picked yet" rather than defaulting to a hard-coded status,
+  // because which statuses exist is not known until the taxonomy has loaded.
+  const [status, setStatus] = useState<TicketStatus | ''>('')
+  const selected = status === '' ? (statuses[0]?.value ?? '') : status
 
   return (
     <div
@@ -36,13 +38,17 @@ export function BulkActionsBar({
       <div className="flex flex-wrap items-end gap-2">
         <Select
           label="Set status to"
-          options={statusOptions}
-          value={status}
-          onChange={(event) => setStatus(event.target.value as TicketStatus)}
+          options={toValueOptions(statuses)}
+          value={selected}
+          onChange={(event) => setStatus(event.target.value)}
           className="w-40"
-          disabled={isBusy}
+          disabled={isBusy || statuses.length === 0}
         />
-        <Button size="md" onClick={() => onApplyStatus(status)} disabled={isBusy}>
+        <Button
+          size="md"
+          onClick={() => onApplyStatus(selected)}
+          disabled={isBusy || selected === ''}
+        >
           Apply
         </Button>
         <Button variant="danger" size="md" onClick={onDelete} disabled={isBusy}>

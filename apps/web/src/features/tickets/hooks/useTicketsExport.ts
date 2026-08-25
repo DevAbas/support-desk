@@ -4,6 +4,7 @@ import { MAX_PAGE_SIZE, type ListTicketsQuery } from '@harness-sample/shared'
 import { toErrorMessage } from '@/lib/api/http'
 import { listTickets } from '@/lib/api/tickets'
 import { downloadTextFile } from '@/lib/download'
+import { useTaxonomySets } from '@/features/taxonomy/useTaxonomy'
 import { ticketKeys } from '@/features/tickets/ticketKeys'
 import { TICKETS_CSV_MIME_TYPE, ticketsCsvFilename, ticketsToCsv } from '@/features/tickets/ticketsCsv'
 
@@ -28,6 +29,7 @@ export function useTicketsExport(
   total: number,
 ): UseTicketsExportResult {
   const queryClient = useQueryClient()
+  const taxonomy = useTaxonomySets()
   const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,7 +51,11 @@ export function useTicketsExport(
         queryFn: ({ signal }) => listTickets(exportQuery, signal),
       })
 
-      downloadTextFile(ticketsCsvFilename(), ticketsToCsv(all.rows), TICKETS_CSV_MIME_TYPE)
+      downloadTextFile(
+        ticketsCsvFilename(),
+        ticketsToCsv(all.rows, taxonomy),
+        TICKETS_CSV_MIME_TYPE,
+      )
     } catch (cause: unknown) {
       setError(toErrorMessage(cause, 'Could not export tickets.'))
     } finally {
