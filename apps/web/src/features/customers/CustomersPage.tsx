@@ -7,6 +7,7 @@ import { CustomerList } from './components/CustomerList'
 import { CustomersToolbar } from './components/CustomersToolbar'
 import { DEFAULT_FILTERS, toListCustomersFilters, type CustomerFilters } from './customerFilters'
 import { useCustomers } from './hooks/useCustomers'
+import { useCustomersExport } from './hooks/useCustomersExport'
 
 /**
  * Everyone who uses the product.
@@ -40,6 +41,10 @@ export function CustomersPage() {
   const query = toListCustomersFilters({ ...filters, search: debouncedSearch }, PAGE_SIZE)
 
   const customers = useCustomers(query)
+
+  // Handed the same filters the list is asking with, minus how much of it is on
+  // screen: the file is everything they match, not the pages loaded so far.
+  const csv = useCustomersExport(query)
 
   // Every page loaded so far, as one list. The pages are how it arrived, not how
   // it is read — nothing below this line knows where one ends and the next
@@ -77,6 +82,9 @@ export function CustomersPage() {
           total={total}
           loaded={rows.length}
           isLoading={customers.isPending}
+          onExport={() => void csv.exportCsv()}
+          isExporting={csv.isExporting}
+          exportError={csv.error}
         />
 
         {loadError ? (
