@@ -1,4 +1,5 @@
 import { cn } from '@harness-sample/shared'
+import { EMPTY_MESSAGE, LOADING_MESSAGE, StateMessage } from '../../primitives/StateMessage'
 import type {
   TableBodyProps,
   TableCellProps,
@@ -31,40 +32,28 @@ export function TableHead({ className, ...props }: TableHeadProps) {
 /**
  * Owns the loading and empty states so every caller renders them the same way.
  * When `isLoading` or `isEmpty` is set, `children` are replaced by a single
- * full-width message row.
+ * full-width message row, drawn by the same `StateMessage` a list and a chart
+ * use — loading wins over empty, because nothing having arrived yet is not the
+ * same as there being nothing.
  */
 export function TableBody({
   columnCount,
   isLoading = false,
   isEmpty = false,
-  loadingMessage = 'Loading…',
-  emptyMessage = 'Nothing to show.',
+  loadingMessage = LOADING_MESSAGE,
+  emptyMessage = EMPTY_MESSAGE,
   className,
   children,
   ...props
 }: TableBodyProps) {
-  const messageCellClasses = 'px-4 py-12 text-center text-sm text-fg-muted'
-
-  if (isLoading) {
+  if (isLoading || isEmpty) {
     return (
       <tbody className={className} {...props}>
         <tr>
-          <td colSpan={columnCount} className={messageCellClasses}>
-            <span role="status" aria-live="polite">
-              {loadingMessage}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    )
-  }
-
-  if (isEmpty) {
-    return (
-      <tbody className={className} {...props}>
-        <tr>
-          <td colSpan={columnCount} className={messageCellClasses}>
-            {emptyMessage}
+          <td colSpan={columnCount}>
+            <StateMessage isLoading={isLoading}>
+              {isLoading ? loadingMessage : emptyMessage}
+            </StateMessage>
           </td>
         </tr>
       </tbody>

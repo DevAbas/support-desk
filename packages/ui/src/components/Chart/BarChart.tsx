@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../Table'
 import { cn } from '@harness-sample/shared'
+import { EMPTY_MESSAGE, LOADING_MESSAGE, StateMessage } from '../../primitives/StateMessage'
 import type { BarChartProps, ChartTone } from './Chart.types'
 
 /**
@@ -66,27 +67,17 @@ export function BarChart({
   categoryLabel = 'Category',
   formatValue = (value) => String(value),
   isLoading = false,
-  loadingMessage = 'Loading…',
-  emptyMessage = 'Nothing to show.',
+  loadingMessage = LOADING_MESSAGE,
+  emptyMessage = EMPTY_MESSAGE,
   className,
   ...props
 }: BarChartProps) {
-  const messageClasses = 'px-4 py-12 text-center text-sm text-fg-muted'
-
-  if (isLoading) {
+  if (isLoading || data.length === 0) {
     return (
-      <figure className={cn(messageClasses, className)} {...props}>
-        <span role="status" aria-live="polite">
-          {loadingMessage}
-        </span>
-      </figure>
-    )
-  }
-
-  if (data.length === 0) {
-    return (
-      <figure className={cn(messageClasses, className)} {...props}>
-        {emptyMessage}
+      <figure className={className} {...props}>
+        <StateMessage isLoading={isLoading}>
+          {isLoading ? loadingMessage : emptyMessage}
+        </StateMessage>
       </figure>
     )
   }

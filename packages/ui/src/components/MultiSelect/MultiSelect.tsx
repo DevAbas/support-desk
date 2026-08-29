@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button } from '../../primitives/Button'
+import { Icon } from '../../primitives/Icon'
 import { cn } from '@harness-sample/shared'
 import type { MultiSelectProps } from './MultiSelect.types'
 
@@ -129,9 +130,13 @@ export function MultiSelect<TValue extends string = string>({
         <span id={summaryId} className={cn(selected.length === 0 && 'text-fg-muted')}>
           {summary}
         </span>
-        <span aria-hidden="true" className="text-fg-subtle">
-          &#9662;
-        </span>
+        <Icon
+          name="chevron-down"
+          size="sm"
+          label="Show options"
+          decorative
+          className="text-fg-subtle"
+        />
       </Button>
 
       {isOpen ? (

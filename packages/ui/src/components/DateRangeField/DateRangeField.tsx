@@ -58,16 +58,12 @@ export function DateRangeField({
             return (
               <Button
                 key={preset.id}
-                variant="secondary"
+                variant={isActive ? 'selected' : 'secondary'}
                 size="sm"
                 // A toggle, not a link: the pressed state is what tells a screen
-                // reader which range is showing.
+                // reader which range is showing. The variant is what shows it.
                 aria-pressed={isActive}
                 onClick={() => onChange(preset.range)}
-                className={cn(
-                  isActive &&
-                    'border-primary-border bg-primary-subtle text-primary-subtle-fg hover:bg-primary-subtle',
-                )}
               >
                 {preset.label}
               </Button>

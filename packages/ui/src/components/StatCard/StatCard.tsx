@@ -1,5 +1,7 @@
 import { Card } from '../Card'
 import { cn } from '@harness-sample/shared'
+import { Icon, type IconName } from '../../primitives/Icon'
+import { LOADING_MESSAGE, StateMessage } from '../../primitives/StateMessage'
 import type { StatCardProps, StatChangeDirection, StatChangeIntent } from './StatCard.types'
 
 const intentClasses: Record<StatChangeIntent, string> = {
@@ -13,10 +15,10 @@ const intentClasses: Record<StatChangeIntent, string> = {
  * it is what gets read out. A direction conveyed by a glyph alone would be a
  * direction conveyed by shape alone.
  */
-const directionGlyph: Record<StatChangeDirection, string> = {
-  up: '↑',
-  down: '↓',
-  flat: '→',
+const directionIcon: Record<StatChangeDirection, IconName> = {
+  up: 'arrow-up',
+  down: 'arrow-down',
+  flat: 'arrow-right',
 }
 
 const directionWord: Record<StatChangeDirection, string> = {
@@ -37,7 +39,7 @@ export function StatCard({
   value,
   change,
   isLoading = false,
-  loadingMessage = 'Loading…',
+  loadingMessage = LOADING_MESSAGE,
   className,
   ...props
 }: StatCardProps) {
@@ -46,16 +48,23 @@ export function StatCard({
       <p className="text-sm font-medium text-fg-muted">{label}</p>
 
       {isLoading ? (
-        <p role="status" aria-live="polite" className="text-sm text-fg-muted">
+        // The same message every table, list and chart shows, in the space a
+        // stat has for it: a figure is one line, not a panel.
+        <StateMessage isLoading className="px-0 py-0 text-left">
           {loadingMessage}
-        </p>
+        </StateMessage>
       ) : (
         <>
           <p className="text-2xl font-semibold text-fg">{value}</p>
 
           {change ? (
             <p className={cn('flex flex-wrap items-baseline gap-1 text-xs', intentClasses[change.intent ?? 'neutral'])}>
-              <span aria-hidden="true">{directionGlyph[change.direction]}</span>
+              <Icon
+                name={directionIcon[change.direction]}
+                size="sm"
+                label={directionWord[change.direction]}
+                decorative
+              />
               <span className="sr-only">{directionWord[change.direction]}</span>
               <span className="font-medium">{change.label}</span>
               {change.description ? (

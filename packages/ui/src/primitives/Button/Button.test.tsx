@@ -16,6 +16,12 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toHaveClass('bg-danger')
   })
 
+  it('expresses selection as a variant rather than a className', () => {
+    render(<Button variant="selected">All tickets</Button>)
+
+    expect(screen.getByRole('button', { name: 'All tickets' })).toHaveClass('bg-primary-subtle')
+  })
+
   it('calls onClick when pressed', async () => {
     const onClick = vi.fn()
     render(<Button onClick={onClick}>Press me</Button>)

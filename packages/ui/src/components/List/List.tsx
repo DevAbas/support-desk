@@ -1,5 +1,6 @@
 import { Button } from '../../primitives/Button'
 import { cn } from '@harness-sample/shared'
+import { EMPTY_MESSAGE, LOADING_MESSAGE, StateMessage } from '../../primitives/StateMessage'
 import type { ListProps, ListRowProps } from './List.types'
 
 /**
@@ -19,8 +20,8 @@ export function List({
   label,
   isLoading = false,
   isEmpty = false,
-  loadingMessage = 'Loading…',
-  emptyMessage = 'Nothing to show.',
+  loadingMessage = LOADING_MESSAGE,
+  emptyMessage = EMPTY_MESSAGE,
   className,
   children,
   ...props
@@ -29,24 +30,15 @@ export function List({
   // list semantics in some browsers, and a list of rows that is not a list is
   // the whole structure gone.
   const listClasses = cn('flex flex-col divide-y divide-border', className)
-  const messageClasses = 'px-4 py-12 text-center text-sm text-fg-muted'
 
-  if (isLoading) {
+  if (isLoading || isEmpty) {
     return (
       <ul role="list" aria-label={label} className={listClasses} {...props}>
-        <li className={messageClasses}>
-          <span role="status" aria-live="polite">
-            {loadingMessage}
-          </span>
+        <li>
+          <StateMessage isLoading={isLoading}>
+            {isLoading ? loadingMessage : emptyMessage}
+          </StateMessage>
         </li>
-      </ul>
-    )
-  }
-
-  if (isEmpty) {
-    return (
-      <ul role="list" aria-label={label} className={listClasses} {...props}>
-        <li className={messageClasses}>{emptyMessage}</li>
       </ul>
     )
   }
@@ -102,14 +94,14 @@ export function ListRow({
     <li className={cn('bg-surface', className)} {...props}>
       {onSelect ? (
         <Button
-          variant="ghost"
+          variant={isSelected ? 'selected' : 'ghost'}
           aria-current={isSelected ? true : undefined}
           onClick={onSelect}
           className={cn(
             rowClasses,
             // A row is as tall as what is in it, and square with its neighbours.
-            'h-auto rounded-none border-0 font-normal hover:bg-surface-muted',
-            isSelected && 'bg-primary-subtle hover:bg-primary-subtle',
+            'h-auto rounded-none border-0 font-normal',
+            !isSelected && 'hover:bg-surface-muted',
           )}
         >
           {content}

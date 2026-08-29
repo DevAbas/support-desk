@@ -40,6 +40,24 @@ describe('Modal', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('keeps focus inside itself', async () => {
+    render(
+      <>
+        <button type="button">Behind the modal</button>
+        <Modal open onClose={() => {}} title="Delete ticket" footer={<button type="button">Delete</button>}>
+          <button type="button">Body control</button>
+        </Modal>
+      </>,
+    )
+
+    const behind = screen.getByRole('button', { name: 'Behind the modal' })
+
+    for (let step = 0; step < 6; step += 1) {
+      await userEvent.tab()
+      expect(behind).not.toHaveFocus()
+    }
+  })
+
   it('closes when the close button is pressed', async () => {
     const onClose = vi.fn()
     render(

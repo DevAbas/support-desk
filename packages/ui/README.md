@@ -7,14 +7,16 @@ to them is a matter of reading them.
 
 ## Only semantic token classes
 
-The Tailwind default palette has been removed. `tokens.css` clears the whole colour
-namespace with `--color-*: initial` and then declares a semantic scale in its place:
-`surface`, `border`, `fg`, `muted`, `primary`, `info`, `success`, `warning`, `danger`.
+`tokens.css` declares a semantic colour scale — `surface`, `border`, `fg`, `muted`,
+`primary`, `info`, `success`, `warning`, `danger` — and that scale is the vocabulary
+this codebase is written in.
 
 Write `bg-primary`, `text-fg-muted`, `border-border`. Never write `bg-blue-500`,
-`text-gray-700`, or `border-slate-200` — those classes no longer exist, so they
-produce no CSS at all. Nothing errors. The element simply renders unstyled, and it is
-easy not to notice.
+`text-gray-700`, or `border-slate-200`. Those classes are not broken: Tailwind's
+default palette is still there, `bg-blue-500` resolves to a real colour, and nothing
+in the build will stop you. That is exactly the difficulty. A screen written in
+`slate` and `blue` looks right on the day it is written, and is outside the system
+from then on — a colour nobody can restyle, because it was never named.
 
 Each colour family follows the same shape, so you can predict the name you need:
 
@@ -33,9 +35,23 @@ a semantic name. Do not reach around the scale with a hex value.
 ## Never hand-build a button
 
 `<button className="...">` does not belong anywhere outside `Button/`. Use `Button`,
-which owns the four variants (`primary`, `secondary`, `ghost`, `danger`), the two
-sizes (`sm`, `md`), the focus ring, the disabled treatment, and the `type="button"`
-default that stops a button inside a form from submitting it by accident.
+which owns the five variants (`primary`, `secondary`, `ghost`, `danger`, `selected`),
+the two sizes (`sm`, `md`), the focus ring, the disabled treatment, and the
+`type="button"` default that stops a button inside a form from submitting it by
+accident.
+
+`selected` is a variant and not a `className`, because "this is the one currently
+chosen" had been written five times in four different ways — a saved view, a date
+preset, a tab and a list row all tinted themselves slightly differently, and the two
+that agreed agreed character for character, which is its own kind of warning. It is
+appearance only. What tells assistive technology a control is chosen is
+`aria-current`, `aria-pressed` or `aria-selected`, whichever the pattern around it
+calls for, and choosing between those three stays with the caller.
+
+There is one selected thing in the app that is not a `Button`: the main nav in
+`AppLayout`, which is a `NavLink`. A link is not a button — it goes somewhere — and
+dressing it as one to reach this variant would be the wrong trade. It keeps its own
+classes until there is a nav item primitive to give it.
 
 The same applies to the other primitives. If a text field, a dropdown, a card, a
 table, a list, or a dialog is needed, it comes from this folder. When a primitive
@@ -66,6 +82,58 @@ the drawing from assistive technology and renders the same figures beside it as 
 legible, because a grey mark sits below the contrast a shape needs to carry meaning on
 its own, so every bar is labelled with its value and every value is in the table.
 
+## The icon library stays behind `Icon/`
+
+For the same reason, and it is worth saying twice: `Icon/` is the only file that
+imports the icon library. Feature code names an icon out of `IconName` — a closed
+union, keyed into a table, so an unwired name is a compile error rather than a blank
+square — and reads nothing of the library's API.
+
+Before this there was no icon primitive, so icons were Unicode in JSX text: `&#215;`
+in two dialogs, `&#9998;` and another `&#215;` in the saved views sidebar, a caret in
+`MultiSelect`, three arrows in `StatCard`, and an arrow inside the text of a link on
+the ticket screen — which meant a screen reader announced that link as "left arrow,
+Back to tickets".
+
+Two rules come with it. **An icon is sized from the spacing scale**, `sm`, `md` or
+`lg`, never from the text it sits beside: a glyph in a sentence inherits the
+sentence, but a picture that resizes with its caption is a picture nobody can lay
+out. And **an icon says what it means**. `label` is required, the way `Avatar`
+requires a `name`, so an icon cannot be rendered without someone having decided what
+it says; pass `decorative` where the meaning is already written next to it or the
+control around it carries its own `aria-label`. The effect is that an icon-only
+control is named by its icon even when whoever wrote it forgot to name the control.
+
+## Type has a semantic layer, the way colour does
+
+`tokens.css` names its type as well as its colours. `text-title` is the one heading
+at the top of a screen, `text-section` the heading on a card or a dialog,
+`text-subsection` a heading on a group inside one, and prose is `text-body` with
+`text-caption` under it. Each carries its own line height, and the three headings
+carry their weight, so a heading is never `text-2xl font-semibold text-fg`
+reassembled by hand — which is how six screens came to have six copies of the same
+page title and a seventh invented a level of its own.
+
+`Heading` takes a semantic `level` and an optional element `as`, because those are
+two questions and answering one should not answer the other: how much weight this
+carries, and where it sits in the document outline. `CardHeader` takes the same
+`level`, so a card in a sidebar and a card filling the screen no longer have to weigh
+the same. `Text` takes a `size` and a `tone` off the same scale.
+
+`Text` also wraps. It sets `wrap-anywhere` — `overflow-wrap: anywhere` — and not
+`break-words`, and the difference is the whole reason it is there. The two render
+identically at any fixed width; only `anywhere` counts toward an element's min-content
+size, and min-content is what a grid item's automatic minimum is made of. One
+200-character URL in a ticket description was enough to push its card out of its
+column and put a scrollbar under the page, and `break-words` would not have fixed it.
+
+**One trap, worth knowing before you add a token.** A semantic type token is
+`text-<word>`, which tailwind-merge reads as a *colour*. Left alone, `cn()` resolves
+`text-title text-fg` to `text-fg` and the size disappears — silently, with nothing to
+notice. Every semantic type token must therefore be listed in `semanticTextSizes` in
+`packages/shared/src/cn.ts`. The list in `cn.ts` and the tokens in `tokens.css` are
+one thing written in two places and nothing enforces the pairing.
+
 ## Two primitives that look alike are not the same primitive
 
 `Table` and `List` both draw rows. `Modal` and `Drawer` both open over the page.
@@ -95,12 +163,45 @@ already means.
 
 A **modal** interrupts. It asks a question and does not go away until it is answered.
 A **drawer** accompanies: the list it slid over is still the thing being worked
-through, and it is expected to be opened and closed a dozen times against it. They
-share the dialog contract deliberately — the same `role="dialog"`, the same
-accessible name from the title, the same Escape, the same focus moved in on open and
-restored to the trigger on close — because those are the parts a person relies on,
-and two dialogs that dismiss differently is a bug in one of them. What differs is
-placement and purpose, which is not a size prop.
+through, and it is expected to be opened and closed a dozen times against it. What
+differs is placement and purpose, which is not a size prop.
+
+They share the dialog contract deliberately, and now they share it literally. `Dialog`
+holds the whole of it — the role, the accessible name taken from the title, the
+description wired through `aria-describedby`, Escape, the click on the overlay, focus
+moved in on open, kept inside while open and given back to the trigger on close — so a
+dialog bug is fixed once instead of in whichever of the two someone noticed it in. It
+was written twice before, and the copies had already started to disagree.
+
+`Dialog` is not exported. Its props are the seams where a modal and a drawer differ —
+the overlay, the panel, the word on the close button, and the body, which each wraps
+itself because whether the contents scroll is one of the few things that genuinely is
+different. Those are not a product API. A feature reaching for `Dialog` would be
+choosing overlay and panel classes by hand, which is the thing this file opens by
+forbidding, and the result would be a third dialog that dismisses slightly
+differently.
+
+`ConfirmDialog` is the one composition worth having on top of it. A modal, a secondary
+Cancel and a confirming button that says what it will do had been built by hand at
+every destructive action, and the copies had drifted: two disabled both buttons while
+the request was in flight and one did not, so one of them could be fired twice by a
+double click. It takes a title, a description, a confirm label, a danger flag, a busy
+state and the two callbacks, and that is the whole of it.
+
+## A bar across a card is not always a `CardHeader`
+
+`CardHeader` and `CardFooter` own the header and footer strips — the border, the
+padding, the heading, the row of actions — and anything that draws one of those
+strips by hand is a copy waiting to drift. `Modal`, `Drawer` and `ReportToolbar` each
+had one, and all three now use the real thing.
+
+`TicketsToolbar` looks like a fourth and is not. `CardHeader` renders a heading,
+requires a title to put in it, and pads to the card scale; a toolbar is a row of
+controls with nothing to head it, on the tighter scale a table uses. Dressing it as a
+`CardHeader` would mean making the title optional and then overriding five of the six
+classes that make a `CardHeader` a `CardHeader`, which is not reuse — it is a costume.
+The distinction to keep: a header says what a card is, a toolbar acts on it, and the
+fact that both are a strip with a border does not make them the same strip.
 
 ## Badge statuses come from a fixed union
 
@@ -133,6 +234,12 @@ Do not write `w-[437px]`, `mt-[13px]`, or `text-[13.5px]`. Spacing is a multiple
 `rounded-sm|md|lg|xl`, type from `text-xs` through `text-2xl`, and elevation from
 `shadow-card` and `shadow-overlay`.
 
+Type is the exception that is worth stating carefully: reach for the semantic level —
+`text-title`, `text-section`, `text-body` — and let `text-xs` through `text-2xl` be
+what the semantic layer is built out of rather than what screens are built out of. A
+raw size is right where the thing is not text in the semantic sense, such as the
+figure on a `StatCard`, which is a number and not a heading.
+
 An arbitrary value is a sign that either the design is off-grid or the scale is
 missing a step. Both are worth resolving before the class is written.
 
@@ -152,9 +259,13 @@ less motion is not a preference for a panel that never appears.
 - Icon-only controls need an `aria-label`.
 - `Table` requires a `caption` and renders it visually hidden; header cells carry
   `scope="col"`.
-- `Modal` and `Drawer` are real dialogs: `role="dialog"`, `aria-modal`, an accessible
-  name from the title, Escape to dismiss, a click on the overlay to dismiss, and focus
-  moved in on open and restored to the trigger on close.
+- `Modal` and `Drawer` are real dialogs, and both are `Dialog`: `role="dialog"`,
+  `aria-modal`, an accessible name from the title, Escape to dismiss, a click on the
+  overlay to dismiss, focus moved in on open and restored to the trigger on close, and
+  Tab kept inside while it is open. The trap is the other half of `aria-modal`, which
+  says the rest of the page is inert: without it that is a claim the keyboard
+  immediately contradicts, walking out into a page the reader has been told is not
+  there and leaving no way back except finding the dialog again.
 - `List` requires a `label`, in the same way and for the same reason `Table` requires a
   caption: sixty rows announced only as "list" are sixty rows of unattributed text. It
   also sets `role="list"` explicitly, because taking the bullets off takes the list
@@ -182,11 +293,13 @@ less motion is not a preference for a panel that never appears.
 - `BarChart` requires a `caption`, in the same way and for the same reason `Table` does.
 - `StatCard` says which way a figure moved in words; the arrow beside it is decorative
   and hidden.
-- Loading and empty states belong to `TableBody` and `List` via `isLoading` and
-  `isEmpty`, so that the loading message is announced through `role="status"` in every
-  table and every list rather than in whichever ones remembered to do it. `StatCard`
-  and `BarChart` own theirs the same way, so a screen full of figures waits as one
-  thing rather than as five. Loading wins over empty where both are set: nothing having
+- Loading and empty states are one component. `StateMessage` owns the padding, the
+  type, and the `role="status"` a wait is announced through, and `TableBody`, `List`,
+  `BarChart` and `StatCard` all render it — `isLoading` and `isEmpty` are the whole of
+  what a caller says. Each of them used to declare the same three things separately,
+  which is how the copies that got written inline elsewhere came to have no live region
+  at all: a wait nobody is told about is not a loading state, it is a blank area with a
+  sentence in it. Loading wins over empty where both are set, because nothing having
   arrived yet is not the same as there being nothing.
 
 ## Composing classes

@@ -1,4 +1,6 @@
 import { cn } from '@harness-sample/shared'
+import { Heading } from '../../primitives/Heading'
+import { Text } from '../../primitives/Text'
 import type { CardBodyProps, CardFooterProps, CardHeaderProps, CardProps } from './Card.types'
 
 export function Card({ className, ...props }: CardProps) {
@@ -10,7 +12,18 @@ export function Card({ className, ...props }: CardProps) {
   )
 }
 
-export function CardHeader({ title, description, actions, className, ...props }: CardHeaderProps) {
+export function CardHeader({
+  title,
+  description,
+  actions,
+  level = 'section',
+  as,
+  titleId,
+  descriptionId,
+  truncateTitle = false,
+  className,
+  ...props
+}: CardHeaderProps) {
   return (
     <div
       className={cn(
@@ -19,9 +32,18 @@ export function CardHeader({ title, description, actions, className, ...props }:
       )}
       {...props}
     >
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold text-fg">{title}</h2>
-        {description ? <p className="text-sm text-fg-muted">{description}</p> : null}
+      {/* `min-w-0` rides with the clipping rather than being its own prop:
+          `truncate` does nothing without it in a flex row, and on its own it
+          would make a long card title overflow instead of widening the header. */}
+      <div className={cn('flex flex-col gap-1', truncateTitle && 'min-w-0')}>
+        <Heading level={level} as={as} id={titleId} className={cn(truncateTitle && 'truncate')}>
+          {title}
+        </Heading>
+        {description ? (
+          <Text tone="muted" id={descriptionId}>
+            {description}
+          </Text>
+        ) : null}
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>

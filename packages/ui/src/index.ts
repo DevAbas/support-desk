@@ -16,11 +16,20 @@ export type { CardBodyProps, CardFooterProps, CardHeaderProps, CardProps } from 
 export { BarChart } from './components/Chart'
 export type { BarChartProps, ChartDatum, ChartTone } from './components/Chart'
 
+export { ConfirmDialog } from './components/ConfirmDialog'
+export type { ConfirmDialogProps } from './components/ConfirmDialog'
+
 export { DateRangeField } from './components/DateRangeField'
 export type { DateRange, DateRangeFieldProps, DateRangePreset } from './components/DateRangeField'
 
 export { Drawer } from './components/Drawer'
 export type { DrawerProps, DrawerSide } from './components/Drawer'
+
+export { Heading } from './primitives/Heading'
+export type { HeadingElement, HeadingLevel, HeadingProps } from './primitives/Heading'
+
+export { Icon } from './primitives/Icon'
+export type { IconName, IconProps, IconSize } from './primitives/Icon'
 
 export { Input } from './primitives/Input'
 export type { InputProps } from './primitives/Input'
@@ -37,6 +46,9 @@ export type { MultiSelectProps } from './components/MultiSelect'
 export { Select } from './primitives/Select'
 export type { SelectOption, SelectProps } from './primitives/Select'
 
+export { EMPTY_MESSAGE, LOADING_MESSAGE, StateMessage } from './primitives/StateMessage'
+export type { StateMessageProps } from './primitives/StateMessage'
+
 export { StatCard } from './components/StatCard'
 export type { StatCardProps, StatChange, StatChangeDirection, StatChangeIntent } from './components/StatCard'
 
@@ -52,6 +64,9 @@ export type {
 
 export { Tab, TabList, TabPanel, Tabs } from './components/Tabs'
 export type { TabListProps, TabPanelProps, TabProps, TabsContextValue, TabsProps } from './components/Tabs'
+
+export { Text } from './primitives/Text'
+export type { TextElement, TextProps, TextSize, TextTone } from './primitives/Text'
 
 export { Textarea } from './primitives/Textarea'
 export type { TextareaProps } from './primitives/Textarea'

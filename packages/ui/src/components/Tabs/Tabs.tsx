@@ -100,7 +100,7 @@ export function Tab({ value, className, onClick, ...props }: TabProps) {
 
   return (
     <Button
-      variant="ghost"
+      variant={isSelected ? 'selected' : 'ghost'}
       size="sm"
       role="tab"
       id={tabId(baseId, value)}
@@ -113,7 +113,7 @@ export function Tab({ value, className, onClick, ...props }: TabProps) {
         onClick?.(event)
         onValueChange(value)
       }}
-      className={cn(isSelected && 'bg-surface text-fg shadow-card hover:bg-surface', className)}
+      className={className}
       {...props}
     />
   )

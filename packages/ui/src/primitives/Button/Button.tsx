@@ -12,6 +12,9 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary: 'border-border bg-surface text-fg hover:bg-muted',
   ghost: 'border-transparent bg-transparent text-fg-muted hover:bg-muted hover:text-fg',
   danger: 'border-transparent bg-danger text-danger-fg hover:bg-danger-hover',
+  selected:
+    'border-primary-border bg-primary-subtle text-primary-subtle-fg ' +
+    'hover:bg-primary-subtle hover:text-primary-subtle-fg',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {

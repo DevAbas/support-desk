@@ -111,6 +111,38 @@
   --text-2xl: 1.5rem;
   --text-2xl--line-height: 2rem;
 
+  /* The scale above is raw sizes, the way the hex values above the colour names
+     are raw colours. This is the vocabulary written on top of it: a screen has
+     one `text-title`, a card or a dialog carries a `text-section`, a group
+     inside one carries a `text-subsection`, and prose is `text-body` with
+     `text-caption` underneath it for meta.
+
+     Weight belongs to the level, so a heading never also needs `font-semibold`.
+     It is set through `--tw-font-weight`, so a caller that does want a different
+     weight still wins.
+
+     `cn()` has to be told these are sizes — see `semanticTextSizes` in
+     `packages/shared/src/cn.ts`. Without it tailwind-merge reads `text-title` as
+     a colour, `text-title text-fg` collapses to `text-fg`, and every heading
+     silently loses its size. */
+  --text-title: 1.5rem;
+  --text-title--line-height: 2rem;
+  --text-title--font-weight: 600;
+
+  --text-section: 1.125rem;
+  --text-section--line-height: 1.75rem;
+  --text-section--font-weight: 600;
+
+  --text-subsection: 0.875rem;
+  --text-subsection--line-height: 1.25rem;
+  --text-subsection--font-weight: 600;
+
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+
   /* --------------------------------------------------------------- shadows */
 
   --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.06);
