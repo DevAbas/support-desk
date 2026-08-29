@@ -31,9 +31,16 @@ proxies `/api` to it.
 | `npm run dev:web` | Start the dev server alone |
 | `npm run build` | Typecheck and build for production |
 | `npm run typecheck` | Typecheck only |
-| `npm run lint` | ESLint |
+| `npm run lint` | ESLint, warnings only |
+| `npm run lint:strict` | ESLint with the rules CI enforces as errors |
+| `npm run lint:boundaries` | dependency-cruiser: the workspace boundaries |
 | `npm run test` | Run the test suite once |
 | `npm run test:watch` | Run the test suite in watch mode |
+
+`lint` and `lint:strict` run the same rules at two severities. `internal/eslint-plugin-harness`
+holds the ones specific to this codebase, and its README says what each is for
+and why — every one of them comes from a defect that was recorded here more than
+once and caught by nothing.
 
 ## How it is laid out
 
