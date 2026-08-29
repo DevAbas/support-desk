@@ -1,8 +1,8 @@
 import { screen, waitForElementToBeRemoved, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
-import { mswServer } from '@/test/msw/server'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { forwardToApi, mswServer } from '@/test/msw/server'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { CustomersPage } from '@/features/customers/CustomersPage'
 
@@ -190,5 +190,118 @@ describe('CustomersPage', () => {
     expect(await screen.findByText('Could not reach the server.')).toBeInTheDocument()
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(customerRows()).toHaveLength(20)
+  })
+  describe('CSV export', () => {
+    // jsdom has no object URLs and does not follow a download, so the two edges
+    // of downloadTextFile() are stubbed and the blob it was handed is read back.
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:customers')
+    const revokeObjectURL = vi.fn()
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const original = { createObjectURL: URL.createObjectURL, revokeObjectURL: URL.revokeObjectURL }
+
+    beforeAll(() => {
+      Object.assign(URL, { createObjectURL, revokeObjectURL })
+      click.mockImplementation(() => {})
+    })
+
+    afterAll(() => {
+      Object.assign(URL, original)
+      click.mockRestore()
+    })
+
+    beforeEach(() => {
+      createObjectURL.mockClear()
+      revokeObjectURL.mockClear()
+      click.mockClear()
+    })
+
+    const exportCsv = () => screen.getByRole('button', { name: 'Export CSV' })
+
+    async function downloadedCsv(): Promise<string> {
+      await vi.waitFor(() => expect(click).toHaveBeenCalledOnce())
+
+      const [blob] = createObjectURL.mock.calls[0]
+      return blob.text()
+    }
+
+    it('exports every customer the filters match, not just the pages on screen', async () => {
+      await renderCustomers()
+
+      await userEvent.click(exportCsv())
+
+      const csv = await downloadedCsv()
+
+      // A header row and all 60 customers, while only 20 are on screen.
+      expect(csv.split('\r\n')).toHaveLength(61)
+      expect(csv.startsWith('"Name","Company","Email","Plan","Tickets","Signed up"')).toBe(true)
+      expect(screen.getByText('Showing 20 of 60')).toBeInTheDocument()
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:customers')
+    })
+
+    it('narrows the export to the current filters', async () => {
+      await renderCustomers()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Plan All plans' }))
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Enterprise' }))
+      await screen.findByText('Showing 5 of 5')
+
+      await userEvent.click(exportCsv())
+
+      const dataRows = (await downloadedCsv()).split('\r\n').slice(1)
+
+      expect(dataRows).toHaveLength(5)
+      expect(dataRows.every((row) => row.includes('"Enterprise"'))).toBe(true)
+    })
+
+    it('walks the cursor to the end when the list is longer than one page', async () => {
+      // The export asks for the largest page the endpoint serves, and the seed
+      // fits inside one. Capping only the export's requests — the list is asking
+      // for twenty and is left alone — makes the walk the seed cannot force.
+      const pageSizes: number[] = []
+
+      mswServer.use(
+        http.get('/api/customers', ({ request }) => {
+          const url = new URL(request.url)
+          const limit = Number(url.searchParams.get('limit'))
+
+          if (limit > 25) {
+            pageSizes.push(limit)
+            url.searchParams.set('limit', '25')
+          }
+
+          return forwardToApi(new Request(url, request))
+        }),
+      )
+
+      await renderCustomers()
+      await userEvent.click(exportCsv())
+
+      const csv = await downloadedCsv()
+
+      // Still every customer, in three requests of twenty-five rather than one.
+      expect(csv.split('\r\n')).toHaveLength(61)
+      expect(pageSizes).toHaveLength(3)
+    })
+
+    it('offers nothing to export when no customer matches', async () => {
+      await renderCustomers()
+
+      await userEvent.type(screen.getByLabelText('Search'), 'zzzzzz')
+      await screen.findByText('No customers match these filters.')
+
+      expect(exportCsv()).toBeDisabled()
+    })
+
+    it('reports a failed export without taking the list down with it', async () => {
+      await renderCustomers()
+
+      mswServer.use(http.get('/api/customers', () => HttpResponse.error()))
+
+      await userEvent.click(exportCsv())
+
+      expect(await screen.findByText('Could not reach the server.')).toBeInTheDocument()
+      expect(click).not.toHaveBeenCalled()
+      expect(customerRows()).toHaveLength(20)
+    })
   })
 })
