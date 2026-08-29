@@ -1,2 +1,2 @@
 export { List, ListRow } from './List'
-export type { ListProps, ListRowProps } from './List.types'
+export type { ListProps, ListRowProps, ListRowSelection } from './List.types'

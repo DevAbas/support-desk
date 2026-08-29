@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   apiErrorSchema,
   customerSchema,
+  deletedCountSchema,
   listCustomersResponseSchema,
+  updatedCountSchema,
   type ListCustomersResponse,
 } from '@harness-sample/shared'
 import { createApiApp, type ApiAppOptions } from './app'
@@ -238,5 +240,112 @@ describe('customers and the queue', () => {
     )
 
     expect(customer.tickets.find((ticket) => ticket.id === ticketId)?.status).toBe('closed')
+  })
+})
+
+/**
+ * The two bulk routes, which are the only writes the customer store has.
+ *
+ * Each case builds its own app, and so its own customer store: these mutate, and
+ * a store shared between cases would make the order they run in part of what is
+ * being asserted.
+ */
+async function bulk(
+  app: ReturnType<typeof createApp>,
+  method: 'PATCH' | 'DELETE',
+  body: unknown,
+): Promise<Response> {
+  return app.request('/api/customers/bulk', {
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+describe('PATCH /api/customers/bulk', () => {
+  it('moves every customer named onto the plan, and nobody else', async () => {
+    const app = createApp()
+    const ids = ['CUS-0002', 'CUS-0003']
+
+    /** Everyone the request did not name, and the plan they are on. */
+    function untouched(rows: ListCustomersResponse['rows']): string[] {
+      return rows
+        .filter((customer) => !ids.includes(customer.id))
+        .map((customer) => `${customer.id}:${customer.plan}`)
+    }
+
+    const before = await listCustomers(app, { limit: '100' })
+    const response = await bulk(app, 'PATCH', { ids, plan: 'enterprise' })
+
+    expect(response.status).toBe(200)
+    expect(updatedCountSchema.parse(await response.json())).toEqual({ updated: 2 })
+
+    const after = await listCustomers(app, { limit: '100' })
+
+    expect(
+      after.rows.filter((customer) => ids.includes(customer.id)).map((customer) => customer.plan),
+    ).toEqual(['enterprise', 'enterprise'])
+    // Asserted against the other fifty-eight rather than against a count, so a
+    // write that reached past the ids it was given fails here whichever way it
+    // went — and whatever the seed happens to put these two on today.
+    expect(untouched(after.rows)).toEqual(untouched(before.rows))
+  })
+
+  it('counts what it changed rather than what it was asked to change', async () => {
+    const response = await bulk(createApp(), 'PATCH', {
+      ids: ['CUS-0002', 'CUS-9999'],
+      plan: 'pro',
+    })
+
+    // An id that names nobody is not an error — a row can be deleted between a
+    // list being drawn and a selection made from it being sent.
+    expect(updatedCountSchema.parse(await response.json())).toEqual({ updated: 1 })
+  })
+
+  it('rejects a body it cannot make sense of', async () => {
+    const app = createApp()
+
+    await expectError(await bulk(app, 'PATCH', { ids: [], plan: 'pro' }), 400, 'validation_failed')
+    await expectError(
+      await bulk(app, 'PATCH', { ids: ['CUS-0001'], plan: 'platinum' }),
+      400,
+      'validation_failed',
+    )
+    // A `bulk` that reached the `:id` route would be a 404 for a customer of
+    // that name, which is the failure the route order exists to prevent.
+    await expectError(await bulk(app, 'PATCH', 'not json at all'), 400, 'validation_failed')
+  })
+})
+
+describe('DELETE /api/customers/bulk', () => {
+  it('removes every customer named and shortens the list by that many', async () => {
+    const app = createApp()
+
+    const response = await bulk(app, 'DELETE', { ids: ['CUS-0002', 'CUS-0003'] })
+
+    expect(response.status).toBe(200)
+    expect(deletedCountSchema.parse(await response.json())).toEqual({ deleted: 2 })
+
+    expect((await listCustomers(app, { limit: '100' })).total).toBe(CUSTOMER_COUNT - 2)
+    await expectError(await app.request('/api/customers/CUS-0002'), 404, 'not_found')
+  })
+
+  it('leaves the queue alone', async () => {
+    const app = createApp()
+    const before = customerSchema.parse(
+      await (await app.request(`/api/customers/${BUSY_CUSTOMER_ID}`)).json(),
+    )
+
+    await bulk(app, 'DELETE', { ids: [BUSY_CUSTOMER_ID] })
+
+    // The link runs from a customer to ticket ids and not back, so deleting the
+    // customer takes the link and leaves the support history.
+    for (const ticket of before.tickets) {
+      expect((await app.request(`/api/tickets/${ticket.id}`)).status).toBe(200)
+    }
+  })
+
+  it('rejects a body it cannot make sense of', async () => {
+    await expectError(await bulk(createApp(), 'DELETE', { ids: [] }), 400, 'validation_failed')
   })
 })

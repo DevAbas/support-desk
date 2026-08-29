@@ -1,5 +1,6 @@
 import { http, type HttpResponseResolver } from 'msw'
 import { createApiApp } from '@harness-sample/api/app'
+import { createCustomerStore } from '@harness-sample/api/customerStore'
 import { createTicketStore } from '@harness-sample/api/store'
 
 /**
@@ -17,7 +18,18 @@ import { createTicketStore } from '@harness-sample/api/store'
 
 export const apiTestStore = createTicketStore()
 
-const app = createApiApp({ store: apiTestStore, latencyMs: [0, 0] })
+/**
+ * Built here rather than left to the app to build, so that `src/test/setup.ts`
+ * has a handle on it. The customer list has writes now, and a customer moved to
+ * Enterprise or deleted by one test would still be moved or gone in the next.
+ */
+export const apiTestCustomerStore = createCustomerStore(apiTestStore)
+
+const app = createApiApp({
+  store: apiTestStore,
+  customers: apiTestCustomerStore,
+  latencyMs: [0, 0],
+})
 
 /** Exported so a one-off handler can inspect a request and still answer it. */
 export async function forwardToApi(request: Request): Promise<Response> {
@@ -37,6 +49,8 @@ export const handlers = [
   http.delete('/api/tickets/:id', forward),
   http.post('/api/tickets/:id/comments', forward),
   http.get('/api/customers', forward),
+  http.patch('/api/customers/bulk', forward),
+  http.delete('/api/customers/bulk', forward),
   http.get('/api/customers/:id', forward),
   http.get('/api/reports/summary', forward),
   http.get('/api/reports/breakdown', forward),

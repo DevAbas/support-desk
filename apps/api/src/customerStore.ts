@@ -1,5 +1,6 @@
 import type {
   Customer,
+  CustomerPlan,
   CustomerSummary,
   CustomerTicketRef,
   ListCustomersQuery,
@@ -12,16 +13,24 @@ import type { TicketStore } from './store'
 /**
  * The in-memory customer store.
  *
- * It is read-only, and has no `reset`. Nothing in this app edits a customer, so
- * there is no state here to restore between tests — what a customer's ticket
- * count and ticket list say is read through the ticket store on every request
- * rather than copied at seed time, so resetting the queue is enough to reset
- * everything a customer screen can show.
+ * A customer's ticket count and ticket list are read through the ticket store on
+ * every request rather than copied at seed time, which is why the store is
+ * handed the ticket store rather than a snapshot: a customer holds ticket *ids*,
+ * and a ticket deleted through the ticket routes should leave the customer who
+ * raised it immediately, not at the next reload.
  *
- * That live read is also why the store is handed the ticket store rather than a
- * snapshot: a customer holds ticket *ids*, and a ticket deleted through the
- * ticket routes should leave the customer who raised it immediately, not at the
- * next reload.
+ * The two bulk operations are the only writes. They are deliberately not a
+ * general `update`: this app has no screen that edits one customer, and a store
+ * method with no caller is a shape nobody has had to defend.
+ *
+ * **Removing a customer does not touch the queue.** The link runs one way — a
+ * customer holds ticket ids, a ticket knows nothing of a customer — so deleting
+ * the row takes the link and leaves the support history, which is what a support
+ * desk needs it to do. The tickets stay in the queue and on the reports.
+ *
+ * It has a `reset` now that it has state to lose, and the same rule as the
+ * ticket store applies: tests call it between cases. Without one, a customer
+ * deleted by one test would still be gone in the next.
  *
  * Everything that leaves the store is built fresh, so a caller holds a response
  * rather than a handle on a row.
@@ -30,6 +39,11 @@ import type { TicketStore } from './store'
 export interface CustomerStore {
   list: (query: ListCustomersQuery) => ListCustomersResponse
   get: (id: string) => Customer | undefined
+  /** How many of the ids named a customer that is actually here. */
+  bulkUpdatePlan: (ids: readonly string[], plan: CustomerPlan) => number
+  bulkRemove: (ids: readonly string[]) => number
+  /** Restores the seed state. Tests call this between cases. */
+  reset: () => void
 }
 
 /** The two fields the order below is built from, and all a cursor encodes. */
@@ -102,7 +116,7 @@ function byNewestFirst(a: CustomerTicketRef, b: CustomerTicketRef): number {
 }
 
 export function createCustomerStore(tickets: TicketStore): CustomerStore {
-  const customers = createSeedCustomers().sort(byCursorOrder)
+  let customers = createSeedCustomers().sort(byCursorOrder)
 
   /**
    * The queue as a lookup, built once per request rather than once per row: a
@@ -166,6 +180,32 @@ export function createCustomerStore(tickets: TicketStore): CustomerStore {
       const queue = ticketsById()
 
       return { ...toSummary(record, queue), tickets: ownedTickets(record, queue) }
+    },
+
+    bulkUpdatePlan(ids, plan) {
+      const targets = new Set(ids)
+      let updated = 0
+
+      for (const record of customers) {
+        if (targets.has(record.id)) {
+          record.plan = plan
+          updated += 1
+        }
+      }
+
+      return updated
+    },
+
+    bulkRemove(ids) {
+      const targets = new Set(ids)
+      const before = customers.length
+      customers = customers.filter((record) => !targets.has(record.id))
+
+      return before - customers.length
+    },
+
+    reset() {
+      customers = createSeedCustomers().sort(byCursorOrder)
     },
   }
 }

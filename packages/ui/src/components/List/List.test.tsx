@@ -116,6 +116,80 @@ describe('ListRow', () => {
     expect(onSelect).toHaveBeenCalledOnce()
   })
 
+  it('has no checkbox unless it is given a selection', () => {
+    render(
+      <List label="Customers">
+        <ListRow title="Priya Raman" onSelect={vi.fn()} />
+      </List>,
+    )
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('keeps the checkbox outside the row control, as a tab stop of its own', async () => {
+    render(
+      <List label="Customers">
+        <ListRow
+          title="Priya Raman"
+          onSelect={vi.fn()}
+          selection={{ label: 'Select Priya Raman', isChecked: false, onChange: vi.fn() }}
+        />
+      </List>,
+    )
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Select Priya Raman' })
+    const row = screen.getByRole('button', { name: 'Priya Raman' })
+
+    // The whole point of the prop: inside the button it would not be reachable
+    // and would not be a checkbox.
+    expect(row).not.toContainElement(checkbox)
+
+    await userEvent.tab()
+    expect(checkbox).toHaveFocus()
+
+    await userEvent.tab()
+    expect(row).toHaveFocus()
+  })
+
+  it('ticks the row without opening it', async () => {
+    const onSelect = vi.fn()
+    const onChange = vi.fn()
+
+    render(
+      <List label="Customers">
+        <ListRow
+          title="Priya Raman"
+          onSelect={onSelect}
+          selection={{ label: 'Select Priya Raman', isChecked: false, onChange }}
+        />
+      </List>,
+    )
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Priya Raman' }))
+
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(true)
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('unticks a row that is already ticked', async () => {
+    const onChange = vi.fn()
+
+    render(
+      <List label="Customers">
+        <ListRow
+          title="Priya Raman"
+          selection={{ label: 'Select Priya Raman', isChecked: true, onChange }}
+        />
+      </List>,
+    )
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Select Priya Raman' })
+    expect(checkbox).toBeChecked()
+
+    await userEvent.click(checkbox)
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(false)
+  })
+
   it('marks the row whose detail is open beside it', () => {
     render(
       <List label="Customers">

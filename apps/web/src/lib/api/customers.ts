@@ -1,10 +1,18 @@
 import {
+  bulkDeleteCustomersBodySchema,
+  bulkUpdateCustomerPlanBodySchema,
   customerSchema,
+  deletedCountSchema,
   listCustomersQuerySchema,
   listCustomersResponseSchema,
+  updatedCountSchema,
+  type BulkDeleteCustomersBody,
+  type BulkUpdateCustomerPlanBody,
   type Customer,
+  type DeletedCount,
   type ListCustomersQuery,
   type ListCustomersResponse,
+  type UpdatedCount,
 } from '@harness-sample/shared'
 import { apiRequest, type QueryParams } from './http'
 
@@ -52,4 +60,27 @@ export function listCustomers(
 
 export function getCustomer(id: string, signal?: AbortSignal): Promise<Customer> {
   return apiRequest(`/customers/${encodeURIComponent(id)}`, { schema: customerSchema, signal })
+}
+
+/**
+ * The two bulk operations, both on `/customers/bulk` and separated by method,
+ * the way the ticket ones are. Bodies are parsed on the way out as well as on
+ * the way in, so a selection the contract will not accept — an empty one, or one
+ * longer than `MAX_CUSTOMER_BULK_IDS` — names the field here instead of arriving
+ * as a round trip and a 400.
+ */
+export function bulkUpdateCustomerPlan(body: BulkUpdateCustomerPlanBody): Promise<UpdatedCount> {
+  return apiRequest('/customers/bulk', {
+    method: 'PATCH',
+    body: bulkUpdateCustomerPlanBodySchema.parse(body),
+    schema: updatedCountSchema,
+  })
+}
+
+export function bulkDeleteCustomers(body: BulkDeleteCustomersBody): Promise<DeletedCount> {
+  return apiRequest('/customers/bulk', {
+    method: 'DELETE',
+    body: bulkDeleteCustomersBodySchema.parse(body),
+    schema: deletedCountSchema,
+  })
 }

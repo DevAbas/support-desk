@@ -64,6 +64,16 @@ target is all of it, so a selectable row is one wide control — and that contro
 `Button/`. `Tab` is built the same way. Everything a control has to get right, from
 the focus ring to the `type="button"` default, is got right once.
 
+Which is also why a row's checkbox is a prop and not something a caller puts in
+`leading`. `leading` renders *inside* that one wide control, and a checkbox inside a
+button is not a checkbox: the button takes the click, and the markup is invalid
+besides. `ListRow` takes a `selection` — a label, a checked state and a handler,
+grouped, because none of the three means anything without the other two — and renders
+the box beside the row instead. Ticking a row and opening it are then two controls in
+the order a keyboard meets them, and they answer different questions: `selection` is
+what the next bulk action will act on, `isSelected` is the row whose detail is open
+beside the list.
+
 ## Never hand-build a checkbox
 
 `<input type="checkbox" className="size-4 accent-primary">` was written three
@@ -93,9 +103,11 @@ background behind it is a background nobody sees. There is no focus-ring overrid
 for the same kind of reason: the box is drawn by the browser, and so is the ring
 that fits it.
 
-Where a checkbox leads a `ListRow`, it is this one. `leading` takes an `Avatar`,
-an `Icon` or a `Checkbox` — three primitives, not a raw input dressed to match
-whichever of them it happens to sit beside.
+The checkbox on a `ListRow` is this one too. It arrives through `selection`
+rather than `leading`, for the reason above — beside the row control, not inside
+it — and `selection` requires a label of its own for exactly the reason
+`Checkbox` does: sixty boxes all announced as "Select" are sixty controls nobody
+can tell apart.
 
 ## The charting library stays behind `Chart/`
 
@@ -333,6 +345,13 @@ less motion is not a preference for a panel that never appears.
   semantics with them in some browsers.
 - A selected `ListRow` carries `aria-current`, not `aria-selected`. Nothing here is a
   listbox — the row is not being chosen, it is the one whose detail is open beside it.
+- A `ListRow` checkbox is named by what it selects — "Select Priya Raman", not
+  "Select". Sixty checkboxes with one name between them are sixty controls a screen
+  reader cannot tell apart, and the row's own text is no help: it belongs to the
+  control next to it.
+- There is no `Checkbox` primitive yet, and three places now write the same raw input:
+  `MultiSelect`, `ListRow`, and the ticket table's select-all column. That is the count
+  at which the other primitives here were written; it is the next one to make.
 - `Avatar` takes a required `name`, and announces it as an image unless `decorative` is
   set. Set it wherever the name is written beside the avatar, which is most places: an
   avatar is a picture of a name, and hearing the name twice is worse than not seeing the

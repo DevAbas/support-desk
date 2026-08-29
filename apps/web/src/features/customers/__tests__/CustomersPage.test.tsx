@@ -1,9 +1,10 @@
-import { screen, waitForElementToBeRemoved, within } from '@testing-library/react'
+import { screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { forwardToApi, mswServer } from '@/test/msw/server'
 import { renderWithProviders } from '@/test/renderWithProviders'
+import type { Role } from '@/features/roles/role.types'
 import { CustomersPage } from '@/features/customers/CustomersPage'
 
 /**
@@ -13,8 +14,8 @@ import { CustomersPage } from '@/features/customers/CustomersPage'
  *
  * The seed holds sixty customers, ten of whom have raised something.
  */
-async function renderCustomers() {
-  renderWithProviders(<CustomersPage />, { initialEntries: ['/customers'] })
+async function renderCustomers(role: Role = 'agent') {
+  renderWithProviders(<CustomersPage />, { initialEntries: ['/customers'], role })
   await waitForElementToBeRemoved(() => screen.queryByText('Loading customers…'))
 }
 
@@ -303,5 +304,239 @@ describe('CustomersPage', () => {
       expect(click).not.toHaveBeenCalled()
       expect(customerRows()).toHaveLength(20)
     })
+  })
+})
+
+/**
+ * The bulk actions, driven against the real API the same way the rest of this
+ * file is: what is asserted is a plan actually changed and a row actually gone,
+ * not a mutation function having been called.
+ *
+ * The seed puts Elena Harper and Priya Raman on Free and Clara Lindberg on Pro,
+ * all three on the first page.
+ */
+const bulkBar = () => screen.getByRole('group', { name: 'Bulk actions' })
+
+const queryBulkBar = () => screen.queryByRole('group', { name: 'Bulk actions' })
+
+function tick(name: string): Promise<void> {
+  return userEvent.click(screen.getByRole('checkbox', { name: `Select ${name}` }))
+}
+
+/** The list row a person is on, found by what is written on it. */
+function rowFor(name: string): HTMLElement {
+  const row = customerRows().find((item) => item.textContent?.includes(name) === true)
+
+  if (!row) {
+    throw new Error(`No row for ${name}.`)
+  }
+
+  return row
+}
+
+describe('CustomersPage bulk actions', () => {
+  it('offers an agent no selection at all', async () => {
+    await renderCustomers()
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(queryBulkBar()).not.toBeInTheDocument()
+  })
+
+  it('shows the bar to an admin once a row is ticked', async () => {
+    await renderCustomers('admin')
+
+    // Twenty checkboxes and no bar: there is nothing to act on yet.
+    expect(screen.getAllByRole('checkbox')).toHaveLength(20)
+    expect(queryBulkBar()).not.toBeInTheDocument()
+
+    await tick('Elena Harper')
+    expect(within(bulkBar()).getByText('1 customer selected')).toBeInTheDocument()
+
+    await tick('Priya Raman')
+    expect(within(bulkBar()).getByText('2 customers selected')).toBeInTheDocument()
+
+    await tick('Elena Harper')
+    expect(within(bulkBar()).getByText('1 customer selected')).toBeInTheDocument()
+  })
+
+  it('ticks a row without opening it', async () => {
+    await renderCustomers('admin')
+
+    await tick('Priya Raman')
+
+    // The checkbox is beside the row control rather than inside it, so the two
+    // are separate: one selects, the other opens.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Priya Raman/ })).not.toHaveAttribute('aria-current')
+  })
+
+  it('will not apply a plan until one is named', async () => {
+    await renderCustomers('admin')
+    await tick('Elena Harper')
+
+    // The select opens on its placeholder: a default here is one click away
+    // from moving an account onto a plan nobody asked for.
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled()
+
+    await userEvent.selectOptions(screen.getByLabelText('Set plan to'), 'pro')
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled()
+  })
+
+  it('moves every ticked customer onto the plan, and nobody else', async () => {
+    await renderCustomers('admin')
+
+    await tick('Elena Harper')
+    await tick('Priya Raman')
+
+    await userEvent.selectOptions(screen.getByLabelText('Set plan to'), 'enterprise')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    await waitFor(() => {
+      expect(within(rowFor('Elena Harper')).getByText('Enterprise')).toBeInTheDocument()
+    })
+    expect(within(rowFor('Priya Raman')).getByText('Enterprise')).toBeInTheDocument()
+    expect(within(rowFor('Clara Lindberg')).getByText('Pro')).toBeInTheDocument()
+
+    // The bar goes with the selection it was acting on.
+    expect(queryBulkBar()).not.toBeInTheDocument()
+  })
+
+  it('selects everything loaded, and keeps counting as more arrives', async () => {
+    await renderCustomers('admin')
+    await tick('Elena Harper')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Select all 20' }))
+
+    expect(within(bulkBar()).getByText('20 customers selected')).toBeInTheDocument()
+    // Nothing left to select, so the control that would do it is gone.
+    expect(screen.queryByRole('button', { name: /^Select all/ })).not.toBeInTheDocument()
+
+    await userEvent.click(loadMore())
+    expect(await screen.findByText('Showing 40 of 60')).toBeInTheDocument()
+
+    // The twenty stay ticked — this list grows rather than turns — and "all"
+    // now means the forty that are loaded.
+    expect(within(bulkBar()).getByText('20 customers selected')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Select all 40' })).toBeInTheDocument()
+  })
+
+  it('drops a selected row from the count when a filter stops matching it', async () => {
+    await renderCustomers('admin')
+
+    await tick('Elena Harper')
+    await userEvent.type(screen.getByLabelText('Search'), 'northwind')
+
+    // Derived from the rows on screen rather than stored, so a row the filters
+    // hide stops counting without an effect having to reset anything.
+    expect(await screen.findByText('Showing 3 of 3')).toBeInTheDocument()
+    expect(queryBulkBar()).not.toBeInTheDocument()
+  })
+
+  it('clears the selection', async () => {
+    await renderCustomers('admin')
+
+    await tick('Elena Harper')
+    await userEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
+
+    expect(queryBulkBar()).not.toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Select Elena Harper' })).not.toBeChecked()
+  })
+
+  it('deletes the selection behind a confirmation', async () => {
+    await renderCustomers('admin')
+
+    await tick('Elena Harper')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete selected customers' })
+    expect(within(dialog).getByText(/permanently removes 1 customer/)).toBeInTheDocument()
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete customers' }))
+
+    // Fifty-nine left, and the first page refills to twenty out of them.
+    expect(await screen.findByText('Showing 20 of 59')).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Select Elena Harper' })).not.toBeInTheDocument()
+    expect(queryBulkBar()).not.toBeInTheDocument()
+  })
+
+  it('deletes nobody when the confirmation is cancelled', async () => {
+    await renderCustomers('admin')
+
+    await tick('Elena Harper')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete selected customers' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.getByText('Showing 20 of 60')).toBeInTheDocument()
+    // Still ticked: cancelling a question is not undoing the work behind it.
+    expect(within(bulkBar()).getByText('1 customer selected')).toBeInTheDocument()
+  })
+
+  it('leaves the tickets of a deleted customer in the queue', async () => {
+    await renderCustomers('admin')
+
+    // Priya has raised eight. The link runs from a customer to ticket ids and
+    // not back, so deleting her takes the link and leaves the history.
+    await tick('Priya Raman')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete selected customers' })
+    expect(within(dialog).getByText(/tickets they raised stay in the queue/)).toBeInTheDocument()
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete customers' }))
+    await screen.findByText('Showing 20 of 59')
+
+    const response = await forwardToApi(new Request('http://localhost/api/tickets/TCK-0028'))
+    expect(response.status).toBe(200)
+  })
+
+  it('reports a failed bulk action and keeps the selection', async () => {
+    mswServer.use(http.patch('/api/customers/bulk', () => HttpResponse.error()))
+
+    await renderCustomers('admin')
+    await tick('Elena Harper')
+
+    await userEvent.selectOptions(screen.getByLabelText('Set plan to'), 'pro')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    expect(await screen.findByText('Could not reach the server.')).toBeInTheDocument()
+    // Nothing was applied, so there is still a selection to try again with.
+    expect(within(bulkBar()).getByText('1 customer selected')).toBeInTheDocument()
+    expect(within(rowFor('Elena Harper')).getByText('Free')).toBeInTheDocument()
+  })
+
+  it('closes the drawer when the customer it is showing is deleted', async () => {
+    // The delete is held open, because that is the only sequence that reaches
+    // this: Escape dismisses the confirmation while the request is in flight,
+    // which puts the list — and so the drawer — back within reach.
+    let release = () => undefined as void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+
+    mswServer.use(
+      http.delete('/api/customers/bulk', async ({ request }) => {
+        await held
+        return forwardToApi(request)
+      }),
+    )
+
+    await renderCustomers('admin')
+
+    await tick('Priya Raman')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete selected customers' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete customers' }))
+
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(screen.getByRole('button', { name: /Priya Raman/ }))
+    expect(await screen.findByRole('dialog', { name: 'Priya Raman' })).toBeInTheDocument()
+
+    release()
+
+    // Rather than sitting over the list refetching a record that is gone.
+    await waitForElementToBeRemoved(() => screen.queryByRole('dialog', { name: 'Priya Raman' }))
   })
 })

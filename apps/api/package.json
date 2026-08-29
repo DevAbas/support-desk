@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./app": "./src/app.ts",
+    "./customerStore": "./src/customerStore.ts",
     "./store": "./src/store.ts"
   },
   "scripts": {

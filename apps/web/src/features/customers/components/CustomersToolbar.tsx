@@ -1,6 +1,6 @@
 import { Alert, Button, Input, MultiSelect } from '@harness-sample/ui'
 import type { CustomerPlan } from '@harness-sample/shared'
-import { planFilterOptions, type CustomerFilters } from '../customerFilters'
+import { planOptions, type CustomerFilters } from '../customerFilters'
 
 interface CustomersToolbarProps {
   filters: CustomerFilters
@@ -52,7 +52,7 @@ export function CustomersToolbar({
 
       <MultiSelect
         label="Plan"
-        options={planFilterOptions}
+        options={planOptions}
         value={filters.plans}
         placeholder="All plans"
         className="w-52"
@@ -60,11 +60,12 @@ export function CustomersToolbar({
       />
 
       {/* An export that failed is an error, and `Alert` is what knows an error
-          is announced assertively. Its chrome is turned off because a line in a
-          toolbar is not a callout: what is being reused is the tone and the role
-          it picks from it. */}
+          is announced assertively. A line in a toolbar is not a callout, which
+          is what the `inline` variant is: the row around it already has the
+          padding and the border, so the message brings only the tone and the
+          role that follows from it. */}
       {exportError ? (
-        <Alert tone="danger" className="border-0 bg-transparent p-0">
+        <Alert tone="danger" variant="inline">
           {exportError}
         </Alert>
       ) : null}
