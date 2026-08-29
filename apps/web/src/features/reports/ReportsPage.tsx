@@ -10,7 +10,7 @@ import {
   TabList,
   TabPanel,
   Tabs,
-} from '@/design-system'
+} from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { downloadTextFile } from '@/lib/download'
 import { formatDate } from '@/lib/format'

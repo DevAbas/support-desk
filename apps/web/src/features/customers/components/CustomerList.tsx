@@ -1,4 +1,4 @@
-import { Avatar, List, ListRow } from '@/design-system'
+import { Avatar, List, ListRow } from '@harness-sample/ui'
 import { formatDate } from '@/lib/format'
 import type { CustomerSummary } from '@harness-sample/shared'
 import { CustomerPlanBadge } from './CustomerPlanBadge'

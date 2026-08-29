@@ -1,4 +1,4 @@
-import { BarChart, type ChartDatum } from '@/design-system'
+import { BarChart, type ChartDatum } from '@harness-sample/ui'
 import type { ReportBreakdownResponse } from '@harness-sample/shared'
 import { BUCKET_LABELS, BUCKET_TONES, DIMENSION_LABELS } from '../reportViews'
 

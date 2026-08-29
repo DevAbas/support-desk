@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Badge } from '@/design-system'
-import { cn } from '@/lib/cn'
+import { Badge } from '@harness-sample/ui'
+import { cn } from '@harness-sample/shared'
 import { ROLE_LABELS } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
 

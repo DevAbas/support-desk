@@ -1,4 +1,4 @@
-import type { ChartTone } from '@/design-system'
+import type { ChartTone } from '@harness-sample/ui'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_STATUS_LABELS,

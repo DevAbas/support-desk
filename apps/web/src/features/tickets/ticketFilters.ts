@@ -1,4 +1,4 @@
-import type { SelectOption } from '@/design-system'
+import type { SelectOption } from '@harness-sample/ui'
 import {
   TICKET_PRIORITIES,
   TICKET_PRIORITY_LABELS,

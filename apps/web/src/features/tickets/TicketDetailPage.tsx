@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Button, Card, CardBody, CardHeader, Modal, Select } from '@/design-system'
+import { Button, Card, CardBody, CardHeader, Modal, Select } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { formatDateTime } from '@/lib/format'
 import {

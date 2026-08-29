@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, CardBody, CardFooter, CardHeader, Input, Select, Textarea } from '@/design-system'
+import { Button, Card, CardBody, CardFooter, CardHeader, Input, Select, Textarea } from '@harness-sample/ui'
 import { useCreateTicket } from './hooks/useCreateTicket'
 import { TICKET_PRIORITIES, TICKET_PRIORITY_LABELS, type TicketPriority } from '@harness-sample/shared'
 

@@ -1,4 +1,4 @@
-import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '@/design-system'
+import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '@harness-sample/ui'
 import {
   TICKET_STATUSES,
   TICKET_STATUS_LABELS,

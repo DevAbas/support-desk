@@ -1,4 +1,4 @@
-import type { DateRangePreset } from '@/design-system'
+import type { DateRangePreset } from '@harness-sample/ui'
 import type { ReportRange } from '@harness-sample/shared'
 
 /**

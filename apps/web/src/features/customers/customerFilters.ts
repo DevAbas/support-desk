@@ -1,4 +1,4 @@
-import type { SelectOption } from '@/design-system'
+import type { SelectOption } from '@harness-sample/ui'
 import {
   CUSTOMER_PLANS,
   CUSTOMER_PLAN_LABELS,

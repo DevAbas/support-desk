@@ -1,4 +1,4 @@
-import type { StatChange, StatChangeDirection, StatChangeIntent } from '@/design-system'
+import type { StatChange, StatChangeDirection, StatChangeIntent } from '@harness-sample/ui'
 import type { ReportMetric } from '@harness-sample/shared'
 
 /**

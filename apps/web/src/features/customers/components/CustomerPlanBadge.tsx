@@ -1,4 +1,4 @@
-import { Badge, type BadgeStatus } from '@/design-system'
+import { Badge, type BadgeStatus } from '@harness-sample/ui'
 import { CUSTOMER_PLAN_LABELS, type CustomerPlan } from '@harness-sample/shared'
 
 /**

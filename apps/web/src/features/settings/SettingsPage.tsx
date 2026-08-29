@@ -1,4 +1,4 @@
-import { Card, CardBody, CardHeader, Select } from '@/design-system'
+import { Card, CardBody, CardHeader, Select } from '@harness-sample/ui'
 import { ROLES, ROLE_LABELS, type Role } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
 

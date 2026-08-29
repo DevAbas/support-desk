@@ -1,5 +1,5 @@
 import { useId, useState, type FormEvent } from 'react'
-import { Button, Input, Modal } from '@/design-system'
+import { Button, Input, Modal } from '@harness-sample/ui'
 
 interface SavedViewNameDialogProps {
   title: string

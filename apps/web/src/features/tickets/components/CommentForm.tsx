@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Button, Textarea } from '@/design-system'
+import { Button, Textarea } from '@harness-sample/ui'
 
 interface CommentFormProps {
   onSubmit: (body: string) => Promise<void>

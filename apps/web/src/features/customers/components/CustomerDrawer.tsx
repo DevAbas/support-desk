@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Alert, Avatar, Button, Drawer, List, ListRow } from '@/design-system'
+import { Alert, Avatar, Button, Drawer, List, ListRow } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { formatDate } from '@/lib/format'
 import type { Customer } from '@harness-sample/shared'

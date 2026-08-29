@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card } from '@/design-system'
+import { Button, Card } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { CustomerDrawer } from './components/CustomerDrawer'

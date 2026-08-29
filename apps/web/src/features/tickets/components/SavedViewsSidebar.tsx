@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Badge, Button, Card, CardBody, CardFooter, CardHeader, Modal } from '@/design-system'
-import { cn } from '@/lib/cn'
+import { Badge, Button, Card, CardBody, CardFooter, CardHeader, Modal } from '@harness-sample/ui'
+import { cn } from '@harness-sample/shared'
 import type { SavedView } from '@/features/tickets/savedViews'
 import { SavedViewNameDialog } from './SavedViewNameDialog'
 

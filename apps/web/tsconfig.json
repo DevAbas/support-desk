@@ -22,6 +22,9 @@
       "path": "../../packages/shared"
     },
     {
+      "path": "../../packages/ui"
+    },
+    {
       "path": "../api"
     }
   ]

@@ -1,11 +1,22 @@
 @import 'tailwindcss';
-@import './design-system/tokens.css';
+@import '@harness-sample/ui/tokens.css';
+
+/*
+ * Automatic source detection stops at `node_modules`, and the workspace symlink
+ * for `@harness-sample/ui` points there, so the design system has to be named
+ * explicitly. Without this every class it uses is detected as unused and
+ * compiled away, silently and without an error. The path is relative to this
+ * file.
+ */
+@source '../../../packages/ui/src';
 
 /*
  * Tailwind v4 scans every file in the project for class names, Markdown
  * included. The design system README quotes the classes it forbids, and without
  * this exclusion those examples would be detected as real usage and compiled
- * into the bundle.
+ * into the bundle. It lives beside the package's `src` rather than inside it,
+ * so the `@source` above does not reach it, but the app's own Markdown is still
+ * worth excluding.
  */
 @source not '../**/*.md';
 

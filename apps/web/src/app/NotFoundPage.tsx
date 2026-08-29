@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, CardBody, CardHeader } from '@/design-system'
+import { Button, Card, CardBody, CardHeader } from '@harness-sample/ui'
 
 export function NotFoundPage() {
   const navigate = useNavigate()

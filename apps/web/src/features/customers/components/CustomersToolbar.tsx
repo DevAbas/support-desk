@@ -1,4 +1,4 @@
-import { Input, MultiSelect } from '@/design-system'
+import { Input, MultiSelect } from '@harness-sample/ui'
 import type { CustomerPlan } from '@harness-sample/shared'
 import { planFilterOptions, type CustomerFilters } from '../customerFilters'
 

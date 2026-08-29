@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, CardHeader, Input, Modal, Select } from '@/design-system'
+import { Button, Card, CardHeader, Input, Modal, Select } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { type TicketStatus } from '@harness-sample/shared'

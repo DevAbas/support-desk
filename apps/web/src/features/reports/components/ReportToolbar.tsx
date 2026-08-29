@@ -1,4 +1,4 @@
-import { Button } from '@/design-system'
+import { Button } from '@harness-sample/ui'
 
 interface ReportToolbarProps {
   onExport: () => void
