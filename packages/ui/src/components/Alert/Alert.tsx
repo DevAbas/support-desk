@@ -1,7 +1,7 @@
 import { cn } from '@harness-sample/shared'
 import type { AlertProps, AlertTone } from './Alert.types'
 
-const baseClasses = 'flex items-start justify-between gap-4 rounded-md border px-4 py-3 text-sm'
+const baseClasses = 'flex items-start justify-between gap-4 rounded-md border px-4 py-3 text-body'
 
 // Keyed by the union, so adding a tone without styling it is a type error.
 const toneClasses: Record<AlertTone, string> = {

@@ -12,7 +12,7 @@ import type {
 export function Table({ caption, className, children, ...props }: TableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className={cn('w-full border-collapse text-sm', className)} {...props}>
+      <table className={cn('w-full border-collapse text-body', className)} {...props}>
         <caption className="sr-only">{caption}</caption>
         {children}
       </table>
@@ -75,7 +75,7 @@ export function TableHeaderCell({ scope = 'col', className, ...props }: TableHea
   return (
     <th
       scope={scope}
-      className={cn('px-4 py-3 text-xs font-semibold tracking-wide text-fg-muted uppercase', className)}
+      className={cn('px-4 py-3 text-caption font-semibold tracking-wide text-fg-muted uppercase', className)}
       {...props}
     />
   )

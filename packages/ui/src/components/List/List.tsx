@@ -79,11 +79,11 @@ export function ListRow({
       {leading ? <span className="flex shrink-0 items-center">{leading}</span> : null}
 
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-sm font-medium text-fg">{title}</span>
-        {subtitle ? <span className="truncate text-xs text-fg-muted">{subtitle}</span> : null}
+        <span className="truncate text-body font-medium text-fg">{title}</span>
+        {subtitle ? <span className="truncate text-caption text-fg-muted">{subtitle}</span> : null}
       </span>
 
-      {meta ? <span className="shrink-0 text-xs text-fg-muted">{meta}</span> : null}
+      {meta ? <span className="shrink-0 text-caption text-fg-muted">{meta}</span> : null}
       {trailing ? <span className="flex shrink-0 items-center">{trailing}</span> : null}
     </>
   )

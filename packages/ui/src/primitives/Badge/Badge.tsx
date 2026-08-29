@@ -2,7 +2,7 @@ import { cn } from '@harness-sample/shared'
 import type { BadgeProps, BadgeStatus } from './Badge.types'
 
 const baseClasses =
-  'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium'
+  'inline-flex items-center rounded-full border px-2 py-0.5 text-caption font-medium'
 
 // Keyed by the union, so adding a status without styling it is a type error.
 const statusClasses: Record<BadgeStatus, string> = {

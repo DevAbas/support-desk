@@ -19,9 +19,13 @@ const defaultElement: Record<HeadingLevel, HeadingElement> = {
  * A heading.
  *
  * The size, the line height and the weight all come from one semantic token, so
- * a heading is chosen by what it is rather than assembled out of `text-2xl` and
- * `font-semibold` — which is how six screens ended up with six copies of the
- * same title.
+ * a heading is chosen by what it is rather than reassembled out of a raw size
+ * and a weight at every call site — which is how six screens ended up with six
+ * copies of the same title.
+ *
+ * The raw size is not named here on purpose. Tailwind scans this file as text,
+ * comments included, so a class written in prose is compiled as though it were
+ * used — the same trap `apps/web/src/index.css` excludes Markdown for.
  */
 export function Heading({ level = 'section', as, className, ...props }: HeadingProps) {
   const Element = as ?? defaultElement[level]

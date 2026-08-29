@@ -3,7 +3,7 @@ import { cn } from '@harness-sample/shared'
 import type { TextareaProps } from './Textarea.types'
 
 const controlClasses =
-  'block w-full rounded-md border bg-surface px-3 py-2 text-sm text-fg ' +
+  'block w-full rounded-md border bg-surface px-3 py-2 text-body text-fg ' +
   'placeholder:text-fg-subtle focus-visible:outline-2 focus-visible:outline-offset-0 ' +
   'focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-muted'
 
@@ -15,7 +15,7 @@ export function Textarea({ label, error, hint, rows = 4, className, ...props }: 
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium text-fg">
+      <label htmlFor={id} className="text-body font-medium text-fg">
         {label}
       </label>
       <textarea
@@ -27,12 +27,12 @@ export function Textarea({ label, error, hint, rows = 4, className, ...props }: 
         {...props}
       />
       {hint ? (
-        <p id={hintId} className="text-xs text-fg-muted">
+        <p id={hintId} className="text-caption text-fg-muted">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="text-xs text-danger">
+        <p id={errorId} role="alert" className="text-caption text-danger">
           {error}
         </p>
       ) : null}

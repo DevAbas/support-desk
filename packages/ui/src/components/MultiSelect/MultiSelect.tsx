@@ -107,7 +107,7 @@ export function MultiSelect<TValue extends string = string>({
         }
       }}
     >
-      <span id={labelId} className="text-sm font-medium text-fg">
+      <span id={labelId} className="text-body font-medium text-fg">
         {label}
       </span>
 
@@ -150,7 +150,7 @@ export function MultiSelect<TValue extends string = string>({
             {options.map((option) => (
               <label
                 key={option.value}
-                className="flex cursor-pointer items-center gap-2 text-sm text-fg"
+                className="flex cursor-pointer items-center gap-2 text-body text-fg"
               >
                 <input
                   type="checkbox"
@@ -172,12 +172,12 @@ export function MultiSelect<TValue extends string = string>({
       ) : null}
 
       {hint ? (
-        <p id={hintId} className="text-xs text-fg-muted">
+        <p id={hintId} className="text-caption text-fg-muted">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="text-xs text-danger">
+        <p id={errorId} role="alert" className="text-caption text-danger">
           {error}
         </p>
       ) : null}

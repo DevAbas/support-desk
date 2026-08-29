@@ -45,7 +45,7 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <Card className={cn('flex flex-col gap-2 px-5 py-4', className)} {...props}>
-      <p className="text-sm font-medium text-fg-muted">{label}</p>
+      <p className="text-body font-medium text-fg-muted">{label}</p>
 
       {isLoading ? (
         // The same message every table, list and chart shows, in the space a
@@ -55,10 +55,10 @@ export function StatCard({
         </StateMessage>
       ) : (
         <>
-          <p className="text-2xl font-semibold text-fg">{value}</p>
+          <p className="text-title text-fg">{value}</p>
 
           {change ? (
-            <p className={cn('flex flex-wrap items-baseline gap-1 text-xs', intentClasses[change.intent ?? 'neutral'])}>
+            <p className={cn('flex flex-wrap items-baseline gap-1 text-caption', intentClasses[change.intent ?? 'neutral'])}>
               <Icon
                 name={directionIcon[change.direction]}
                 size="sm"

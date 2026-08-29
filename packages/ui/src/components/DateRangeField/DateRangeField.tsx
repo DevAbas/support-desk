@@ -48,7 +48,7 @@ export function DateRangeField({
 
   return (
     <fieldset disabled={disabled} className={cn('flex flex-col gap-3', className)} {...props}>
-      <legend className="text-sm font-medium text-fg">{legend}</legend>
+      <legend className="text-body font-medium text-fg">{legend}</legend>
 
       <div className="flex flex-wrap items-end gap-4">
         <div role="group" aria-label={`${legend} presets`} className="flex flex-wrap gap-2">

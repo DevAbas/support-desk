@@ -114,7 +114,7 @@ export function BarChart({
                 }
 
                 return (
-                  <div className="rounded-md border border-border bg-surface px-3 py-2 text-xs shadow-overlay">
+                  <div className="rounded-md border border-border bg-surface px-3 py-2 text-caption shadow-overlay">
                     <p className="font-medium text-fg">{String(label)}</p>
                     <p className="text-fg-muted">{formatValue(value)}</p>
                   </div>
