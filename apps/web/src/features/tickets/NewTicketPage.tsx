@@ -1,6 +1,17 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, CardBody, CardFooter, CardHeader, Input, Select, Textarea } from '@harness-sample/ui'
+import {
+  Button,
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  Heading,
+  Input,
+  Select,
+  Text,
+  Textarea,
+} from '@harness-sample/ui'
 import { useCreateTicket } from './hooks/useCreateTicket'
 import { TICKET_PRIORITIES, TICKET_PRIORITY_LABELS, type TicketPriority } from '@harness-sample/shared'
 
@@ -84,8 +95,8 @@ export function NewTicketPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-fg">New ticket</h1>
-        <p className="text-sm text-fg-muted">Log a support request on behalf of a customer.</p>
+        <Heading level="page">New ticket</Heading>
+        <Text tone="muted">Log a support request on behalf of a customer.</Text>
       </div>
 
       <form onSubmit={handleSubmit} noValidate>

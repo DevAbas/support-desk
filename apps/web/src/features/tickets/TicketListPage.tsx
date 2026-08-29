@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, CardHeader, Input, Modal, Select } from '@harness-sample/ui'
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  ConfirmDialog,
+  Heading,
+  Input,
+  Select,
+  Text,
+} from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { type TicketStatus } from '@harness-sample/shared'
@@ -130,8 +141,8 @@ export function TicketListPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-fg">Tickets</h1>
-          <p className="text-sm text-fg-muted">Every support request in the queue.</p>
+          <Heading level="page">Tickets</Heading>
+          <Text tone="muted">Every support request in the queue.</Text>
         </div>
         <Button onClick={() => navigate('/tickets/new')}>New ticket</Button>
       </div>
@@ -154,7 +165,7 @@ export function TicketListPage() {
               description="Narrow the queue down before working through it."
             />
 
-            <div className="grid gap-4 px-5 py-4 sm:grid-cols-3">
+            <CardBody className="grid gap-4 sm:grid-cols-3">
               <Select
                 label="Status"
                 options={statusFilterOptions}
@@ -178,7 +189,7 @@ export function TicketListPage() {
                 placeholder="Title or ticket ID"
                 onChange={(event) => changeFilters({ search: event.target.value })}
               />
-            </div>
+            </CardBody>
           </Card>
 
           <Card className="overflow-hidden">
@@ -199,12 +210,19 @@ export function TicketListPage() {
             ) : null}
 
             {loadError ? (
-              <div className="flex items-center justify-between gap-4 border-b border-danger-border bg-danger-subtle px-4 py-3">
-                <p className="text-sm text-danger-subtle-fg">{loadError}</p>
-                <Button variant="secondary" size="sm" onClick={() => void tickets.refetch()}>
-                  Try again
-                </Button>
-              </div>
+              // A band across the card rather than a card of its own, which is
+              // what the rounding and the side borders are turned off for.
+              <Alert
+                tone="danger"
+                className="items-center rounded-none border-x-0 border-t-0"
+                action={
+                  <Button variant="secondary" size="sm" onClick={() => void tickets.refetch()}>
+                    Try again
+                  </Button>
+                }
+              >
+                {loadError}
+              </Alert>
             ) : null}
 
             <TicketsTable
@@ -228,27 +246,18 @@ export function TicketListPage() {
         </div>
       </div>
 
-      <Modal
+      <ConfirmDialog
         open={isConfirmingDelete}
         onClose={() => setIsConfirmingDelete(false)}
+        onConfirm={confirmBulkDelete}
         title="Delete selected tickets"
         description={`This permanently removes ${selectedIds.length} ${
           selectedIds.length === 1 ? 'ticket' : 'tickets'
         }. This cannot be undone.`}
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setIsConfirmingDelete(false)}
-              disabled={isBulkBusy}
-            >
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={confirmBulkDelete} disabled={isBulkBusy}>
-              {isBulkBusy ? 'Deleting…' : 'Delete tickets'}
-            </Button>
-          </>
-        }
+        confirmLabel="Delete tickets"
+        busyLabel="Deleting…"
+        isDanger
+        isBusy={isBulkBusy}
       />
     </div>
   )

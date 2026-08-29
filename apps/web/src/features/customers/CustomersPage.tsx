@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card } from '@harness-sample/ui'
+import { Alert, Button, Card, Heading, Text } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { CustomerDrawer } from './components/CustomerDrawer'
@@ -66,10 +66,8 @@ export function CustomersPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-fg">Customers</h1>
-        <p className="text-sm text-fg-muted">
-          Everyone using the product, and what they have raised.
-        </p>
+        <Heading level="page">Customers</Heading>
+        <Text tone="muted">Everyone using the product, and what they have raised.</Text>
       </div>
 
       <Card className="overflow-hidden">
@@ -82,12 +80,19 @@ export function CustomersPage() {
         />
 
         {loadError ? (
-          <div className="flex items-center justify-between gap-4 border-b border-danger-border bg-danger-subtle px-4 py-3">
-            <p className="text-sm text-danger-subtle-fg">{loadError}</p>
-            <Button variant="secondary" size="sm" onClick={() => void customers.refetch()}>
-              Try again
-            </Button>
-          </div>
+          // A band across the card rather than a card of its own, which is what
+          // the rounding and the side borders are turned off for.
+          <Alert
+            tone="danger"
+            className="items-center rounded-none border-x-0 border-t-0"
+            action={
+              <Button variant="secondary" size="sm" onClick={() => void customers.refetch()}>
+                Try again
+              </Button>
+            }
+          >
+            {loadError}
+          </Alert>
         ) : null}
 
         <CustomerList

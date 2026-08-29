@@ -6,10 +6,12 @@ import {
   CardBody,
   CardHeader,
   DateRangeField,
+  Heading,
   Tab,
   TabList,
   TabPanel,
   Tabs,
+  Text,
 } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { downloadTextFile } from '@/lib/download'
@@ -93,10 +95,8 @@ export function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-fg">Reports</h1>
-        <p className="text-sm text-fg-muted">
-          How the queue has been moving, over the range you choose.
-        </p>
+        <Heading level="page">Reports</Heading>
+        <Text tone="muted">How the queue has been moving, over the range you choose.</Text>
       </div>
 
       <Card>

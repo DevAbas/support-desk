@@ -1,6 +1,15 @@
 import { useState } from 'react'
-import { Badge, Button, Card, CardBody, CardFooter, CardHeader, Modal } from '@harness-sample/ui'
-import { cn } from '@harness-sample/shared'
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  ConfirmDialog,
+  Icon,
+  StateMessage,
+} from '@harness-sample/ui'
 import type { SavedView } from '@/features/tickets/savedViews'
 import { SavedViewNameDialog } from './SavedViewNameDialog'
 
@@ -22,9 +31,6 @@ interface SavedViewsSidebarProps {
 }
 
 const rowClasses = 'min-w-0 flex-1 justify-start gap-2'
-
-const activeRowClasses =
-  'bg-primary-subtle text-primary-subtle-fg hover:bg-primary-subtle hover:text-primary-subtle-fg'
 
 export function SavedViewsSidebar({
   views,
@@ -53,10 +59,10 @@ export function SavedViewsSidebar({
           <ul className="flex flex-col gap-1">
             <li className="flex items-center gap-1">
               <Button
-                variant="ghost"
+                variant={activeViewId === null ? 'selected' : 'ghost'}
                 size="sm"
                 aria-current={activeViewId === null ? 'true' : undefined}
-                className={cn(rowClasses, activeViewId === null && activeRowClasses)}
+                className={rowClasses}
                 onClick={() => onSelectView(null)}
               >
                 <span className="truncate">All tickets</span>
@@ -72,10 +78,10 @@ export function SavedViewsSidebar({
               return (
                 <li key={view.id} className="flex items-center gap-1">
                   <Button
-                    variant="ghost"
+                    variant={isActive ? 'selected' : 'ghost'}
                     size="sm"
                     aria-current={isActive ? 'true' : undefined}
-                    className={cn(rowClasses, isActive && activeRowClasses)}
+                    className={rowClasses}
                     onClick={() => onSelectView(view)}
                   >
                     <span className="truncate">{view.name}</span>
@@ -88,7 +94,7 @@ export function SavedViewsSidebar({
                     aria-label={`Rename ${view.name}`}
                     onClick={() => setDialog({ kind: 'rename', view })}
                   >
-                    &#9998;
+                    <Icon name="pencil" size="sm" label={`Rename ${view.name}`} decorative />
                   </Button>
                   <Button
                     variant="ghost"
@@ -97,7 +103,7 @@ export function SavedViewsSidebar({
                     aria-label={`Delete ${view.name}`}
                     onClick={() => setDialog({ kind: 'delete', view })}
                   >
-                    &#215;
+                    <Icon name="close" size="sm" label={`Delete ${view.name}`} decorative />
                   </Button>
                 </li>
               )
@@ -105,9 +111,11 @@ export function SavedViewsSidebar({
           </ul>
 
           {views.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-fg-muted">
+            // The same empty state every list shows, at the size a sidebar has
+            // room for and aligned with the rows above it rather than centred.
+            <StateMessage className="px-3 py-2 text-left">
               No saved views yet. Set the filters you want, then save them.
-            </p>
+            </StateMessage>
           ) : null}
         </CardBody>
 
@@ -150,27 +158,17 @@ export function SavedViewsSidebar({
       ) : null}
 
       {dialog?.kind === 'delete' ? (
-        <Modal
+        <ConfirmDialog
           open
           onClose={closeDialog}
+          onConfirm={() => {
+            onDeleteView(dialog.view.id)
+            closeDialog()
+          }}
           title="Delete saved view"
           description={`This removes “${dialog.view.name}”. The filters on screen stay as they are.`}
-          footer={
-            <>
-              <Button variant="secondary" onClick={closeDialog}>
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  onDeleteView(dialog.view.id)
-                  closeDialog()
-                }}
-              >
-                Delete view
-              </Button>
-            </>
-          }
+          confirmLabel="Delete view"
+          isDanger
         />
       ) : null}
     </aside>

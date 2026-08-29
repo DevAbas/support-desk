@@ -1,4 +1,4 @@
-import { Card, CardBody, CardHeader, Select } from '@harness-sample/ui'
+import { Card, CardBody, CardHeader, Heading, Select, Text } from '@harness-sample/ui'
 import { ROLES, ROLE_LABELS, type Role } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
 
@@ -10,11 +10,11 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-fg">Settings</h1>
-        <p className="text-sm text-fg-muted">
+        <Heading level="page">Settings</Heading>
+        <Text tone="muted">
           There is no authentication in this reference app. Switching role here is how you test
           the permission-gated parts of the UI.
-        </p>
+        </Text>
       </div>
 
       <Card className="max-w-md">

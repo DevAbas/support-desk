@@ -1,5 +1,15 @@
 import { Link } from 'react-router-dom'
-import { Alert, Avatar, Button, Drawer, List, ListRow } from '@harness-sample/ui'
+import {
+  Alert,
+  Avatar,
+  Button,
+  Drawer,
+  Heading,
+  List,
+  ListRow,
+  StatCard,
+  StateMessage,
+} from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { formatDate } from '@/lib/format'
 import type { Customer } from '@harness-sample/shared'
@@ -41,11 +51,7 @@ export function CustomerDrawer({ customerId, onClose }: CustomerDrawerProps) {
       title={customer.data?.name ?? 'Customer'}
       description={customer.data?.company}
     >
-      {customer.isPending ? (
-        <p role="status" aria-live="polite" className="text-sm text-fg-muted">
-          Loading customer…
-        </p>
-      ) : null}
+      {customer.isPending ? <StateMessage isLoading>Loading customer…</StateMessage> : null}
 
       {error ? (
         <Alert
@@ -88,21 +94,15 @@ function CustomerDetail({ customer }: CustomerDetailProps) {
         </div>
       </div>
 
-      {/* A description list, because these are labelled facts about one thing —
-          which is what a `dl` is, and what a two-column grid of divs is not. */}
-      <dl className="grid grid-cols-2 gap-4 border-y border-border py-4">
-        <div className="flex flex-col gap-1">
-          <dt className="text-xs font-medium text-fg-muted">Signed up</dt>
-          <dd className="text-sm text-fg">{formatDate(customer.signupDate)}</dd>
-        </div>
-        <div className="flex flex-col gap-1">
-          <dt className="text-xs font-medium text-fg-muted">Tickets raised</dt>
-          <dd className="text-sm text-fg">{customer.ticketCount}</dd>
-        </div>
-      </dl>
+      {/* Two figures about one customer, which is what `StatCard` is. They were
+          a hand-built pair of label-and-value stacks a scale step off it. */}
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard label="Signed up" value={formatDate(customer.signupDate)} />
+        <StatCard label="Tickets raised" value={customer.ticketCount} />
+      </div>
 
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-fg">Tickets</h3>
+        <Heading level="subsection">Tickets</Heading>
 
         <List
           label={`Tickets raised by ${customer.name}`}

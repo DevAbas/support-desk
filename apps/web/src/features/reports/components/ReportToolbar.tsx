@@ -1,4 +1,4 @@
-import { Button } from '@harness-sample/ui'
+import { Button, CardFooter, Text } from '@harness-sample/ui'
 
 interface ReportToolbarProps {
   onExport: () => void
@@ -12,12 +12,14 @@ interface ReportToolbarProps {
  */
 export function ReportToolbar({ onExport, disabled = false }: ReportToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border bg-surface-muted px-5 py-3">
-      <p className="text-sm text-fg-muted">Exports the view above, for the range selected.</p>
+    // A real card footer: it sits in the footer slot of the card the report is
+    // in, and its border, fill and padding were `CardFooter`'s copied out.
+    <CardFooter className="flex-wrap justify-between gap-4">
+      <Text tone="muted">Exports the view above, for the range selected.</Text>
 
       <Button variant="secondary" size="sm" onClick={onExport} disabled={disabled}>
         Export CSV
       </Button>
-    </div>
+    </CardFooter>
   )
 }
