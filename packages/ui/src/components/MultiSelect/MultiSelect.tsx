@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button } from '../../primitives/Button'
+import { Checkbox } from '../../primitives/Checkbox'
 import { Icon } from '../../primitives/Icon'
 import { cn } from '@harness-sample/shared'
 import type { MultiSelectProps } from './MultiSelect.types'
@@ -148,18 +149,12 @@ export function MultiSelect<TValue extends string = string>({
             <legend className="sr-only">{label}</legend>
 
             {options.map((option) => (
-              <label
+              <Checkbox
                 key={option.value}
-                className="flex cursor-pointer items-center gap-2 text-body text-fg"
-              >
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={value.includes(option.value)}
-                  onChange={() => toggle(option.value)}
-                />
-                {option.label}
-              </label>
+                label={option.label}
+                checked={value.includes(option.value)}
+                onChange={() => toggle(option.value)}
+              />
             ))}
           </fieldset>
 

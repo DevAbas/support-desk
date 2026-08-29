@@ -64,6 +64,39 @@ target is all of it, so a selectable row is one wide control — and that contro
 `Button/`. `Tab` is built the same way. Everything a control has to get right, from
 the focus ring to the `type="button"` default, is got right once.
 
+## Never hand-build a checkbox
+
+`<input type="checkbox" className="size-4 accent-primary">` was written three
+times — the header cell and the row cell of the ticket table, and every option in
+`MultiSelect` — and the three copies agreed on precisely the two classes that are
+easy to agree on. What none of them had was a disabled treatment, so the
+select-all box in the ticket header looked the same whether it could be used or
+not. And none of them could say *some of these*: a header box over a half-selected
+page draws what it draws over an empty one.
+
+`Checkbox` owns all three. `label` is required, the way `Icon` requires one, so a
+box cannot be rendered unnamed — a selection column is otherwise a column of
+controls announced only as "checkbox". `labelHidden` makes that label the
+accessible name without drawing the words, which is what a cell in a table needs
+and what a row of filter options does not: with the label visible it wraps the
+box, so the words are a click target too.
+
+`indeterminate` is the third state, and it is written to the node as a DOM
+property because that is the only form it has — there is no attribute for it. It
+is deliberately not paired with `aria-checked="mixed"`: a native checkbox already
+reports mixed, and an ARIA state layered on a native one is a second source for
+one fact and a second thing that can disagree.
+
+The disabled treatment is `opacity-50` rather than the `bg-muted` `Input`,
+`Select` and `Textarea` use, because `accent-primary` paints the box itself and a
+background behind it is a background nobody sees. There is no focus-ring override
+for the same kind of reason: the box is drawn by the browser, and so is the ring
+that fits it.
+
+Where a checkbox leads a `ListRow`, it is this one. `leading` takes an `Avatar`,
+an `Icon` or a `Checkbox` — three primitives, not a raw input dressed to match
+whichever of them it happens to sit beside.
+
 ## The charting library stays behind `Chart/`
 
 `Chart/` is the only place in this codebase that imports the charting library. Feature
@@ -203,6 +236,34 @@ classes that make a `CardHeader` a `CardHeader`, which is not reuse — it is a 
 The distinction to keep: a header says what a card is, a toolbar acts on it, and the
 fact that both are a strip with a border does not make them the same strip.
 
+## An `Alert` has a tone and a shape, and they are two questions
+
+`tone` is what the message means. `variant` is where it sits, and it had been
+answered in `className` three times: a toolbar taking the chrome off with
+`border-0 bg-transparent p-0`, and two cards squaring a callout into a band with
+`items-center rounded-none border-x-0 border-t-0` — the same four classes in the
+same order, in two features that had never read each other. Each of those is
+`Alert` imported for its tone and the `role` that follows from it, and then taken
+apart to fit where it landed.
+
+| Variant | Shape |
+| --- | --- |
+| `callout` | the default; stands on its own, tinted and bordered and rounded |
+| `inline` | a line in a row of controls, carrying no chrome of its own |
+| `band` | spans a card edge to edge, separated from what follows by its bottom edge |
+
+`inline` has no chrome because the row around it already has the padding and the
+border; a message in a toolbar is not a callout, it is a line in the toolbar.
+`band` draws a bottom edge and nothing else — the base sets no border width, so a
+variant that names no border draws none, and a tone contributes a border *colour*
+with nothing to show it.
+
+They are named for the shape being asked for rather than for the classes each one
+drops. `inline` says what the caller wanted; `border-0 bg-transparent p-0` says
+what they took away, and only the first still means anything after someone
+changes the padding scale. `className` is still the right way to say where a
+message sits in its parent — `mr-auto` in a toolbar — but not what it is made of.
+
 ## Badge statuses come from a fixed union
 
 `BadgeStatus` is `'neutral' | 'info' | 'success' | 'warning' | 'danger'` and nothing
@@ -286,7 +347,14 @@ less motion is not a preference for a panel that never appears.
   tab tied to its panel through a generated pair of ids. Only the selected panel is
   rendered, so a panel that loads its own data does not load it until it is shown.
 - `Alert` chooses its own `role` from its tone — a failure is announced assertively,
-  everything else politely — which is why `role` is not a prop.
+  everything else politely — which is why `role` is not a prop. `variant` changes
+  the shape and nothing else, so a message stripped to a line in a toolbar is still
+  announced the way its tone says it should be.
+- `Checkbox` takes a required `label`, so a box cannot be rendered unnamed, and
+  `labelHidden` turns that label into the accessible name rather than dropping it.
+  Its `indeterminate` state is the native DOM property with no `aria-checked`
+  beside it: the browser already reports mixed, and one state with two sources is
+  one source too many.
 - `DateRangeField` is a `fieldset` with a legend, and its presets are toggle buttons
   carrying `aria-pressed` rather than links that look pressed. It never emits a range
   that ends before it starts: moving one end past the other takes the other with it.

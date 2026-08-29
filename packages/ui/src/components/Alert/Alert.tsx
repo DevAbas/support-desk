@@ -1,7 +1,7 @@
 import { cn } from '@harness-sample/shared'
-import type { AlertProps, AlertTone } from './Alert.types'
+import type { AlertProps, AlertTone, AlertVariant } from './Alert.types'
 
-const baseClasses = 'flex items-start justify-between gap-4 rounded-md border px-4 py-3 text-body'
+const baseClasses = 'flex justify-between gap-4 text-body'
 
 // Keyed by the union, so adding a tone without styling it is a type error.
 const toneClasses: Record<AlertTone, string> = {
@@ -9,6 +9,21 @@ const toneClasses: Record<AlertTone, string> = {
   success: 'border-success-border bg-success-subtle text-success-subtle-fg',
   warning: 'border-warning-border bg-warning-subtle text-warning-subtle-fg',
   danger: 'border-danger-border bg-danger-subtle text-danger-subtle-fg',
+}
+
+/**
+ * Keyed by the union in the same way, and merged after the tone so that a
+ * variant which wants no fill can say so: `bg-transparent` has to come after
+ * `bg-danger-subtle` for tailwind-merge to drop the one it replaces.
+ *
+ * Each variant sets its own border width. The base sets none, so a variant that
+ * names no border draws none — a tone contributes a border *colour* and nothing
+ * that would show it.
+ */
+const variantClasses: Record<AlertVariant, string> = {
+  callout: 'items-start rounded-md border px-4 py-3',
+  inline: 'items-start bg-transparent p-0',
+  band: 'items-center border-b px-4 py-3',
 }
 
 /**
@@ -23,11 +38,19 @@ const roleByTone: Record<AlertTone, 'alert' | 'status'> = {
   danger: 'alert',
 }
 
-export function Alert({ tone = 'info', title, action, className, children, ...props }: AlertProps) {
+export function Alert({
+  tone = 'info',
+  variant = 'callout',
+  title,
+  action,
+  className,
+  children,
+  ...props
+}: AlertProps) {
   return (
     <div
       role={roleByTone[tone]}
-      className={cn(baseClasses, toneClasses[tone], className)}
+      className={cn(baseClasses, toneClasses[tone], variantClasses[variant], className)}
       {...props}
     >
       <div className="flex min-w-0 flex-col gap-1">

@@ -210,11 +210,9 @@ export function TicketListPage() {
             ) : null}
 
             {loadError ? (
-              // A band across the card rather than a card of its own, which is
-              // what the rounding and the side borders are turned off for.
               <Alert
                 tone="danger"
-                className="items-center rounded-none border-x-0 border-t-0"
+                variant="band"
                 action={
                   <Button variant="secondary" size="sm" onClick={() => void tickets.refetch()}>
                     Try again

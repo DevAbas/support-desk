@@ -1,2 +1,2 @@
 export { Alert } from './Alert'
-export type { AlertProps, AlertTone } from './Alert.types'
+export type { AlertProps, AlertTone, AlertVariant } from './Alert.types'

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import {
+  Checkbox,
   Table,
   TableBody,
   TableCell,
@@ -39,10 +40,9 @@ export function TicketsTable({
         <TableRow>
           {selectable ? (
             <TableHeaderCell className="w-12">
-              <input
-                type="checkbox"
-                className="size-4 accent-primary"
-                aria-label="Select all tickets on this page"
+              <Checkbox
+                label="Select all tickets on this page"
+                labelHidden
                 checked={allSelected}
                 onChange={(event) => onToggleAll(event.target.checked)}
                 disabled={isLoading || tickets.length === 0}
@@ -68,10 +68,9 @@ export function TicketsTable({
           <TableRow key={ticket.id} className="hover:bg-surface-muted">
             {selectable ? (
               <TableCell>
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  aria-label={`Select ticket ${ticket.id}`}
+                <Checkbox
+                  label={`Select ticket ${ticket.id}`}
+                  labelHidden
                   checked={selectedIds.includes(ticket.id)}
                   onChange={() => onToggleTicket(ticket.id)}
                 />

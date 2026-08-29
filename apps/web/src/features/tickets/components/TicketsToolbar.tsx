@@ -19,11 +19,12 @@ export function TicketsToolbar({
     <div className="flex flex-wrap items-center justify-end gap-4 border-b border-border px-4 py-3">
       {/* An export that failed is an error, and `Alert` is what knows an error
           is announced assertively — this said it politely, through a
-          `role="status"` written by hand. Its chrome is turned off because a
-          line in a toolbar is not a callout: what is being reused is the tone
-          and the role it picks from it, which is the part that was wrong. */}
+          `role="status"` written by hand. A line in a toolbar is not a callout,
+          which is what the `inline` variant is: the row around it already has
+          the padding and the border, so the message brings only the tone and
+          the role that follows from it. */}
       {error ? (
-        <Alert tone="danger" className="mr-auto border-0 bg-transparent p-0">
+        <Alert tone="danger" variant="inline" className="mr-auto">
           {error}
         </Alert>
       ) : null}

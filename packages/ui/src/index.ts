@@ -1,5 +1,5 @@
 export { Alert } from './components/Alert'
-export type { AlertProps, AlertTone } from './components/Alert'
+export type { AlertProps, AlertTone, AlertVariant } from './components/Alert'
 
 export { Avatar } from './primitives/Avatar'
 export type { AvatarProps, AvatarSize } from './primitives/Avatar'
@@ -15,6 +15,9 @@ export type { CardBodyProps, CardFooterProps, CardHeaderProps, CardProps } from 
 
 export { BarChart } from './components/Chart'
 export type { BarChartProps, ChartDatum, ChartTone } from './components/Chart'
+
+export { Checkbox } from './primitives/Checkbox'
+export type { CheckboxProps } from './primitives/Checkbox'
 
 export { ConfirmDialog } from './components/ConfirmDialog'
 export type { ConfirmDialogProps } from './components/ConfirmDialog'

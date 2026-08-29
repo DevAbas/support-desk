@@ -46,7 +46,10 @@ with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`. Below is the
 - Extract a repeated block inside a `.map()` into a named component. The threshold rules
   say when you have gone far past this; the judgement is yours before they fire.
 - Use `Alert` for errors and `StateMessage` for loading and empty. Never assemble either
-  by hand.
+  by hand, and never switch `Alert`'s chrome off in `className` — a message that is a
+  line in a toolbar or a band across a card asks for that shape with `variant`.
+- Never hand-build a checkbox. `Checkbox` owns the size, the accent, the disabled
+  treatment, the label it cannot be rendered without, and the indeterminate state.
 
 ## When a rule here is broken repeatedly
 

@@ -19,7 +19,12 @@ export interface ListProps extends ComponentPropsWithRef<'ul'> {
  * the DOM already has one, and it means text selection, not this.
  */
 export interface ListRowProps extends Omit<ComponentPropsWithRef<'li'>, 'title' | 'onSelect'> {
-  /** An avatar, an icon, a checkbox: whatever the row leads with. */
+  /**
+   * Whatever the row leads with: an `Avatar`, an `Icon`, a `Checkbox`. All
+   * three are primitives now, so a row that leads with a selection box takes
+   * the one every other checkbox in the app is, rather than a raw input
+   * dressed to match.
+   */
   leading?: ReactNode
   title: ReactNode
   subtitle?: ReactNode
