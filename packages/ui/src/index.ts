@@ -35,7 +35,7 @@ export { Input } from './primitives/Input'
 export type { InputProps } from './primitives/Input'
 
 export { List, ListRow } from './components/List'
-export type { ListProps, ListRowProps } from './components/List'
+export type { ListProps, ListRowProps, ListRowSelection } from './components/List'
 
 export { Modal } from './components/Modal'
 export type { ModalProps } from './components/Modal'

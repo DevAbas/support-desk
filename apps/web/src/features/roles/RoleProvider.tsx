@@ -21,7 +21,12 @@ export function RoleProvider({ children, initialRole }: RoleProviderProps) {
   const role = chosenRole ?? me.data?.role ?? 'agent'
 
   const value = useMemo(
-    () => ({ role, setRole: setChosenRole, canManageTickets: role === 'admin' }),
+    () => ({
+      role,
+      setRole: setChosenRole,
+      canManageTickets: role === 'admin',
+      canManageCustomers: role === 'admin',
+    }),
     [role],
   )
 

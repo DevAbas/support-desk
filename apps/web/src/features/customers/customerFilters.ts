@@ -27,9 +27,16 @@ export const DEFAULT_FILTERS: CustomerFilters = {
   search: '',
 }
 
-export const planFilterOptions: readonly SelectOption<CustomerPlan>[] = CUSTOMER_PLANS.map(
-  (plan) => ({ value: plan, label: CUSTOMER_PLAN_LABELS[plan] }),
-)
+/**
+ * Every plan, labelled. One list, because there is one set of plans: the toolbar
+ * offers them as a set to narrow the list by, the bulk bar offers them as a
+ * value to put a selection on, and a second copy would be the one that is out of
+ * date the day a tier is added.
+ */
+export const planOptions: readonly SelectOption<CustomerPlan>[] = CUSTOMER_PLANS.map((plan) => ({
+  value: plan,
+  label: CUSTOMER_PLAN_LABELS[plan],
+}))
 
 /**
  * The filters as the list endpoint wants them, minus the cursor: which page is

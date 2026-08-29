@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
-import { apiTestStore, mswServer } from './msw/server'
+import { apiTestCustomerStore, apiTestStore, mswServer } from './msw/server'
 
 /**
  * jsdom has no layout, and so no ResizeObserver. The charting library behind
@@ -26,10 +26,11 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup()
-  // Both of the things a test can leave behind: a one-off handler, and a queue
-  // it has been adding to and deleting from.
+  // Everything a test can leave behind: a one-off handler, a queue it has been
+  // adding to and deleting from, and a customer list it has been bulk-editing.
   mswServer.resetHandlers()
   apiTestStore.reset()
+  apiTestCustomerStore.reset()
 })
 
 afterAll(() => {

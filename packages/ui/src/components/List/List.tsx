@@ -62,6 +62,13 @@ export function List({
  * A selected row carries `aria-current`, not `aria-selected`. Nothing here is a
  * listbox — the row is not being chosen, it is the one whose detail is open
  * beside it, and `aria-current` is what says that.
+ *
+ * `selection` is the other thing a row can be, and it sits *outside* that one
+ * wide control rather than in `leading`. A checkbox nested in a button is not a
+ * checkbox — the button takes the click, and the markup is invalid — so ticking
+ * a row and opening it are two controls, in that order, and a keyboard reaches
+ * both. It is a raw input rather than a primitive because there is no checkbox
+ * primitive yet; when there is, this is one of the three places to change.
  */
 export function ListRow({
   leading,
@@ -71,6 +78,7 @@ export function ListRow({
   trailing,
   onSelect,
   isSelected = false,
+  selection,
   className,
   ...props
 }: ListRowProps) {
@@ -88,10 +96,27 @@ export function ListRow({
     </>
   )
 
-  const rowClasses = 'flex w-full items-center gap-3 px-4 py-2 text-left'
+  // `flex-1` rather than `w-full`, because the row may now have a checkbox
+  // beside it: a full-width child of a flex row would push it off the end.
+  const rowClasses = 'flex min-w-0 flex-1 items-center gap-3 px-4 py-2 text-left'
 
   return (
-    <li className={cn('bg-surface', className)} {...props}>
+    <li className={cn('flex items-center bg-surface', className)} {...props}>
+      {selection ? (
+        // A label around it so the column is the target rather than the
+        // sixteen pixels of the box, and `self-stretch` so that column is the
+        // height of the row.
+        <label className="flex shrink-0 cursor-pointer items-center self-stretch pl-4">
+          <input
+            type="checkbox"
+            className="size-4 accent-primary"
+            aria-label={selection.label}
+            checked={selection.isChecked}
+            onChange={(event) => selection.onChange(event.target.checked)}
+          />
+        </label>
+      ) : null}
+
       {onSelect ? (
         <Button
           variant={isSelected ? 'selected' : 'ghost'}

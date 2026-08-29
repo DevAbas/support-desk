@@ -136,3 +136,37 @@ export const listCustomersResponseSchema = z.object({
 })
 
 export type ListCustomersResponse = z.infer<typeof listCustomersResponseSchema>
+
+/**
+ * The most ids one bulk request may carry.
+ *
+ * Deliberately not `MAX_CUSTOMER_PAGE_SIZE`, which is how the ticket bulk bodies
+ * are bounded. The ticket table selects within the page it is showing, so a page
+ * is the whole of what can be ticked; this list accumulates pages, and a
+ * selection made across four load-mores is larger than any response that built
+ * it. So the bound is on the size of a request rather than on what fits on a
+ * screen — which is the only thing a server can honestly bound here.
+ */
+export const MAX_CUSTOMER_BULK_IDS = 500
+
+const customerBulkIdsSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(MAX_CUSTOMER_BULK_IDS),
+})
+
+/**
+ * The two bulk operations, and the reason they are a `plan` rather than a patch.
+ *
+ * A bulk edit is not a partial update applied many times: everything selected
+ * comes out the same, so the body names the one field being set and its new
+ * value. A `Partial<Customer>` here would let a caller ask to set sixty people's
+ * email address to one string, which is not an operation this screen has.
+ */
+export const bulkUpdateCustomerPlanBodySchema = customerBulkIdsSchema.extend({
+  plan: customerPlanSchema,
+})
+
+export type BulkUpdateCustomerPlanBody = z.infer<typeof bulkUpdateCustomerPlanBodySchema>
+
+export const bulkDeleteCustomersBodySchema = customerBulkIdsSchema
+
+export type BulkDeleteCustomersBody = z.infer<typeof bulkDeleteCustomersBodySchema>

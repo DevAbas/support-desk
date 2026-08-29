@@ -1,6 +1,6 @@
 import { Input, MultiSelect } from '@harness-sample/ui'
 import type { CustomerPlan } from '@harness-sample/shared'
-import { planFilterOptions, type CustomerFilters } from '../customerFilters'
+import { planOptions, type CustomerFilters } from '../customerFilters'
 
 interface CustomersToolbarProps {
   filters: CustomerFilters
@@ -38,7 +38,7 @@ export function CustomersToolbar({
 
       <MultiSelect
         label="Plan"
-        options={planFilterOptions}
+        options={planOptions}
         value={filters.plans}
         placeholder="All plans"
         className="w-52"

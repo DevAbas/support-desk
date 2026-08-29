@@ -97,7 +97,14 @@ stay. Tickets are a paginated table with single-value filters and a route per ti
 Customers are a dense list of avatars with a cursor and a load-more, a set filter over
 plans, and a drawer that slides over the list rather than a route change — because
 opening a customer is a glance taken while working through the list, and a glance
-should not be a history entry. `src/design-system/README.md` covers why `Table` and
+should not be a history entry.
+
+Both lists have bulk actions, and they differ in what "everything" means. A ticket
+selection is bounded by the page it was made on, so select-all is a header cell. A
+customer selection spans every page loaded so far and keeps spanning them as more
+arrive, so select-all lives on the actions bar and says how many it will tick.
+
+`src/design-system/README.md` covers why `Table` and
 `List`, `Modal` and `Drawer`, `Select` and `MultiSelect` are pairs of primitives rather
 than one primitive with a prop.
 
@@ -119,4 +126,7 @@ second implementation of the queue. See `src/test/msw/handlers.ts`.
 
 Two roles, `agent` and `admin`. `GET /api/me` reports which one the server was started
 with, and the Settings page overrides it locally — there is no login to enforce anything
-against. Bulk actions and ticket deletion are admin-only.
+against. Ticket deletion and the bulk actions on both lists are admin-only. The role
+context carries `canManageTickets` and `canManageCustomers` separately, both true for an
+admin today: they are different powers, and a customer screen asking about tickets is a
+line that reads wrong.

@@ -5,7 +5,9 @@ import { z } from 'zod'
 import {
   addCommentBodySchema,
   bulkDeleteBodySchema,
+  bulkDeleteCustomersBodySchema,
   bulkUpdateBodySchema,
+  bulkUpdateCustomerPlanBodySchema,
   createTicketBodySchema,
   listCustomersQuerySchema,
   listTicketsQuerySchema,
@@ -252,6 +254,44 @@ export function createApiApp(options: ApiAppOptions = {}) {
     }
 
     return c.json(customers.list(query.data))
+  })
+
+  // Registered ahead of `/api/customers/:id` for the same reason the ticket
+  // bulk routes are: `bulk` is a collection operation, not a customer id.
+  //
+  // These are the only writes the customer store has, and — like every other
+  // route here — they are not role-aware. The UI is where an agent is stopped
+  // from reaching them; see the README.
+  app.patch('/api/customers/bulk', async (c) => {
+    const raw = await readJsonBody(c)
+
+    if (!raw.ok) {
+      return fail(c, 400, 'validation_failed', 'The request body is not valid JSON.')
+    }
+
+    const body = bulkUpdateCustomerPlanBodySchema.safeParse(raw.value)
+
+    if (!body.success) {
+      return invalid(c, body.error, 'bulk plan change')
+    }
+
+    return c.json({ updated: customers.bulkUpdatePlan(body.data.ids, body.data.plan) })
+  })
+
+  app.delete('/api/customers/bulk', async (c) => {
+    const raw = await readJsonBody(c)
+
+    if (!raw.ok) {
+      return fail(c, 400, 'validation_failed', 'The request body is not valid JSON.')
+    }
+
+    const body = bulkDeleteCustomersBodySchema.safeParse(raw.value)
+
+    if (!body.success) {
+      return invalid(c, body.error, 'bulk delete')
+    }
+
+    return c.json({ deleted: customers.bulkRemove(body.data.ids) })
   })
 
   app.get('/api/customers/:id', (c) => {
