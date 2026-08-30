@@ -1,7 +1,11 @@
 import { http, type HttpResponseResolver } from 'msw'
 import { createApiApp } from '@harness-sample/api/app'
 import { createCustomerStore } from '@harness-sample/api/customerStore'
+import { createSessionStore } from '@harness-sample/api/sessionStore'
 import { createTicketStore } from '@harness-sample/api/store'
+import { createUserStore } from '@harness-sample/api/userStore'
+import { SESSION_COOKIE } from '@harness-sample/api/auth'
+import { SEED_ADMIN_EMAIL } from '@harness-sample/api/userSeed'
 
 /**
  * MSW intercepts the request and hands it to the real API.
@@ -25,21 +29,90 @@ export const apiTestStore = createTicketStore()
  */
 export const apiTestCustomerStore = createCustomerStore(apiTestStore)
 
+export const apiTestUserStore = createUserStore()
+
+export const apiTestSessionStore = createSessionStore()
+
 const app = createApiApp({
   store: apiTestStore,
   customers: apiTestCustomerStore,
+  users: apiTestUserStore,
+  sessions: apiTestSessionStore,
   latencyMs: [0, 0],
 })
 
+/**
+ * The session, held here because jsdom has no cookie jar of its own.
+ *
+ * `rememberSession` below keeps it in step with what the API sets, so a test
+ * that fills in the sign-in form ends up signed in exactly as a browser would.
+ * `signInTestUser` is the shortcut past that, called from `src/test/setup.ts`
+ * before every test so that a screen test says what it expects of the screen and
+ * nothing about signing in. The tests that *are* about signing in call
+ * `signOutTestUser` first.
+ */
+let sessionCookie: string | null = null
+
+/** Signs the suite in as the seeded admin, which is what most screens assume. */
+export function signInTestUser(email: string = SEED_ADMIN_EMAIL): void {
+  const user = apiTestUserStore.findByEmail(email)
+
+  if (!user) {
+    throw new Error(`No seeded user has the email "${email}".`)
+  }
+
+  sessionCookie = `${SESSION_COOKIE}=${apiTestSessionStore.create(user.id)}`
+}
+
+/** Leaves the suite signed out, for the tests that are about getting in. */
+export function signOutTestUser(): void {
+  sessionCookie = null
+}
+
+/**
+ * The cookie jar jsdom does not give us, in the two lines it actually needs.
+ *
+ * A `Set-Cookie` on the way out is remembered and attached on the way in, so a
+ * test that fills in the sign-in form is signed in afterwards for the same
+ * reason a browser would be — the server issued a session and the next request
+ * carried it. Signing out clears the value the same way, because that is what
+ * the server's expiry header means.
+ */
+function rememberSession(response: Response): void {
+  const header = response.headers.get('set-cookie')
+
+  if (header === null || !header.includes(`${SESSION_COOKIE}=`)) {
+    return
+  }
+
+  const pair = header.split(';')[0] ?? ''
+
+  sessionCookie = pair.endsWith('=') ? null : pair
+}
+
 /** Exported so a one-off handler can inspect a request and still answer it. */
 export async function forwardToApi(request: Request): Promise<Response> {
-  return await app.fetch(request)
+  const outgoing =
+    sessionCookie === null
+      ? request
+      : new Request(request, {
+          headers: { ...Object.fromEntries(request.headers), cookie: sessionCookie },
+        })
+
+  const response = await app.fetch(outgoing)
+
+  rememberSession(response)
+
+  return response
 }
 
 const forward: HttpResponseResolver = ({ request }) => forwardToApi(request)
 
 export const handlers = [
   http.get('/api/me', forward),
+  http.post('/api/auth/register', forward),
+  http.post('/api/auth/login', forward),
+  http.post('/api/auth/logout', forward),
   http.get('/api/tickets', forward),
   http.post('/api/tickets', forward),
   http.patch('/api/tickets/bulk', forward),

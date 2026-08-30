@@ -7,20 +7,16 @@ import {
   updatedCountSchema,
   type ListCustomersResponse,
 } from '@harness-sample/shared'
-import { createApiApp, type ApiAppOptions } from './app'
+import { createApp } from './test/support'
 
 /**
  * The customer endpoints, exercised the same way as the ticket routes: through
  * `app.request`, with every response parsed by the contract schema rather than
- * poked at.
+ * poked at, and signed in as the admin — see `test/support`.
  *
  * The figures below are fixed properties of the seed — sixty customers, ten of
  * whom have raised something — and not counts read back off the code under test.
  */
-function createApp(options: ApiAppOptions = {}) {
-  return createApiApp({ latencyMs: [0, 0], ...options })
-}
-
 const CUSTOMER_COUNT = 60
 
 /** The eight-ticket account. Used wherever a test needs one that is not empty. */

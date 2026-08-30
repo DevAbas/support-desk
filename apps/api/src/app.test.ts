@@ -7,17 +7,19 @@ import {
   ticketSchema,
   updatedCountSchema,
 } from '@harness-sample/shared'
-import { createApiApp, type ApiAppOptions } from './app'
+import { createApp, createSignedOutApp } from './test/support'
+import { SEED_AGENT_EMAIL } from './userSeed'
 
 /**
  * The API is exercised through `app.request`, which is the same path a real
  * request takes, minus the socket. Responses are parsed with the contract
  * schemas rather than poked at, so a route that stops matching what the client
  * expects fails here rather than in the browser.
+ *
+ * `createApp` comes from `test/support` and is signed in as the admin — see the
+ * docblock there for why that is the default rather than something each case
+ * arranges for itself.
  */
-function createApp(options: ApiAppOptions = {}) {
-  return createApiApp({ latencyMs: [0, 0], ...options })
-}
 
 const jsonRequest = (method: string, body: unknown): RequestInit => ({
   method,
@@ -278,14 +280,21 @@ describe('DELETE /api/tickets/:id', () => {
 })
 
 describe('GET /api/me', () => {
-  it('reports the role the server was started with', async () => {
-    expect(meResponseSchema.parse(await (await createApp().request('/api/me')).json())).toEqual({
-      role: 'agent',
-    })
+  it('reports the signed-in user, not a role from the environment', async () => {
+    const body = meResponseSchema.parse(await (await createApp().request('/api/me')).json())
 
-    expect(
-      meResponseSchema.parse(await (await createApp({ role: 'admin' }).request('/api/me')).json()),
-    ).toEqual({ role: 'admin' })
+    expect(body.user).toMatchObject({ name: 'Dana Whitfield', role: 'admin' })
+  })
+
+  it('reports whoever the session belongs to', async () => {
+    const app = createApp({}, SEED_AGENT_EMAIL)
+    const body = meResponseSchema.parse(await (await app.request('/api/me')).json())
+
+    expect(body.user).toMatchObject({ name: 'Marco Ellis', role: 'agent' })
+  })
+
+  it('refuses a caller with no session', async () => {
+    await expectError(await createSignedOutApp().request('/api/me'), 401, 'unauthorized')
   })
 })
 

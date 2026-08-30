@@ -23,7 +23,6 @@ export const ROLE_LABELS: Record<Role, string> = {
  */
 export interface RoleContextValue {
   role: Role
-  setRole: (role: Role) => void
   /** Bulk actions and deletion on the ticket screens are gated on this. */
   canManageTickets: boolean
   /** Bulk actions on the customer list are gated on this. */

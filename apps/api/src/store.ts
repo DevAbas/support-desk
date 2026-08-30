@@ -12,9 +12,9 @@ import { createSeedTickets } from './seed'
 /**
  * The in-memory ticket store.
  *
- * It is deliberately not role-aware: it will delete a ticket for anyone who
- * asks. There is no authentication in this app, so authorisation lives in the
- * UI.
+ * It is not role-aware and does not need to be: the routes in `app.ts` decide
+ * who may call `remove` and `bulkRemove` before either is reached. A store that
+ * also checked would be a second place to keep that decision correct.
  *
  * Everything that leaves the store is cloned. Callers hold the response, not a
  * handle on the row, so a mutation cannot reach back through one.

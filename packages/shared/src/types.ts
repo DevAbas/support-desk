@@ -95,3 +95,19 @@ export const CUSTOMER_PLAN_LABELS: Record<CustomerPlan, string> = {
   pro: 'Pro',
   enterprise: 'Enterprise',
 }
+
+/**
+ * Someone who can sign in.
+ *
+ * Not every name the queue mentions is one of these: a ticket records its
+ * assignee as a bare string, and `Unassigned` is a value that string can take.
+ * A user is a person with a password, which is a smaller set.
+ */
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: Role
+  /** A picture of them, or null. `Avatar` falls back to their initials. */
+  avatarUrl: string | null
+}

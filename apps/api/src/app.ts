@@ -1,7 +1,4 @@
 import { Hono } from 'hono'
-import type { Context } from 'hono'
-import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { z } from 'zod'
 import {
   addCommentBodySchema,
   bulkDeleteBodySchema,
@@ -14,13 +11,15 @@ import {
   reportBreakdownQuerySchema,
   reportRangeQuerySchema,
   updateTicketBodySchema,
-  type ApiErrorBody,
-  type ApiErrorCode,
-  type Role,
 } from '@harness-sample/shared'
+import { registerAuthRoutes, requireAdmin, requireSession } from './auth'
 import { createCustomerStore, type CustomerStore } from './customerStore'
+import { createLoginLimiter, type LoginLimiter } from './loginLimiter'
 import { buildAssignees, buildBreakdown, buildSummary } from './reports'
+import { currentUser, fail, invalid, missing, readJsonBody, type AppEnv } from './respond'
+import { createSessionStore, type SessionStore } from './sessionStore'
 import { createTicketStore, type TicketStore } from './store'
+import { createUserStore, type UserStore } from './userStore'
 
 /**
  * The API the app talks to.
@@ -28,6 +27,13 @@ import { createTicketStore, type TicketStore } from './store'
  * Every request body and query string is parsed at the boundary, so nothing
  * unvalidated reaches the store, and every failure leaves through the one error
  * shape the client knows how to read.
+ *
+ * Every request is also authenticated. `requireSession` runs ahead of the routes
+ * and refuses anything without a valid session cookie, so the only paths that
+ * answer a stranger are the three that hand out a session. The destructive
+ * routes go further and check the role: deleting a ticket and both bulk
+ * endpoints are administrators' work, and an agent asking for them is refused
+ * here rather than merely not offered the button.
  *
  * The app is built by a factory rather than exported as a singleton: the node
  * entry point gives it real latency, and the test suite gives it none and drives
@@ -38,12 +44,22 @@ export interface ApiAppOptions {
   store?: TicketStore
   /** Defaults to a store reading the queue above, so the two cannot disagree. */
   customers?: CustomerStore
+  users?: UserStore
+  /** Handed in by the web test suite, which needs to mint a session of its own. */
+  sessions?: SessionStore
+  limiter?: LoginLimiter
   /** Inclusive millisecond range added to every request. */
   latencyMs?: readonly [number, number]
   /** Fails every request, for exercising error states without a query param. */
   failAlways?: boolean
-  /** Who `GET /api/me` reports as signed in. There is no authentication here. */
-  role?: Role
+  /**
+   * The clock the session expiry and the login rate limit are measured against.
+   *
+   * Injected rather than read so that a test can move time without fake timers,
+   * which nothing else in this suite uses. It is only consulted by the two
+   * stores built here; one passed in already carries its own.
+   */
+  now?: () => number
 }
 
 const DEFAULT_LATENCY_MS: readonly [number, number] = [150, 400]
@@ -58,60 +74,22 @@ function delay(range: readonly [number, number]): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, min + Math.random() * (max - min)))
 }
 
-function errorBody(code: ApiErrorCode, message: string, details?: string[]): ApiErrorBody {
-  return { error: details ? { code, message, details } : { code, message } }
-}
-
-function fail(
-  c: Context,
-  status: ContentfulStatusCode,
-  code: ApiErrorCode,
-  message: string,
-  details?: string[],
-) {
-  return c.json(errorBody(code, message, details), status)
-}
-
-/** One entry per failed field: `title: Too small: expected string to have >=5`. */
-function formatIssues(error: z.ZodError): string[] {
-  return error.issues.map((issue) => {
-    const path = issue.path.join('.')
-    return path === '' ? issue.message : `${path}: ${issue.message}`
-  })
-}
-
-function invalid(c: Context, error: z.ZodError, subject: string) {
-  return fail(c, 400, 'validation_failed', `The ${subject} is not valid.`, formatIssues(error))
-}
-
-function missing(c: Context, subject: string, id: string) {
-  return fail(c, 404, 'not_found', `${subject} ${id} was not found.`)
-}
-
-/**
- * Reads a JSON body without letting a malformed one become a 500. An absent or
- * unparseable body is reported as the validation failure it is.
- */
-async function readJsonBody(c: Context): Promise<{ ok: true; value: unknown } | { ok: false }> {
-  try {
-    return { ok: true, value: await c.req.json<unknown>() }
-  } catch {
-    return { ok: false }
-  }
-}
-
 export function createApiApp(options: ApiAppOptions = {}) {
   const {
     store = createTicketStore(),
     // Reads the queue above rather than a copy of it, so a ticket deleted
     // through the routes below leaves its customer in the same breath.
     customers = createCustomerStore(store),
+    users = createUserStore(),
+    now = Date.now,
+    sessions = createSessionStore(now),
+    limiter = createLoginLimiter(now),
     latencyMs = DEFAULT_LATENCY_MS,
     failAlways = false,
-    role = 'agent',
   } = options
 
-  const app = new Hono()
+  const app = new Hono<AppEnv>()
+  const adminOnly = requireAdmin()
 
   // Real requests are never instant, so neither are these: the loading states in
   // the UI stay real states that have to be handled.
@@ -130,7 +108,13 @@ export function createApiApp(options: ApiAppOptions = {}) {
     await next()
   })
 
-  app.get('/api/me', (c) => c.json({ role }))
+  // Last of the three, so a forced failure still fails for a signed-out caller
+  // and the knob keeps working the way it is documented to.
+  app.use('/api/*', requireSession({ users, sessions, limiter }))
+
+  registerAuthRoutes(app, { users, sessions, limiter })
+
+  app.get('/api/me', (c) => c.json({ user: currentUser(c) }))
 
   app.get('/api/tickets', (c) => {
     const query = listTicketsQuerySchema.safeParse(c.req.query())
@@ -160,7 +144,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
 
   // Registered ahead of `/api/tickets/:id` so that `bulk` is read as the
   // collection operation it is rather than as a ticket id.
-  app.patch('/api/tickets/bulk', async (c) => {
+  app.patch('/api/tickets/bulk', adminOnly, async (c) => {
     const raw = await readJsonBody(c)
 
     if (!raw.ok) {
@@ -176,7 +160,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     return c.json({ updated: store.bulkUpdateStatus(body.data.ids, body.data.status) })
   })
 
-  app.delete('/api/tickets/bulk', async (c) => {
+  app.delete('/api/tickets/bulk', adminOnly, async (c) => {
     const raw = await readJsonBody(c)
 
     if (!raw.ok) {
@@ -218,7 +202,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     return ticket ? c.json(ticket) : missing(c, 'Ticket', id)
   })
 
-  app.delete('/api/tickets/:id', (c) => {
+  app.delete('/api/tickets/:id', adminOnly, (c) => {
     const id = c.req.param('id')
 
     return store.remove(id) ? c.json({ deleted: 1 }) : missing(c, 'Ticket', id)
@@ -259,10 +243,10 @@ export function createApiApp(options: ApiAppOptions = {}) {
   // Registered ahead of `/api/customers/:id` for the same reason the ticket
   // bulk routes are: `bulk` is a collection operation, not a customer id.
   //
-  // These are the only writes the customer store has, and — like every other
-  // route here — they are not role-aware. The UI is where an agent is stopped
-  // from reaching them; see the README.
-  app.patch('/api/customers/bulk', async (c) => {
+  // These are the only writes the customer store has, and both are behind
+  // `adminOnly`. The UI hides them from an agent as well, and that is now a
+  // convenience rather than the enforcement.
+  app.patch('/api/customers/bulk', adminOnly, async (c) => {
     const raw = await readJsonBody(c)
 
     if (!raw.ok) {
@@ -278,7 +262,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     return c.json({ updated: customers.bulkUpdatePlan(body.data.ids, body.data.plan) })
   })
 
-  app.delete('/api/customers/bulk', async (c) => {
+  app.delete('/api/customers/bulk', adminOnly, async (c) => {
     const raw = await readJsonBody(c)
 
     if (!raw.ok) {

@@ -1,6 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
+import { useSession } from '@/features/auth/useSession'
 import { RoleContext } from './RoleContext'
-import { useMe } from './useMe'
 import type { Role } from './role.types'
 
 interface RoleProviderProps {
@@ -13,17 +13,17 @@ interface RoleProviderProps {
 }
 
 export function RoleProvider({ children, initialRole }: RoleProviderProps) {
-  // A role picked on the Settings page outranks whatever the API reported. The
-  // server has no authentication to enforce, so this is the whole of it.
-  const [chosenRole, setChosenRole] = useState<Role | null>(initialRole ?? null)
-  const me = useMe({ enabled: initialRole === undefined })
+  // The role is the session's, and there is no longer anywhere to override it:
+  // the Settings page that used to hold a switcher was there because the server
+  // had no authentication to enforce, and it does now. Signing in as somebody
+  // else is how you see the app as somebody else.
+  const session = useSession({ enabled: initialRole === undefined })
 
-  const role = chosenRole ?? me.data?.role ?? 'agent'
+  const role = initialRole ?? session.data?.user.role ?? 'agent'
 
   const value = useMemo(
     () => ({
       role,
-      setRole: setChosenRole,
       canManageTickets: role === 'admin',
       canManageCustomers: role === 'admin',
     }),

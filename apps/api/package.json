@@ -5,8 +5,12 @@
   "type": "module",
   "exports": {
     "./app": "./src/app.ts",
+    "./auth": "./src/auth.ts",
     "./customerStore": "./src/customerStore.ts",
-    "./store": "./src/store.ts"
+    "./sessionStore": "./src/sessionStore.ts",
+    "./store": "./src/store.ts",
+    "./userSeed": "./src/userSeed.ts",
+    "./userStore": "./src/userStore.ts"
   },
   "scripts": {
     "dev": "tsx watch src/main.ts"

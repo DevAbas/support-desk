@@ -12,10 +12,35 @@ import { apiErrorSchema, type ApiErrorCode } from '@harness-sample/shared'
  * Cancellation is not handled here. TanStack Query passes an `AbortSignal` into
  * the query function and this forwards it; an aborted request rejects with the
  * `AbortError` that Query expects to see.
+ *
+ * A 401 is handled here, and it is the one thing in this module with an effect
+ * beyond its return value. A session can expire while the app is open, so any
+ * request can be the one that discovers it — and a screen that renders an error
+ * band saying "Sign in to continue" above a table it can no longer load is
+ * showing the user a problem instead of the way out of it. Sending them to
+ * `/login` is the same answer every time, which makes it the wrapper's answer
+ * rather than something forty callers each remember to give.
  */
 
 /** Failures the server reports, plus the two only the client can see. */
 export type ApiFailureCode = ApiErrorCode | 'network_error' | 'invalid_response'
+
+/** Told that the session is gone. Registered once, by `UnauthorizedRedirect`. */
+export type UnauthorizedHandler = () => void
+
+let unauthorizedHandler: UnauthorizedHandler | null = null
+
+/**
+ * A module-level subscriber rather than an argument threaded through every
+ * caller: what to do about a lost session is one decision for the whole app, and
+ * the wrapper is the only place that sees every response.
+ *
+ * Pass `null` to unregister, which is what the effect that set it does on the
+ * way out.
+ */
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): void {
+  unauthorizedHandler = handler
+}
 
 interface ApiErrorOptions {
   status: number
@@ -60,6 +85,16 @@ interface RequestOptions<TOutput> {
   body?: unknown
   query?: QueryParams
   signal?: AbortSignal
+  /**
+   * Keeps a 401 from being treated as a lost session.
+   *
+   * Two requests need it. A rejected sign-in is a 401 about the password that
+   * was just typed, and redirecting to the page the user is already on would
+   * replace the message explaining it. `GET /api/me` is the question "am I
+   * signed in?", whose negative answer is a 401 by design and is what the route
+   * guard reads.
+   */
+  allowUnauthorized?: boolean
 }
 
 /** Relative, so the dev server's proxy and the deployed origin both work. */
@@ -102,7 +137,7 @@ function toFailure(status: number, payload: unknown): ApiError {
 
 export async function apiRequest<TOutput>(
   path: string,
-  { schema, method = 'GET', body, query, signal }: RequestOptions<TOutput>,
+  { schema, method = 'GET', body, query, signal, allowUnauthorized = false }: RequestOptions<TOutput>,
 ): Promise<TOutput> {
   let response: Response
 
@@ -131,6 +166,10 @@ export async function apiRequest<TOutput>(
   const payload = await readBody(response)
 
   if (!response.ok) {
+    if (response.status === 401 && !allowUnauthorized) {
+      unauthorizedHandler?.()
+    }
+
     throw toFailure(response.status, payload)
   }
 

@@ -1,6 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { Badge } from '@harness-sample/ui'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Badge, Button, Text } from '@harness-sample/ui'
 import { cn } from '@harness-sample/shared'
+import { useSession } from '@/features/auth/useSession'
+import { useSignOut } from '@/features/auth/useSignOut'
 import { ROLE_LABELS } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
 
@@ -8,12 +10,44 @@ const navigation = [
   { to: '/tickets', label: 'Tickets' },
   { to: '/customers', label: 'Customers' },
   { to: '/reports', label: 'Reports' },
-  { to: '/settings', label: 'Settings' },
 ]
 
-export function AppLayout() {
+/**
+ * Who you are, and the way out.
+ *
+ * This replaced a badge reading "Signed in as Admin", which was the whole of
+ * what the app could say when the role came from an environment variable. There
+ * is a person behind it now, so the header says their name; the role stays
+ * beside it because it is what decides whether half the controls on the screen
+ * are there.
+ */
+function SignedInAs() {
+  const navigate = useNavigate()
   const { role } = useRole()
+  const session = useSession()
+  const signOut = useSignOut()
 
+  return (
+    <div className="flex items-center gap-3">
+      <Text as="span" tone="muted">
+        {session.data?.user.name}
+      </Text>
+      <Badge status={role === 'admin' ? 'info' : 'neutral'}>{ROLE_LABELS[role]}</Badge>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={signOut.isPending}
+        onClick={() => {
+          signOut.mutate(undefined, { onSettled: () => navigate('/login', { replace: true }) })
+        }}
+      >
+        {signOut.isPending ? 'Signing out…' : 'Sign out'}
+      </Button>
+    </div>
+  )
+}
+
+export function AppLayout() {
   return (
     <div className="min-h-screen bg-surface-muted">
       <header className="border-b border-border bg-surface">
@@ -44,10 +78,7 @@ export function AppLayout() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-fg-muted">Signed in as</span>
-            <Badge status={role === 'admin' ? 'info' : 'neutral'}>{ROLE_LABELS[role]}</Badge>
-          </div>
+          <SignedInAs />
         </div>
       </header>
 

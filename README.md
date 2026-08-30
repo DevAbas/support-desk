@@ -48,7 +48,7 @@ once and caught by nothing.
 server/              The API. Hono routes over an in-memory store.
 src/
 ├── design-system/   Tokens and primitives. Knows nothing about tickets.
-├── features/        The application. Tickets, customers, reports, roles, settings.
+├── features/        The application. Auth, tickets, customers, reports, roles.
 ├── lib/             cn(), the API client and its contract, seed data, domain types.
 └── app/             Layout, routes, providers.
 ```
@@ -85,10 +85,16 @@ handle. The knobs for working on those states:
 | `?fail=1` on any request | That request fails with a 500 |
 | `API_FAIL=1 npm run dev` | Every request fails |
 | `API_LATENCY_MS=0 npm run dev` | No artificial latency |
-| `API_ROLE=admin npm run dev` | `GET /api/me` reports an admin |
 
-The API is deliberately not role-aware — it will delete a ticket for anyone who asks.
-Authorisation is enforced in the UI only.
+Every request is authenticated. The API refuses anything without a session cookie, so
+`curl`ing an endpoint needs one — sign in first and keep the cookie:
+
+```bash
+curl -c jar -X POST localhost:8787/api/auth/login \
+  -H 'content-type: application/json' \
+  -d '{"email":"dana.whitfield@supportdesk.example","password":"support-desk-dev"}'
+curl -b jar localhost:8787/api/tickets
+```
 
 ## Two screens, two patterns
 
@@ -122,11 +128,40 @@ Tests intercept HTTP with MSW and hand the request to the real API, so a test ex
 the real query layer against the real routing and validation rather than agreeing with a
 second implementation of the queue. See `src/test/msw/handlers.ts`.
 
+## Signing in
+
+Sessions are an httpOnly, `SameSite=Lax` cookie. The client never reads it and holds no
+token: what it knows about being signed in is whether `GET /api/me` answers, which is
+what the route guard reads and what the header writes a name from. A 401 from any
+endpoint is handled once, in the fetch wrapper, by sending the user to `/login` with
+where they were headed in the query string — a session can lapse while the app is open,
+and an error band on a screen they can no longer load is not the way out.
+
+Passwords are hashed with scrypt from `node:crypto`: a real memory-hard KDF, in the
+standard library, so a reference codebase people clone and run gains no native build
+step. Failed sign-ins are rate-limited per account — five in fifteen minutes — which
+stops guessing at one account and not one password sprayed across many. Both the session
+expiry and that window are measured against a clock the app is handed, so the tests move
+time without faking timers.
+
+Six accounts are seeded, one per name the queue assigns tickets to, all with the password
+`support-desk-dev`:
+
+| Email | Role |
+| --- | --- |
+| `dana.whitfield@supportdesk.example` | admin |
+| `marco.ellis@supportdesk.example` and the other four | agent |
+
+Registering is open and always creates an agent. Sessions live in memory, so restarting
+the API signs everyone out — which is also the easiest way to see the 401 path work.
+
 ## Roles
 
-Two roles, `agent` and `admin`. `GET /api/me` reports which one the server was started
-with, and the Settings page overrides it locally — there is no login to enforce anything
-against. Ticket deletion and the bulk actions on both lists are admin-only. The role
-context carries `canManageTickets` and `canManageCustomers` separately, both true for an
-admin today: they are different powers, and a customer screen asking about tickets is a
-line that reads wrong.
+Two roles, `agent` and `admin`, and the role now comes from the session. Ticket deletion
+and the bulk actions on both lists are admin-only, enforced on the server: an agent
+calling one is refused with a 403 rather than merely not shown the button. The UI hides
+them too, which is a courtesy rather than the enforcement.
+
+The role context carries `canManageTickets` and `canManageCustomers` separately, both
+true for an admin today: they are different powers, and a customer screen asking about
+tickets is a line that reads wrong.

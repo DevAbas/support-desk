@@ -1,7 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { afterAll, afterEach, beforeAll } from 'vitest'
-import { apiTestCustomerStore, apiTestStore, mswServer } from './msw/server'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
+import {
+  apiTestCustomerStore,
+  apiTestSessionStore,
+  apiTestStore,
+  apiTestUserStore,
+  mswServer,
+  signInTestUser,
+} from './msw/server'
 
 /**
  * jsdom has no layout, and so no ResizeObserver. The charting library behind
@@ -24,6 +31,18 @@ beforeAll(() => {
   mswServer.listen({ onUnhandledRequest: 'error' })
 })
 
+/**
+ * Every test starts signed in, because almost none of them are about signing in.
+ *
+ * The API refuses an unauthenticated request now, so without this every screen
+ * test would begin by arranging a session — the same four lines, in eight files,
+ * describing something none of them are testing. The two auth test files call
+ * `signOutTestUser` to opt out.
+ */
+beforeEach(() => {
+  signInTestUser()
+})
+
 afterEach(() => {
   cleanup()
   // Everything a test can leave behind: a one-off handler, a queue it has been
@@ -31,6 +50,11 @@ afterEach(() => {
   mswServer.resetHandlers()
   apiTestStore.reset()
   apiTestCustomerStore.reset()
+  // And the accounts a registration test added, with the sessions they were
+  // given: a duplicate-email test that ran twice would otherwise pass for the
+  // wrong reason the second time.
+  apiTestUserStore.reset()
+  apiTestSessionStore.reset()
 })
 
 afterAll(() => {

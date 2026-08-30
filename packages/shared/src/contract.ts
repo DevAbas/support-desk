@@ -134,17 +134,24 @@ export const deletedCountSchema = z.object({ deleted: z.number().int().nonnegati
 
 export type DeletedCount = z.infer<typeof deletedCountSchema>
 
-export const meResponseSchema = z.object({ role: roleSchema })
-
-export type MeResponse = z.infer<typeof meResponseSchema>
-
 /**
  * Every failure the server reports shares this shape, so the client has one
  * thing to parse and one thing to render.
+ *
+ * The list is closed, and `apiErrorSchema` is what both ends parse with, so a
+ * route answering with a code that is not here fails the contract rather than
+ * quietly arriving as something the client cannot name. The four authentication
+ * codes were added when there was a session to refuse: `unauthorized` is "the
+ * server does not know who you are", `forbidden` is "it does, and the answer is
+ * still no".
  */
 export const API_ERROR_CODES = [
   'validation_failed',
+  'unauthorized',
+  'forbidden',
   'not_found',
+  'conflict',
+  'rate_limited',
   'forced_failure',
   'server_error',
 ] as const

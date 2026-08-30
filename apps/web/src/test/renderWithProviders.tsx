@@ -6,7 +6,13 @@ import { RoleProvider } from '@/features/roles/RoleProvider'
 import type { Role } from '@/features/roles/role.types'
 
 interface Options {
-  role?: Role
+  /**
+   * The role to fix, or `null` to let the session query decide it — which is
+   * what `App.tsx` does and what almost nothing else here wants. Fixing it skips
+   * a round trip a screen test is not about; passing `null` is how a test about
+   * the session itself gets the provider the browser gets.
+   */
+  role?: Role | null
   initialEntries?: string[]
   /** Pass one in to inspect the cache, or to share it across two renders. */
   queryClient?: QueryClient
@@ -32,7 +38,7 @@ export function renderWithProviders(
 ): RenderResult {
   return render(
     <QueryClientProvider client={queryClient}>
-      <RoleProvider initialRole={role}>
+      <RoleProvider initialRole={role ?? undefined}>
         <MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>
       </RoleProvider>
     </QueryClientProvider>,

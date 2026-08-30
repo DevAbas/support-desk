@@ -7,21 +7,18 @@ import {
   ticketSchema,
   TICKET_STATUSES,
 } from '@harness-sample/shared'
-import { createApiApp, type ApiAppOptions } from './app'
+import { createApp } from './test/support'
 
 /**
  * The reporting endpoints, exercised the same way as the ticket routes: through
  * `app.request`, with every response parsed by the contract schema rather than
- * poked at.
+ * poked at, and signed in as the admin — see `test/support`.
  *
  * The ranges below are fixed dates over the seeded queue, which spans
  * 2026-06-02 to 2026-07-31. Nothing here asks for "the last 30 days", because a
  * test whose expectations depend on the day it runs is a test that starts
  * failing on its own.
  */
-function createApp(options: ApiAppOptions = {}) {
-  return createApiApp({ latencyMs: [0, 0], ...options })
-}
 
 /** June holds 19 of the seeded tickets, July the remaining 21. */
 const JUNE = { from: '2026-06-01', to: '2026-06-30' } as const
