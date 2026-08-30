@@ -118,11 +118,17 @@ export function TicketListPage() {
     setSelection(selected ? rows.map((ticket) => ticket.id) : [])
   }
 
-  function applyBulkStatus(nextStatus: TicketStatus) {
-    bulkUpdateStatus.mutate(
-      { ids: selectedIds, status: nextStatus },
-      { onSuccess: () => setSelection([]) },
-    )
+  function applyBulkStatus(nextStatus: TicketStatus, onApplied: () => void) {
+    const ids = selectedIds
+    const onSuccess = () => {
+      // Drops the ids the request acted on rather than emptying the selection:
+      // it was in flight for a while, and anything ticked in the meantime was
+      // not part of what was just done. `CustomersPage` draws the same line.
+      setSelection((current) => current.filter((id) => !ids.includes(id)))
+      onApplied()
+    }
+
+    bulkUpdateStatus.mutate({ ids, status: nextStatus }, { onSuccess })
   }
 
   function confirmBulkDelete() {

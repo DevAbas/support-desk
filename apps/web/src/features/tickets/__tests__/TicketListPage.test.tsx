@@ -2,7 +2,7 @@ import { screen, waitForElementToBeRemoved } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mswServer } from '@/test/msw/server'
+import { forwardToApi, mswServer } from '@/test/msw/server'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { TicketListPage } from '@/features/tickets/TicketListPage'
 
@@ -110,6 +110,49 @@ describe('TicketListPage', () => {
     // mutation invalidated comes back shorter.
     expect(await screen.findByText('Showing 1–1 of 1')).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Bulk actions' })).not.toBeInTheDocument()
+  })
+
+  it('drops only the tickets the apply acted on, and puts the status back', async () => {
+    // Held open so a row can be ticked while the request is in flight, which is
+    // the only sequence that tells "drop what was applied" apart from "clear
+    // everything".
+    let release = () => undefined as void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+
+    mswServer.use(
+      http.patch('/api/tickets/bulk', async ({ request }) => {
+        await held
+        return forwardToApi(request)
+      }),
+    )
+
+    await renderList('admin')
+
+    const [applied, alsoApplied, tickedMeanwhile] = screen
+      .getAllByRole('checkbox', { name: /^Select ticket/ })
+      .map((box) => box.getAttribute('aria-label') ?? '')
+
+    await userEvent.click(screen.getByRole('checkbox', { name: applied }))
+    await userEvent.click(screen.getByRole('checkbox', { name: alsoApplied }))
+
+    await userEvent.selectOptions(screen.getByLabelText('Set status to'), 'closed')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    // Ticked after the request went out, so it was not part of what was done.
+    await userEvent.click(screen.getByRole('checkbox', { name: tickedMeanwhile }))
+    expect(screen.getByText('3 tickets selected')).toBeInTheDocument()
+
+    release()
+
+    expect(await screen.findByText('1 ticket selected')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: tickedMeanwhile })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: applied })).not.toBeChecked()
+
+    // And the select is back on the status a bulk edit opens on, rather than
+    // holding the one that has already been applied.
+    expect(screen.getByLabelText('Set status to')).toHaveValue('resolved')
   })
 
   describe('CSV export', () => {

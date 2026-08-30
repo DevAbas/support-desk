@@ -115,7 +115,7 @@ Promotion is one edit to `ROLLOUT` in `src/index.js`, visible in a diff.
 | `harness/complexity` | 0 | `warn` | **`error`** | promoted |
 | `harness/max-depth` | 0 | `warn` | **`error`** | promoted |
 | `harness/max-params` | 0 | `warn` | **`error`** | promoted |
-| `@typescript-eslint/no-deprecated` | 6 | `warn` | `warn` | when the count reaches 0 |
+| `@typescript-eslint/no-deprecated` | 2 | `warn` | `warn` | when the count reaches 0 |
 
 The four counting rules are at zero because their thresholds were chosen to put
 them there — see [Thresholds](#thresholds) below. That is the ratchet's starting
@@ -279,8 +279,8 @@ import { useState, type FormEvent } from 'react'
 async function handleSubmit(event: FormEvent<HTMLFormElement>) { … }
 
 // Good
-import { useState, type SyntheticEvent } from 'react'
-async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) { … }
+import { useState, type SubmitEventHandler } from 'react'
+const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => { … }
 ```
 
 It is a typed rule, so `eslint.config.js` turns on `projectService` for it. That
@@ -289,6 +289,12 @@ is the only typed rule enabled; the rest of the config stays syntactic.
 Turning it on immediately found two more nobody knew about: `queryClient.fetchQuery`
 in `useTicketsExport`, and recharts' `Cell` in `BarChart`. Six violations, all at
 `warn`.
+
+The four `FormEvent` files are migrated now, onto the `SubmitEventHandler` the
+auth screens were already using. The two the rule found on its way past are what
+is left, and neither is a spelling this codebase chose: `fetchQuery` is a one-line
+move to `queryClient.query`, and `Cell` goes when `BarChart` moves onto recharts'
+`shape` prop. Promotion waits on those two, not on anything a form does.
 
 ## Thresholds
 

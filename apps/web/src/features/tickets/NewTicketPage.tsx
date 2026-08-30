@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEventHandler } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Button,
@@ -72,7 +72,7 @@ export function NewTicketPage() {
     setValues((current) => ({ ...current, [field]: value }))
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault()
 
     const nextErrors = validate(values)

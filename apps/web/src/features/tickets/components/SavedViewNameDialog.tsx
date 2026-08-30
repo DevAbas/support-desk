@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react'
+import { useId, useState, type SubmitEventHandler } from 'react'
 import { Button, Input, Modal } from '@harness-sample/ui'
 
 interface SavedViewNameDialogProps {
@@ -31,7 +31,7 @@ export function SavedViewNameDialog({
   const [name, setName] = useState(initialName)
   const [error, setError] = useState<string | null>(null)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault()
 
     const trimmed = name.trim()

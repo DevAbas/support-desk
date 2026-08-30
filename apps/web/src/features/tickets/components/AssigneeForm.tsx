@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEventHandler } from 'react'
 import { Button, Input } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 
@@ -36,7 +36,7 @@ export function AssigneeForm({ assignee, onSubmit, disabled = false }: AssigneeF
   const nextAssignee = value.trim()
   const isUnchanged = nextAssignee === assignee
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault()
 
     if (nextAssignee === '') {

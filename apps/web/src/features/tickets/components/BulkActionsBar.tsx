@@ -7,9 +7,26 @@ const statusOptions = TICKET_STATUSES.map((status) => ({
   label: TICKET_STATUS_LABELS[status],
 }))
 
+/**
+ * The status a bulk edit opens on, and goes back to once one has landed.
+ *
+ * A default is safe here where `CustomersBulkActionsBar` deliberately has none.
+ * That bar opens on a placeholder because a default there is one click from
+ * moving accounts onto Free — a billing change nobody asked for, and no plan is
+ * the obvious one to land on. A status is none of those things: it is reversible
+ * from the same bar, and working a queue in bulk is nearly always working it
+ * down to resolved. The reasoning still holds, so the default stays.
+ */
+const DEFAULT_STATUS: TicketStatus = 'resolved'
+
 interface BulkActionsBarProps {
   selectedCount: number
-  onApplyStatus: (status: TicketStatus) => void
+  /**
+   * Handed the status to apply and a callback to run once it has landed, which
+   * is when the select goes back to `DEFAULT_STATUS`. A status left on screen
+   * after the rows have moved reads as a change still waiting to be applied.
+   */
+  onApplyStatus: (status: TicketStatus, onApplied: () => void) => void
   onDelete: () => void
   isBusy?: boolean
 }
@@ -21,7 +38,7 @@ export function BulkActionsBar({
   onDelete,
   isBusy = false,
 }: BulkActionsBarProps) {
-  const [status, setStatus] = useState<TicketStatus>('resolved')
+  const [status, setStatus] = useState<TicketStatus>(DEFAULT_STATUS)
 
   return (
     <div
@@ -42,7 +59,11 @@ export function BulkActionsBar({
           className="w-40"
           disabled={isBusy}
         />
-        <Button size="md" onClick={() => onApplyStatus(status)} disabled={isBusy}>
+        <Button
+          size="md"
+          onClick={() => onApplyStatus(status, () => setStatus(DEFAULT_STATUS))}
+          disabled={isBusy}
+        >
           Apply
         </Button>
         <Button variant="danger" size="md" onClick={onDelete} disabled={isBusy}>

@@ -81,7 +81,10 @@ export default tseslint.config(
        * rather than an error, so typecheck passes, and the strikethrough is
        * only visible on hover in an editor. An agent never hovers.
        *
-       * Still `warn` in strict: 4 violations. Promote to `level` once zero.
+       * Those four are migrated onto `SubmitEventHandler`, which is what the
+       * auth screens use. Still `warn` in strict: the two the rule found on its
+       * way past are left — `queryClient.fetchQuery` in useTicketsExport and
+       * recharts' `Cell` in BarChart. Promote to `level` once zero.
        */
       '@typescript-eslint/no-deprecated': 'warn',
 

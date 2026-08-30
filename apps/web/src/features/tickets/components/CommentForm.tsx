@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEventHandler } from 'react'
 import { Button, Textarea } from '@harness-sample/ui'
 
 interface CommentFormProps {
@@ -11,7 +11,7 @@ export function CommentForm({ onSubmit, disabled = false }: CommentFormProps) {
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault()
 
     if (body.trim() === '') {
