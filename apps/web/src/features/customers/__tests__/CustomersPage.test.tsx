@@ -323,6 +323,11 @@ function tick(name: string): Promise<void> {
   return userEvent.click(screen.getByRole('checkbox', { name: `Select ${name}` }))
 }
 
+/** The select-all on the bar, which is a checkbox and stays one. */
+function selectAll(loadedCount: number): HTMLElement {
+  return screen.getByRole('checkbox', { name: `Select all ${String(loadedCount)}` })
+}
+
 /** The list row a person is on, found by what is written on it. */
 function rowFor(name: string): HTMLElement {
   const row = customerRows().find((item) => item.textContent?.includes(name) === true)
@@ -405,11 +410,14 @@ describe('CustomersPage bulk actions', () => {
     await renderCustomers('admin')
     await tick('Elena Harper')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Select all 20' }))
+    await userEvent.click(selectAll(20))
 
     expect(within(bulkBar()).getByText('20 customers selected')).toBeInTheDocument()
-    // Nothing left to select, so the control that would do it is gone.
-    expect(screen.queryByRole('button', { name: /^Select all/ })).not.toBeInTheDocument()
+    // Nothing left to select, and the control says so rather than unmounting
+    // itself: a control that goes away on activation takes the keyboard with it,
+    // and focus falls to the top of the document.
+    expect(selectAll(20)).toBeChecked()
+    expect(selectAll(20)).toHaveFocus()
 
     await userEvent.click(loadMore())
     expect(await screen.findByText('Showing 40 of 60')).toBeInTheDocument()
@@ -417,7 +425,56 @@ describe('CustomersPage bulk actions', () => {
     // The twenty stay ticked — this list grows rather than turns — and "all"
     // now means the forty that are loaded.
     expect(within(bulkBar()).getByText('20 customers selected')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Select all 40' })).toBeInTheDocument()
+    expect(selectAll(40)).toBePartiallyChecked()
+  })
+
+  it('unticks the rows on screen without forgetting the ones a filter hides', async () => {
+    await renderCustomers('admin')
+
+    await tick('Elena Harper')
+    await userEvent.type(screen.getByLabelText('Search'), 'northwind')
+    await screen.findByText('Showing 3 of 3')
+
+    await tick('Priya Raman')
+    await userEvent.click(selectAll(3))
+    expect(selectAll(3)).toBeChecked()
+
+    // The inverse of ticking what is loaded, rather than of the selection: the
+    // three on screen go, and Elena — hidden, remembered — stays.
+    await userEvent.click(selectAll(3))
+    expect(queryBulkBar()).not.toBeInTheDocument()
+
+    await userEvent.clear(screen.getByLabelText('Search'))
+    await screen.findByText('Showing 20 of 60')
+
+    expect(screen.getByRole('checkbox', { name: 'Select Elena Harper' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Select Priya Raman' })).not.toBeChecked()
+  })
+
+  it('adds the rows on screen to the selection rather than replacing it', async () => {
+    await renderCustomers('admin')
+
+    // The intersection the other two tests each miss: select-all is exercised
+    // with no filter, where replacing and unioning are the same thing, and the
+    // filter is exercised with no select-all.
+    await tick('Elena Harper')
+    await userEvent.type(screen.getByLabelText('Search'), 'northwind')
+    await screen.findByText('Showing 3 of 3')
+
+    // Elena is hidden, so she stops counting and the bar goes with her — but she
+    // is still ticked, which is the whole of what "derived" buys.
+    expect(queryBulkBar()).not.toBeInTheDocument()
+
+    await tick('Priya Raman')
+    await userEvent.click(selectAll(3))
+    expect(within(bulkBar()).getByText('3 customers selected')).toBeInTheDocument()
+
+    await userEvent.clear(screen.getByLabelText('Search'))
+    await screen.findByText('Showing 20 of 60')
+
+    // Select-all reached what was on screen. It did not un-tick what was not.
+    expect(screen.getByRole('checkbox', { name: 'Select Elena Harper' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Select Priya Raman' })).toBeChecked()
   })
 
   it('drops a selected row from the count when a filter stops matching it', async () => {
@@ -504,6 +561,79 @@ describe('CustomersPage bulk actions', () => {
     // Nothing was applied, so there is still a selection to try again with.
     expect(within(bulkBar()).getByText('1 customer selected')).toBeInTheDocument()
     expect(within(rowFor('Elena Harper')).getByText('Free')).toBeInTheDocument()
+  })
+
+  it('reports a failed delete inside the dialog that asked for it', async () => {
+    mswServer.use(http.delete('/api/customers/bulk', () => HttpResponse.error()))
+
+    await renderCustomers('admin')
+    await tick('Elena Harper')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete selected customers' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete customers' }))
+
+    // Inside the dialog, not on the card behind it: the dialog is `aria-modal`,
+    // so a band out there is a message a screen reader is told is not there and
+    // a sighted reader has to dismiss the question to read.
+    expect(await within(dialog).findByText('Could not reach the server.')).toBeInTheDocument()
+    expect(dialog).toBeInTheDocument()
+
+    // Nobody was deleted, and the selection is still there to try again with.
+    expect(screen.getByText('Showing 20 of 60')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Delete customers' })).toBeEnabled()
+  })
+
+  it('asks the next delete without the last one’s failure', async () => {
+    mswServer.use(http.delete('/api/customers/bulk', () => HttpResponse.error()))
+
+    await renderCustomers('admin')
+    await tick('Elena Harper')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+
+    const failed = await screen.findByRole('dialog', { name: 'Delete selected customers' })
+    await userEvent.click(within(failed).getByRole('button', { name: 'Delete customers' }))
+    await within(failed).findByText('Could not reach the server.')
+
+    await userEvent.click(within(failed).getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+
+    const reopened = await screen.findByRole('dialog', { name: 'Delete selected customers' })
+    expect(within(reopened).queryByText('Could not reach the server.')).not.toBeInTheDocument()
+  })
+
+  it('takes the band away with the selection it was about', async () => {
+    mswServer.use(http.patch('/api/customers/bulk', () => HttpResponse.error()))
+
+    await renderCustomers('admin')
+    await tick('Elena Harper')
+
+    await userEvent.selectOptions(screen.getByLabelText('Set plan to'), 'pro')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    expect(await screen.findByText('Could not reach the server.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
+
+    // Mutation state is held until something lets it go, where the load-error
+    // band under it is query state and clears itself.
+    expect(screen.queryByText('Could not reach the server.')).not.toBeInTheDocument()
+  })
+
+  it('takes the band away when the filters change under it', async () => {
+    mswServer.use(http.patch('/api/customers/bulk', () => HttpResponse.error()))
+
+    await renderCustomers('admin')
+    await tick('Elena Harper')
+
+    await userEvent.selectOptions(screen.getByLabelText('Set plan to'), 'pro')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    expect(await screen.findByText('Could not reach the server.')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('Search'), 'northwind')
+    expect(await screen.findByText('Showing 3 of 3')).toBeInTheDocument()
+
+    // Otherwise it stays pinned across the card over a different set of rows.
+    expect(screen.queryByText('Could not reach the server.')).not.toBeInTheDocument()
   })
 
   it('closes the drawer when the customer it is showing is deleted', async () => {

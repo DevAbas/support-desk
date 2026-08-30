@@ -140,12 +140,19 @@ export type ListCustomersResponse = z.infer<typeof listCustomersResponseSchema>
 /**
  * The most ids one bulk request may carry.
  *
- * Deliberately not `MAX_CUSTOMER_PAGE_SIZE`, which is how the ticket bulk bodies
- * are bounded. The ticket table selects within the page it is showing, so a page
- * is the whole of what can be ticked; this list accumulates pages, and a
- * selection made across four load-mores is larger than any response that built
- * it. So the bound is on the size of a request rather than on what fits on a
- * screen — which is the only thing a server can honestly bound here.
+ * The same number as `MAX_PAGE_SIZE`, which is what bounds the ticket bulk
+ * bodies — and a constant of its own rather than that one, because the two
+ * answer different questions that happen to share an answer. A ticket selection
+ * is made inside the page it is shown on, so over there the largest page and the
+ * largest selection are one bound and one constant does both jobs. This list
+ * accumulates pages: a selection made across four load-mores is larger than any
+ * response that built it, and `MAX_CUSTOMER_PAGE_SIZE` — a hundred — would bound
+ * a growing selection at one page of it. What is bounded here is the size of a
+ * request body, which is the only thing a server can honestly bound.
+ *
+ * The client holds the other half, in `CustomersPage`: select-all ticks at most
+ * this many and the bar refuses an action carrying more, so a selection that
+ * outgrows a request is something the screen says before the schema has to.
  */
 export const MAX_CUSTOMER_BULK_IDS = 500
 

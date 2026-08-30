@@ -689,9 +689,12 @@ less motion is not a preference for a panel that never appears.
   "Select". Sixty checkboxes with one name between them are sixty controls a screen
   reader cannot tell apart, and the row's own text is no help: it belongs to the
   control next to it.
-- There is no `Checkbox` primitive yet, and three places now write the same raw input:
-  `MultiSelect`, `ListRow`, and the ticket table's select-all column. That is the count
-  at which the other primitives here were written; it is the next one to make.
+- Every checkbox in the app is `Checkbox`: `MultiSelect`, `ListRow`, and both of the
+  ticket table's columns. The note that stood here said there was no such primitive yet
+  and counted three of those four, having read the select-all cell in the header and
+  not the one on every row twenty-nine lines below it. Both halves of that stopped
+  being true and neither announced it — a census taken by eye goes stale the way a
+  hand-written padding value does.
 - `Avatar` takes a required `name`, and announces it as an image unless `decorative` is
   set. Set it wherever the name is written beside the avatar, which is most places: an
   avatar is a picture of a name, and hearing the name twice is worse than not seeing the

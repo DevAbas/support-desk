@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -69,6 +69,25 @@ describe('ConfirmDialog', () => {
     render(<ConfirmDialog {...props} isBusy onClose={() => {}} onConfirm={() => {}} />)
 
     expect(screen.getByRole('button', { name: 'Delete ticket' })).toBeDisabled()
+  })
+
+  it('reports a failed attempt inside the dialog rather than behind it', () => {
+    render(
+      <ConfirmDialog
+        {...props}
+        error="Could not reach the server."
+        onClose={() => {}}
+        onConfirm={() => {}}
+      />,
+    )
+
+    // Inside, because the dialog is `aria-modal`: a band on the page behind it
+    // is a message a screen reader is told is not there.
+    const dialog = screen.getByRole('dialog', { name: 'Delete this ticket' })
+
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Could not reach the server.')
+    // And the question is still askable, so the button is still there to press.
+    expect(within(dialog).getByRole('button', { name: 'Delete ticket' })).toBeEnabled()
   })
 
   it('renames the answers when the question is not a deletion', () => {

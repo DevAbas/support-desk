@@ -22,6 +22,19 @@ export interface ConfirmDialogProps {
   isBusy?: boolean
   /** What the confirming button says while busy. Defaults to `confirmLabel`. */
   busyLabel?: string
+  /**
+   * Why the last attempt did not work, rendered inside the dialog.
+   *
+   * A confirmation is `aria-modal`, which says the rest of the page is not
+   * there — so an error band on the screen behind it is a message nobody is
+   * told about and a sighted reader has to dismiss the dialog to read. The
+   * answer to a question asked here is reported here, beside the button that
+   * will be pressed again.
+   *
+   * Not `children`: that is part of the question, and this is the answer to the
+   * last time it was answered.
+   */
+  error?: ReactNode
   /** Anything the question needs beyond its description. */
   children?: ReactNode
 }

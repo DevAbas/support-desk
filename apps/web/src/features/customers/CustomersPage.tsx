@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Alert, Button, Card, ConfirmDialog, Heading, Text, Toolbar } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
-import type { CustomerPlan } from '@harness-sample/shared'
+import { MAX_CUSTOMER_BULK_IDS, type CustomerPlan } from '@harness-sample/shared'
 import { useRole } from '@/features/roles/useRole'
 import { CustomerDrawer } from './components/CustomerDrawer'
 import { CustomerList } from './components/CustomerList'
@@ -86,9 +86,19 @@ export function CustomersPage() {
     : []
 
   const isBulkBusy = bulkUpdatePlan.isPending || bulkDelete.isPending
-  // At most one of the two holds an error, because each resets the other before
-  // it runs — so this is always the last attempt rather than the oldest failure.
-  const bulkError = bulkUpdatePlan.error ?? bulkDelete.error
+
+  // The two failures are reported in two places, because the two actions happen
+  // in two places. A plan change is applied from the bar with nothing over the
+  // list, so its failure is a band on the list. A delete is confirmed inside a
+  // modal that is still open when the request comes back, and a band behind an
+  // `aria-modal` dialog is a message a screen reader is told is not there and a
+  // sighted reader has to dismiss the question to read.
+  const planError = bulkUpdatePlan.error
+    ? toErrorMessage(bulkUpdatePlan.error, 'Could not change those customers.')
+    : null
+  const deleteError = bulkDelete.error
+    ? toErrorMessage(bulkDelete.error, 'Could not delete those customers.')
+    : null
 
   /**
    * No page to reset, and nothing else to tidy up. A new filter is a new list,
@@ -102,14 +112,63 @@ export function CustomersPage() {
    * The selection is left alone for the same reason it is derived: a row the new
    * filters do not match stops counting on its own, and comes back still ticked
    * if the filter that hid it is undone.
+   *
+   * The band is not left alone. It is about rows that are about to leave.
    */
   function changeFilters(patch: Partial<CustomerFilters>) {
+    forgetBulkFailure()
     setFilters((current) => ({ ...current, ...patch }))
+  }
+
+  /**
+   * Drops the band over the list, which is a report on one selection and one set
+   * of rows: when either of those goes, a message about them is pinned over a
+   * screen it is no longer describing. The load-error band beneath it clears
+   * itself because it is query state; this one is mutation state, which is held
+   * until something asks for it to be let go.
+   *
+   * Only when the mutation has actually failed. `reset()` on one that is still
+   * running takes the `onSuccess` waiting to run with it — the callbacks handed
+   * to `mutate` belong to the observer's current mutation — and the filters are
+   * not disabled while a bulk action is in flight.
+   *
+   * Unmount needs nothing: mutation state belongs to the observer, so a screen
+   * that is left and come back to comes back idle.
+   */
+  function forgetBulkFailure() {
+    if (bulkUpdatePlan.isError) {
+      bulkUpdatePlan.reset()
+    }
   }
 
   function toggleSelected(id: string, isSelected: boolean) {
     setSelection((current) =>
       isSelected ? [...current, id] : current.filter((value) => value !== id),
+    )
+  }
+
+  /**
+   * Adds every row on screen to the selection rather than becoming it.
+   *
+   * The stored selection is wider than what is on screen on purpose — a row the
+   * filters no longer match drops out of the count and comes back still ticked —
+   * so replacing it here would throw away every remembered tick the current
+   * filters happen to hide, invisibly, because those ids were not being counted
+   * anyway. `toggleSelected` and `forgetSelected` both hold that model; this is
+   * the third place that has to.
+   *
+   * Capped at what one request may carry. This is the only control that can grow
+   * a selection in leaps — a hundred rows a load-more, and no ceiling on the
+   * load-mores — so it is where a selection that outgrows a bulk body would come
+   * from, and the cap belongs where the growing happens rather than at the schema
+   * that would otherwise reject the result.
+   */
+  function selectAllLoaded() {
+    setSelection((current) =>
+      [
+        ...current,
+        ...rows.map((customer) => customer.id).filter((id) => !current.includes(id)),
+      ].slice(0, MAX_CUSTOMER_BULK_IDS),
     )
   }
 
@@ -125,16 +184,30 @@ export function CustomersPage() {
   function applyPlan(plan: CustomerPlan) {
     const ids = selectedIds
 
-    // The other action's failure is not this one's news. Without this, a delete
-    // that failed would keep its band above the list through a plan change that
-    // worked, since a mutation holds its error until it is asked to run again.
-    bulkDelete.reset()
+    // Nothing to reset for the delete: its failure lives inside the dialog, and
+    // a closed dialog renders none of it. The reverse is not true, which is why
+    // `confirmDelete` still resets this one.
     bulkUpdatePlan.mutate({ ids, plan }, { onSuccess: () => forgetSelected(ids) })
+  }
+
+  /**
+   * Asking again starts from a clean question. The reset is on the way in rather
+   * than on the way out because `mutate`'s callbacks belong to the observer that
+   * is being reset: dismissing a confirmation while its request is still in
+   * flight is a real sequence here, and resetting then would drop the `onSuccess`
+   * that closes the drawer over a customer that has just been deleted.
+   */
+  function askToDelete() {
+    bulkDelete.reset()
+    setIsConfirmingDelete(true)
   }
 
   function confirmDelete() {
     const ids = selectedIds
 
+    // A plan change that failed would otherwise keep its band above the list
+    // through a delete that worked, since a mutation holds its error until it is
+    // asked to run again.
     bulkUpdatePlan.reset()
     bulkDelete.mutate(
       { ids },
@@ -180,17 +253,22 @@ export function CustomersPage() {
           <CustomersBulkActionsBar
             selectedCount={selectedIds.length}
             loadedCount={rows.length}
-            onSelectAll={() => setSelection(rows.map((customer) => customer.id))}
-            onClearSelection={() => setSelection([])}
+            maxBulkIds={MAX_CUSTOMER_BULK_IDS}
+            onSelectAll={selectAllLoaded}
+            onDeselectAll={() => forgetSelected(rows.map((customer) => customer.id))}
+            onClearSelection={() => {
+              forgetBulkFailure()
+              setSelection([])
+            }}
             onApplyPlan={applyPlan}
-            onDelete={() => setIsConfirmingDelete(true)}
+            onDelete={askToDelete}
             isBusy={isBulkBusy}
           />
         ) : null}
 
-        {bulkError ? (
+        {planError ? (
           <Alert tone="danger" variant="band">
-            {toErrorMessage(bulkError, 'Could not change those customers.')}
+            {planError}
           </Alert>
         ) : null}
 
@@ -245,6 +323,7 @@ export function CustomersPage() {
         )}. The tickets they raised stay in the queue. This cannot be undone.`}
         confirmLabel="Delete customers"
         busyLabel="Deleting…"
+        error={deleteError}
         isDanger
         isBusy={isBulkBusy}
       />
