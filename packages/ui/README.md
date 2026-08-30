@@ -29,6 +29,14 @@ Each colour family follows the same shape, so you can predict the name you need:
 | `primary-subtle-fg` | text on a tinted background |
 | `primary-border` | border matching a tinted background |
 
+Icons are the one thing with a ramp of its own — `icon-primary`, `icon-secondary`,
+`icon-disabled` — and it is separate from `fg` on purpose. An icon takes `currentColor`
+unless it is told otherwise, which means it is always exactly as loud as the sentence
+it sits in and had no way to be quieter than the words beside it. The three values
+start where `fg`, `fg-muted` and `fg-subtle` are today, because that is what icons are
+drawn in today; naming them apart is what lets the two ramps come apart later without
+every icon in the app moving with the text.
+
 If you need a colour that is not on the scale, add a token to `tokens.css` and give it
 a semantic name. Do not reach around the scale with a hex value.
 
@@ -140,7 +148,7 @@ in two dialogs, `&#9998;` and another `&#215;` in the saved views sidebar, a car
 the ticket screen — which meant a screen reader announced that link as "left arrow,
 Back to tickets".
 
-Two rules come with it. **An icon is sized from the spacing scale**, `sm`, `md` or
+Three rules come with it. **An icon is sized from the spacing scale**, `sm`, `md` or
 `lg`, never from the text it sits beside: a glyph in a sentence inherits the
 sentence, but a picture that resizes with its caption is a picture nobody can lay
 out. And **an icon says what it means**. `label` is required, the way `Avatar`
@@ -149,15 +157,51 @@ it says; pass `decorative` where the meaning is already written next to it or th
 control around it carries its own `aria-label`. The effect is that an icon-only
 control is named by its icon even when whoever wrote it forgot to name the control.
 
+The third is **an icon is coloured from the icon ramp, or from nothing at all**.
+`tone` defaults to `inherit`, which is `currentColor` and is right for an icon inside
+a `Button` or inside a sentence — it is part of that thing and should weigh what that
+thing weighs. `primary`, `secondary` and `disabled` are for an icon that is not part
+of the text beside it and should not be as loud as it. Before the ramp existed the
+only way to say that was to reach for a text colour, which said the wrong thing about
+what the icon was; `MultiSelect`'s chevron is still doing exactly that, and is the
+one call site left to move.
+
 ## Type has a semantic layer, the way colour does
 
 `tokens.css` names its type as well as its colours. `text-title` is the one heading
 at the top of a screen, `text-section` the heading on a card or a dialog,
 `text-subsection` a heading on a group inside one, and prose is `text-body` with
 `text-caption` under it. Each carries its own line height, and the three headings
-carry their weight, so a heading is never `text-2xl font-semibold text-fg`
-reassembled by hand — which is how six screens came to have six copies of the same
-page title and a seventh invented a level of its own.
+carry their weight, so a heading is never a raw size and a weight reassembled by
+hand — which is how six screens came to have six copies of the same page title and a
+seventh invented a level of its own.
+
+The layer underneath is a scale and not a list. Sizes are `round(12px × 1.15 ^ step)`
+for six steps, a ratio that doubles the scale every five steps and lands on 12, 14,
+16, 18, 20 and 24. Every size a semantic level needs falls out of that formula
+exactly. One raw step does not: the fourth comes out at 21px and is kept at 20px,
+which is today's value, because a scale is a way of choosing new numbers rather than
+a reason to move the ones already on screen. It is the only number on the scale that
+is not on the scale, and it is not currently used by anything.
+
+Line height is computed, not chosen. Take 1.5 below 20px, 1.4 from 20 to 31px and
+1.25 at 32px and above; snap to the 4px grid; never come closer than fontSize + 4px.
+Five of the six steps already satisfied it, which is the useful thing the exercise
+found. The smallest does not: the rule asks 20px on 12px text and this file says
+16px, which is exactly the fontSize + 4px floor the rule itself sets. 1.67 on
+twelve-pixel meta text reads as a gap between lines rather than as lines, so the
+value stays and the rule is the one that is wrong at the small end.
+
+Weight is named too — `normal`, `medium`, `semibold`, `bold` — and the three heading
+levels reference `semibold` rather than each stating `600`. A bare number in three
+places is three places to change and nothing to say what it means; a level pointing
+at a weight is one decision, made once.
+
+A semantic level therefore restates nothing. `--text-section` is a `var()` at the
+step it sits on, its line height is that step's line height, and its weight is a
+named weight, so the numbers live at the bottom of the file and the vocabulary sits
+on top of them. That is the same arrangement as the colours, where `#2563eb` is a raw
+value and `primary` is what this product does with it.
 
 `Heading` takes a semantic `level` and an optional element `as`, because those are
 two questions and answering one should not answer the other: how much weight this
@@ -177,7 +221,79 @@ column and put a scrollbar under the page, and `break-words` would not have fixe
 `text-title text-fg` to `text-fg` and the size disappears — silently, with nothing to
 notice. Every semantic type token must therefore be listed in `semanticTextSizes` in
 `packages/shared/src/cn.ts`. The list in `cn.ts` and the tokens in `tokens.css` are
-one thing written in two places and nothing enforces the pairing.
+one thing written in two places and nothing enforces the pairing. The radius names
+below have the same problem and the same answer, `semanticRadii`, a few lines down
+the same file.
+
+## A radius is named for what it is drawn on
+
+`sm`, `md` and `lg` said which of three sizes a corner was and nothing about which to
+reach for, so the answer was whichever the last component happened to use. The scale
+is now six names and each one says where it belongs:
+
+| Token | Rule |
+| --- | --- |
+| `rounded-none` | a corner that meets another one: a row in a list, a strip across a card |
+| `rounded-inner` | a corner nested inside a rounded one — see the concentric rule below |
+| `rounded-element` | an interactive control: a button, a field, a badge that is not a pill, a popover |
+| `rounded-container` | a thing that holds other things: a card, a dialog, a tab strip |
+| `rounded-page` | a surface that fills the view it sits in |
+| `rounded-full` | a pill or a circle: an avatar, a status badge |
+
+The pixel values did not move; only the names did. `none` and `full` are Tailwind's
+own, `0` and an effective infinity, so `tokens.css` declares the four in between and
+names all six. The old names are gone from the theme rather than left beside the new
+ones, so `rounded-md` now produces no CSS at all — a missed call site is a corner that
+visibly squares itself rather than one nobody notices for a year.
+
+**The concentric rule, for `inner`.** A rounded box with padding needs its inner
+corner at `max(0, outer − padding)`. Match the outer radius instead and the two curves
+run parallel rather than sharing a centre, and the gap between them visibly widens
+through the corner. In this product it currently resolves to zero everywhere it could
+apply — `Card` is an 8px corner around 16–20px of padding, so `max(0, 8 − 20)` is 0,
+which is what a square-cornered child already draws. `Card` therefore does not set it,
+and `inner` is here for the day a tighter container needs it.
+
+## The focus ring is written once
+
+Say `focus-ring`. Not `focus-visible:` three times.
+
+Width, style, colour and offset are four tokens in `tokens.css` and `focus-ring` is
+the single style that spends them. Before this, ten controls each wrote their own
+copy of the same three utilities — `Button`, `Tabs`, the nav in `AppLayout`, four
+links across two features, and the three form controls — and the copies had already
+started to disagree on the offset. That is the part that drifts first, because
+nothing on screen shows two controls disagreeing about a ring unless both are focused
+at once, which never happens.
+
+`focus-ring-inset` is the same ring at offset 0, and it is a decision rather than
+drift: a field's ring belongs on its border, not outside it, so the control does not
+appear to grow when it is focused. `Input`, `Select` and `Textarea` use it and nothing
+else does. Two names, one token apart, beats one name and three exceptions.
+
+`Checkbox` has neither, on purpose: the box is drawn by the browser and so is the ring
+that fits it.
+
+## Control height, border width and motion are tokens too
+
+**Height.** `Button`'s two sizes are `--size-element-sm` and `--size-element-md`, not
+a pair of Tailwind height classes. They were classes, which meant the two heights
+every control in the product lines up against lived inside one component and a denser
+build of this app had no way to ask for them. `Input`, `Select` and `Textarea` are
+still sized by their padding, because a textarea has rows and a field grows with its
+font; that is worth revisiting and it is not settled here. The nav item in `AppLayout`
+is a third height written by hand, and it is the next thing to fix.
+
+**Border width.** One token, `--default-border-width`, which is what `border` reads.
+There is no hairline and no heavy variant: a second width should be a decision
+somebody makes in `tokens.css` rather than an arbitrary value at a call site.
+
+**Motion.** Two durations and one easing, because there are two distances — a fade
+crosses no ground, a panel crosses the edge of the screen — and everything here is an
+entrance, and an entrance decelerates. The `--animate-*` tokens reference them instead
+of carrying `150ms ease-out` inline. Note that `--ease-enter` is the CSS `ease-out`
+keyword and *not* Tailwind's `--ease-out`, which is a different curve; they are easy
+to confuse and they do not look the same.
 
 ## Two primitives that look alike are not the same primitive
 
@@ -304,8 +420,8 @@ news and more resolved is good, while the arrow for both points the same way.
 
 Do not write `w-[437px]`, `mt-[13px]`, or `text-[13.5px]`. Spacing is a multiple of the
 `--spacing` base, so `p-2`, `gap-6`, and `mt-10` are all on the scale. Radii come from
-`rounded-sm|md|lg|xl`, type from `text-xs` through `text-2xl`, and elevation from
-`shadow-card` and `shadow-overlay`.
+the six names above, type from `text-xs` through `text-2xl`, elevation from
+`shadow-card` and `shadow-overlay`, and a control's height from the size tokens.
 
 Type is the exception that is worth stating carefully: reach for the semantic level —
 `text-title`, `text-section`, `text-body` — and let `text-xs` through `text-2xl` be
@@ -316,8 +432,8 @@ figure on a `StatCard`, which is a number and not a heading.
 An arbitrary value is a sign that either the design is off-grid or the scale is
 missing a step. Both are worth resolving before the class is written.
 
-Motion is on a scale too — `--animate-fade-in`, `--animate-slide-in-right` — and it is
-short. `Drawer` is the only thing in the app that moves, and it moves because a panel
+Motion is on a scale too — `--animate-fade-in`, `--animate-slide-in-right`, built out
+of `--duration-fast`, `--duration-slow` and `--ease-enter` — and it is short. `Drawer` is the only thing in the app that moves, and it moves because a panel
 that slides in from an edge says where it came from, and so where it will go back to.
 Anything animated pairs its class with `motion-reduce:animate-none`: a preference for
 less motion is not a preference for a panel that never appears.
@@ -400,3 +516,9 @@ className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className
 ```
 
 Use `cn()` in every new component, in that order.
+
+`cn()` carries two extensions, and both are there because tailwind-merge cannot know
+what this design system named. `semanticTextSizes` stops `text-title` being read as a
+colour; `semanticRadii` stops `rounded-element` being read as nothing at all, which is
+what lets `ListRow` square the corners of the `Button` it is built on. Add a semantic
+type token or a radius token to `tokens.css` and you have to add it there too.

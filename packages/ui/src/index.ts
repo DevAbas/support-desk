@@ -32,7 +32,7 @@ export { Heading } from './primitives/Heading'
 export type { HeadingElement, HeadingLevel, HeadingProps } from './primitives/Heading'
 
 export { Icon } from './primitives/Icon'
-export type { IconName, IconProps, IconSize } from './primitives/Icon'
+export type { IconName, IconProps, IconSize, IconTone } from './primitives/Icon'
 
 export { Input } from './primitives/Input'
 export type { InputProps } from './primitives/Input'

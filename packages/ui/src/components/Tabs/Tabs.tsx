@@ -81,7 +81,7 @@ export function TabList({ className, onKeyDown, ...props }: TabListProps) {
       aria-label={label}
       onKeyDown={handleKeyDown}
       className={cn(
-        'inline-flex flex-wrap items-center gap-1 rounded-lg border border-border bg-surface-inset p-1',
+        'inline-flex flex-wrap items-center gap-1 rounded-container border border-border bg-surface-inset p-1',
         className,
       )}
       {...props}
@@ -138,10 +138,10 @@ export function TabPanel({ value, className, ...props }: TabPanelProps) {
       aria-labelledby={tabId(baseId, value)}
       // Focusable so that a panel of unfocusable content can still be reached.
       tabIndex={0}
-      className={cn(
-        'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-        className,
-      )}
+      // `outline-none` kills the browser's own ring on a plain focus; the
+      // ring a keyboard gets is the shared one, which every other focusable
+      // thing in the app uses.
+      className={cn('outline-none focus-ring', className)}
       {...props}
     />
   )

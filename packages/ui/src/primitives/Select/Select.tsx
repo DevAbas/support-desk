@@ -3,9 +3,8 @@ import { cn } from '@harness-sample/shared'
 import type { SelectProps } from './Select.types'
 
 const controlClasses =
-  'block w-full appearance-none rounded-md border bg-surface px-3 py-2 text-body text-fg ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary ' +
-  'disabled:cursor-not-allowed disabled:bg-muted'
+  'block w-full appearance-none rounded-element border bg-surface px-3 py-2 text-body text-fg ' +
+  'focus-ring-inset disabled:cursor-not-allowed disabled:bg-muted'
 
 export function Select<TValue extends string = string>({
   label,

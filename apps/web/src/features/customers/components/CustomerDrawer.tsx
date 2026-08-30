@@ -86,7 +86,7 @@ function CustomerDetail({ customer }: CustomerDetailProps) {
         <div className="flex min-w-0 flex-col gap-1">
           <a
             href={`mailto:${customer.email}`}
-            className="truncate text-sm text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="truncate text-sm text-primary underline-offset-2 hover:underline focus-ring"
           >
             {customer.email}
           </a>
@@ -108,7 +108,7 @@ function CustomerDetail({ customer }: CustomerDetailProps) {
           label={`Tickets raised by ${customer.name}`}
           isEmpty={customer.tickets.length === 0}
           emptyMessage="No tickets raised yet."
-          className="rounded-md border border-border"
+          className="rounded-element border border-border"
         >
           {customer.tickets.map((ticket) => (
             // No `onSelect` here: this row goes somewhere, and going somewhere
@@ -119,7 +119,7 @@ function CustomerDetail({ customer }: CustomerDetailProps) {
               title={
                 <Link
                   to={`/tickets/${ticket.id}`}
-                  className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="font-medium text-primary underline-offset-2 hover:underline focus-ring"
                 >
                   {ticket.title}
                 </Link>

@@ -143,7 +143,7 @@ export function MultiSelect<TValue extends string = string>({
       {isOpen ? (
         <div
           id={panelId}
-          className="absolute top-full left-0 z-20 mt-1 flex w-full min-w-48 flex-col gap-2 rounded-md border border-border bg-surface p-3 shadow-overlay"
+          className="absolute top-full left-0 z-20 mt-1 flex w-full min-w-48 flex-col gap-2 rounded-element border border-border bg-surface p-3 shadow-overlay"
         >
           <fieldset className="flex flex-col gap-2">
             <legend className="sr-only">{label}</legend>

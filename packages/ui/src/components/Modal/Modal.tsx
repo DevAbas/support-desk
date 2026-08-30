@@ -22,7 +22,7 @@ export function Modal({ open, onClose, title, description, children, footer, cla
       closeLabel="Close dialog"
       overlayClassName="flex items-center justify-center p-4"
       panelClassName={cn(
-        'w-full max-w-lg rounded-lg border border-border bg-surface shadow-overlay',
+        'w-full max-w-lg rounded-container border border-border bg-surface shadow-overlay',
         className,
       )}
       footer={footer}

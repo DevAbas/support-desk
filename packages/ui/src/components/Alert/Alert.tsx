@@ -21,7 +21,7 @@ const toneClasses: Record<AlertTone, string> = {
  * that would show it.
  */
 const variantClasses: Record<AlertVariant, string> = {
-  callout: 'items-start rounded-md border px-4 py-3',
+  callout: 'items-start rounded-element border px-4 py-3',
   inline: 'items-start bg-transparent p-0',
   band: 'items-center border-b px-4 py-3',
 }

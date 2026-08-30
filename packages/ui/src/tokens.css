@@ -9,6 +9,11 @@
  * Tailwind v4 theme variables are flat: there is no nesting and no DEFAULT key.
  * `--color-primary` produces `bg-primary`, `--color-primary-fg` produces
  * `text-primary-fg`, and so on.
+ *
+ * Several groups here are two layers: a raw scale, and a semantic layer that
+ * references it with `var()`. Type is the clearest case — a size is a number, a
+ * level is a decision — and the rule is the same one the colours follow, where
+ * `#2563eb` is a raw colour and `primary` is what this product does with it.
  */
 @theme {
   /* ---------------------------------------------------------------- colors */
@@ -32,6 +37,20 @@
   --color-fg: #0f172a;
   --color-fg-muted: #475569;
   --color-fg-subtle: #94a3b8;
+
+  /* Icons, in descending emphasis, and separate from the text scale above on
+     purpose. An icon takes `currentColor` unless it is told otherwise, which
+     means it is always exactly as loud as the sentence it sits in and has no
+     way to be quieter than it — a chevron on a filter and the word beside it
+     are not the same thing and should not have to weigh the same.
+
+     They start on the same three values as `fg`, `fg-muted` and `fg-subtle`
+     because that is what they are today. Naming them separately is what lets
+     the two ramps come apart later without every icon in the app moving with
+     the text. Reached through `Icon`'s `tone`, which defaults to inheriting. */
+  --color-icon-primary: var(--color-fg);
+  --color-icon-secondary: var(--color-fg-muted);
+  --color-icon-disabled: var(--color-fg-subtle);
 
   /* Muted: the neutral fill used by secondary controls and neutral badges. */
   --color-muted: #f1f5f9;
@@ -84,12 +103,82 @@
      gap-6 is 1.5rem. Use the scale; do not reach for arbitrary values. */
   --spacing: 0.25rem;
 
+  /* ---------------------------------------------------------------- sizing */
+
+  /* The height of an interactive control. These were `h-8` and `h-10` written
+     into `Button`, which meant the two heights every control in the product is
+     measured against were a Tailwind class rather than something a theme could
+     reach: a denser build of this app had no way to say so without editing the
+     component.
+
+     `sm` is the row-and-toolbar height, `md` the standalone one. `Input`,
+     `Select` and `Textarea` are still sized by their padding rather than by
+     these, because a textarea has rows and a text field grows with its font;
+     that is worth revisiting, and it is not this change. */
+  --size-element-sm: 2rem;
+  --size-element-md: 2.5rem;
+
+  /* ----------------------------------------------------------- border width */
+
+  /* One width, and it is Tailwind's `border` reading from the theme rather than
+     from its own default. Every border in the product is this: there is no
+     hairline and no heavy variant, and a second width should be a decision
+     somebody makes here rather than an arbitrary value at a call site. */
+  --default-border-width: 1px;
+
+  /* ------------------------------------------------------------------ focus */
+
+  /* The focus ring, in four parts.
+     Before this every control wrote its own, and the same three utilities
+     appeared in ten places: `Button`, `Tabs`, the nav in `AppLayout` and four
+     links across two features at one offset, and the three form controls at
+     another. A ring assembled by hand at every control is a ring that drifts,
+     and the offset is where it drifts first, because nothing on screen shows
+     two controls disagreeing unless they are focused at the same time.
+
+     `--focus-ring-offset-inset` is the second offset and it is deliberate, not
+     drift: a field's ring sits on its border rather than outside it, so the
+     control does not appear to grow when it is focused. It is named here so
+     that it stays one decision instead of becoming three.
+
+     Use them through `focus-ring` and `focus-ring-inset` below. */
+  --focus-ring-width: 2px;
+  --focus-ring-style: solid;
+  --focus-ring-color: var(--color-primary);
+  --focus-ring-offset: 2px;
+  --focus-ring-offset-inset: 0px;
+
   /* ---------------------------------------------------------------- radii */
 
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
+  /* Named for what is being drawn, not for how big it is. `sm`, `md` and `lg`
+     said which of three a corner was and nothing about which to reach for, so
+     the answer was whichever the last component used.
+
+     | Token       | Rule                                                    |
+     | ----------- | ------------------------------------------------------- |
+     | `none`      | a corner that meets another one: a row in a list, a strip across a card |
+     | `inner`     | a corner nested inside a rounded one — see the concentric rule below |
+     | `element`   | an interactive control: a button, a field, a badge that is not a pill, a popover |
+     | `container` | a thing that holds other things: a card, a dialog, a tab strip |
+     | `page`      | a surface that fills the view it sits in |
+     | `full`      | a pill or a circle: an avatar, a status badge |
+
+     `none` and `full` are Tailwind's own statics — `0` and an effective
+     infinity — so there is nothing to declare for them; the names are here
+     because the scale is six steps and reads as one.
+
+     The concentric rule, for `inner`: a rounded box with padding needs its
+     inner corner at `max(0, outer - padding)`, or the two curves run parallel
+     instead of sharing a centre and the gap between them visibly widens at the
+     corner. In this product it currently resolves to zero everywhere it could
+     apply — `Card` is an 8px corner around 16-20px of padding, so `max(0, 8 -
+     20)` is 0, which is what a square-cornered child already draws. `inner`
+     exists for the day a tighter container needs it. */
+  --radius-*: initial;
+  --radius-inner: 0.25rem;
+  --radius-element: 0.375rem;
+  --radius-container: 0.5rem;
+  --radius-page: 0.75rem;
 
   /* ------------------------------------------------------------ typography */
 
@@ -98,6 +187,41 @@
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
     'Liberation Mono', monospace;
 
+  /* Weight, named. The three headings said `600` three times, which is a number
+     that means nothing on its own and cannot be changed in one place. */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Raw sizes: a geometric scale, `round(12px × 1.15 ^ step)` for steps 0 to 5.
+     The ratio is a fifth root of two, so the scale doubles every five steps.
+
+       step  0      1      2      3      4      5
+       exact 12     13.80  15.87  18.25  20.99  24.14
+       token 12     14     16     18     20     24
+
+     Every size the semantic layer needs — 12, 14, 18 and 24 — falls out of it
+     exactly. Step 4 does not: the scale puts it at 21px and this file says
+     20px. That is today's value kept rather than a value moved to satisfy a
+     formula, and it is the one number on this scale that is not on the scale.
+
+     Line height is computed rather than chosen. Take 1.5 below 20px, 1.4 from
+     20 to 31px and 1.25 at 32px and above; snap the result to the 4px grid;
+     never let it come closer than fontSize + 4px:
+
+       12 → 18 → 20    ← the rule and this file disagree; see below
+       14 → 21 → 20
+       16 → 24 → 24
+       18 → 27 → 28
+       20 → 28 → 28
+       24 → 33.6 → 32
+
+     Five of the six already comply. `--text-xs` does not: the rule asks for
+     20px and this file says 16px. 16px is exactly the fontSize + 4px floor the
+     rule sets, and 1.67 on twelve-pixel text reads as a gap between lines
+     rather than as lines. Today's value is kept and the rule is the one that is
+     wrong at the small end. */
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
   --text-sm: 0.875rem;
@@ -117,31 +241,33 @@
      inside one carries a `text-subsection`, and prose is `text-body` with
      `text-caption` underneath it for meta.
 
-     Weight belongs to the level, so a heading never also needs `font-semibold`.
-     It is set through `--tw-font-weight`, so a caller that does want a different
-     weight still wins.
+     Every level points at a step rather than restating its numbers, so the
+     scale is the one place a size is decided and a level says only which step
+     it is. Weight belongs to the level too, so a heading never also needs
+     `font-semibold`. It is set through `--tw-font-weight`, so a caller that
+     does want a different weight still wins.
 
      `cn()` has to be told these are sizes — see `semanticTextSizes` in
      `packages/shared/src/cn.ts`. Without it tailwind-merge reads `text-title` as
      a colour, `text-title text-fg` collapses to `text-fg`, and every heading
      silently loses its size. */
-  --text-title: 1.5rem;
-  --text-title--line-height: 2rem;
-  --text-title--font-weight: 600;
+  --text-title: var(--text-2xl);
+  --text-title--line-height: var(--text-2xl--line-height);
+  --text-title--font-weight: var(--font-weight-semibold);
 
-  --text-section: 1.125rem;
-  --text-section--line-height: 1.75rem;
-  --text-section--font-weight: 600;
+  --text-section: var(--text-lg);
+  --text-section--line-height: var(--text-lg--line-height);
+  --text-section--font-weight: var(--font-weight-semibold);
 
-  --text-subsection: 0.875rem;
-  --text-subsection--line-height: 1.25rem;
-  --text-subsection--font-weight: 600;
+  --text-subsection: var(--text-sm);
+  --text-subsection--line-height: var(--text-sm--line-height);
+  --text-subsection--font-weight: var(--font-weight-semibold);
 
-  --text-body: 0.875rem;
-  --text-body--line-height: 1.25rem;
+  --text-body: var(--text-sm);
+  --text-body--line-height: var(--text-sm--line-height);
 
-  --text-caption: 0.75rem;
-  --text-caption--line-height: 1rem;
+  --text-caption: var(--text-xs);
+  --text-caption--line-height: var(--text-xs--line-height);
 
   /* --------------------------------------------------------------- shadows */
 
@@ -154,10 +280,19 @@
      moves for a reason: a panel that slides in from an edge says where it came
      from, and so where it will go back to. Anything animated pairs these with
      `motion-reduce:animate-none` — a preference for less motion is not a
-     preference for a panel that never appears. */
-  --animate-fade-in: fade-in 150ms ease-out;
-  --animate-slide-in-right: slide-in-right 200ms ease-out;
-  --animate-slide-in-left: slide-in-left 200ms ease-out;
+     preference for a panel that never appears.
+
+     Two durations, because there are two distances: a fade crosses no ground,
+     a panel crosses the edge of the screen. `--ease-enter` is the CSS `ease-out`
+     keyword and not Tailwind's `--ease-out`, which is a different curve —
+     everything here is an entrance, and an entrance decelerates. */
+  --duration-fast: 150ms;
+  --duration-slow: 200ms;
+  --ease-enter: ease-out;
+
+  --animate-fade-in: fade-in var(--duration-fast) var(--ease-enter);
+  --animate-slide-in-right: slide-in-right var(--duration-slow) var(--ease-enter);
+  --animate-slide-in-left: slide-in-left var(--duration-slow) var(--ease-enter);
 
   @keyframes fade-in {
     from {
@@ -184,5 +319,35 @@
     to {
       transform: translateX(0);
     }
+  }
+}
+
+/*
+ * The focus ring, written once.
+ *
+ * A control says `focus-ring` and gets the whole of it — width, style, colour
+ * and offset — rather than three `focus-visible:` classes that have to agree
+ * with the three on the control beside it.
+ *
+ * `focus-ring-inset` is the same ring at offset 0, for a control whose own
+ * border is where the ring belongs: a text field, a select, a textarea. The two
+ * differ in one token and nothing else, which is the point of there being two
+ * names rather than two sets of classes.
+ */
+@utility focus-ring {
+  &:focus-visible {
+    outline-width: var(--focus-ring-width);
+    outline-style: var(--focus-ring-style);
+    outline-color: var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
+
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline-width: var(--focus-ring-width);
+    outline-style: var(--focus-ring-style);
+    outline-color: var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset-inset);
   }
 }

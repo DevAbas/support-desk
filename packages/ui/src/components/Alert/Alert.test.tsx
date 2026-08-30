@@ -40,7 +40,7 @@ describe('Alert', () => {
   it('is a callout on its own by default', () => {
     render(<Alert tone="danger">Something broke.</Alert>)
 
-    expect(screen.getByRole('alert')).toHaveClass('rounded-md', 'border', 'px-4', 'py-3')
+    expect(screen.getByRole('alert')).toHaveClass('rounded-element', 'border', 'px-4', 'py-3')
   })
 
   it('carries no chrome of its own inline', () => {
@@ -56,7 +56,7 @@ describe('Alert', () => {
     // fill, the border and the padding go.
     expect(alert).toHaveClass('bg-transparent', 'p-0', 'text-danger-subtle-fg')
     expect(alert).not.toHaveClass('bg-danger-subtle')
-    expect(alert).not.toHaveClass('rounded-md')
+    expect(alert).not.toHaveClass('rounded-element')
   })
 
   it('spans a card edge to edge as a band', () => {
@@ -70,7 +70,7 @@ describe('Alert', () => {
 
     // A bottom edge and nothing else: no rounding, no sides, no top.
     expect(alert).toHaveClass('border-b', 'bg-danger-subtle', 'px-4', 'py-3')
-    expect(alert).not.toHaveClass('rounded-md')
+    expect(alert).not.toHaveClass('rounded-element')
     expect(alert).not.toHaveClass('border')
   })
 

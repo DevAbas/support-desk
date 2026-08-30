@@ -12,10 +12,23 @@ import { extendTailwindMerge } from 'tailwind-merge'
  */
 const semanticTextSizes = ['title', 'section', 'subsection', 'body', 'caption']
 
+/**
+ * The radius scale, registered as border radii.
+ *
+ * The same trap in a second place. tailwind-merge knows `rounded-none` and
+ * `rounded-full` but not `rounded-element`, so without this a component that
+ * squares its corners — `ListRow`, which is `Button` with the radius taken off
+ * — keeps both classes and the winner is whichever Tailwind happened to emit
+ * last. Naming them here is what makes `cn('rounded-element', 'rounded-none')`
+ * resolve to the override the caller asked for.
+ */
+const semanticRadii = ['inner', 'element', 'container', 'page']
+
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
       'font-size': [{ text: semanticTextSizes }],
+      rounded: [{ rounded: semanticRadii }],
     },
   },
 })

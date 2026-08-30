@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@harness-sample/shared'
-import type { IconName, IconProps, IconSize } from './Icon.types'
+import type { IconName, IconProps, IconSize, IconTone } from './Icon.types'
 
 /**
  * An icon.
@@ -44,7 +44,34 @@ const sizeClasses: Record<IconSize, string> = {
   lg: 'size-6',
 }
 
-export function Icon({ name, size = 'md', label, decorative = false, className, ...props }: IconProps) {
+/**
+ * Colour comes off the icon scale, which is its own scale and not the text one.
+ *
+ * `inherit` draws nothing and lets `currentColor` stand, which is what an icon
+ * inside a button or inside a sentence wants — it is part of that thing. The
+ * other three are for an icon that is not: a chevron on a control, a glyph
+ * beside a label it should not be as loud as. Before this scale existed there
+ * was no way to say that except by reaching for a text colour, which said the
+ * wrong thing about what the icon was.
+ *
+ * Keyed by the union, so adding a tone without styling it is a type error.
+ */
+const toneClasses: Record<IconTone, string> = {
+  inherit: '',
+  primary: 'text-icon-primary',
+  secondary: 'text-icon-secondary',
+  disabled: 'text-icon-disabled',
+}
+
+export function Icon({
+  name,
+  size = 'md',
+  tone = 'inherit',
+  label,
+  decorative = false,
+  className,
+  ...props
+}: IconProps) {
   const Glyph = icons[name]
 
   return (
@@ -54,7 +81,7 @@ export function Icon({ name, size = 'md', label, decorative = false, className, 
       aria-label={decorative ? undefined : label}
       // Never a tab stop: SVG is focusable by default in some browsers.
       focusable="false"
-      className={cn('shrink-0', sizeClasses[size], className)}
+      className={cn('shrink-0', sizeClasses[size], toneClasses[tone], className)}
       {...props}
     />
   )

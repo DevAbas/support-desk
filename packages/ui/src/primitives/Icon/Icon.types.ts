@@ -20,10 +20,29 @@ export type IconName =
 /** Sizes come from the spacing scale, not from the text an icon sits beside. */
 export type IconSize = 'sm' | 'md' | 'lg'
 
+/**
+ * How loud an icon is.
+ *
+ * `inherit` is the default and takes the colour of the text around it, which is
+ * what an icon inside a sentence or inside a `Button` wants: it is part of the
+ * thing it sits in. The other three come from the icon colour scale in
+ * `tokens.css`, which exists so that an icon can be quieter than the words
+ * beside it — a scale it could not reach while `currentColor` was the only
+ * answer it had.
+ */
+export type IconTone = 'inherit' | 'primary' | 'secondary' | 'disabled'
+
 /** `children` is omitted: what an icon draws follows from `name`. */
 export interface IconProps extends Omit<ComponentPropsWithRef<'svg'>, 'children'> {
   name: IconName
   size?: IconSize
+  /**
+   * The colour, off the icon scale rather than off the text scale.
+   *
+   * Defaults to `inherit`, so an icon that says nothing about its tone still
+   * takes the colour of whatever it is inside.
+   */
+  tone?: IconTone
   /**
    * What the icon means, in words.
    *

@@ -62,8 +62,8 @@ export function AppLayout() {
                       to={item.to}
                       className={({ isActive }) =>
                         cn(
-                          'inline-flex h-9 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                          'inline-flex h-9 items-center rounded-element px-3 text-sm font-medium',
+                          'transition-colors focus-ring',
                           isActive
                             ? 'bg-primary-subtle text-primary-subtle-fg'
                             : 'text-fg-muted hover:bg-muted hover:text-fg',
