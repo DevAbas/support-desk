@@ -44,7 +44,7 @@ export function StatCard({
   ...props
 }: StatCardProps) {
   return (
-    <Card className={cn('flex flex-col gap-2 px-5 py-4', className)} {...props}>
+    <Card className={cn('flex flex-col gap-2 px-4 py-3', className)} {...props}>
       <p className="text-body font-medium text-fg-muted">{label}</p>
 
       {isLoading ? (

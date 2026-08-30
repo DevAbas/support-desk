@@ -3,7 +3,7 @@ import { cn } from '@harness-sample/shared'
 import type { TextareaProps } from './Textarea.types'
 
 const controlClasses =
-  'block w-full rounded-element border bg-surface px-3 py-2 text-body text-fg ' +
+  'block w-full rounded-element border bg-surface px-2.5 py-1.5 text-body text-fg ' +
   'placeholder:text-fg-subtle focus-ring-inset disabled:cursor-not-allowed disabled:bg-muted'
 
 export function Textarea({ label, error, hint, rows = 4, className, ...props }: TextareaProps) {

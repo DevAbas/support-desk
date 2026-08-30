@@ -44,9 +44,9 @@ export function BulkActionsBar({
     <div
       aria-label="Bulk actions"
       role="group"
-      className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-primary-subtle px-4 py-3"
+      className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-primary-subtle px-3 py-2"
     >
-      <p className="text-sm font-medium text-primary-subtle-fg">
+      <p className="text-body font-medium text-primary-subtle-fg">
         {selectedCount} {selectedCount === 1 ? 'ticket' : 'tickets'} selected
       </p>
 

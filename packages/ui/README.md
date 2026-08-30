@@ -23,19 +23,32 @@ Each colour family follows the same shape, so you can predict the name you need:
 | Token | Use |
 | --- | --- |
 | `primary` | solid fill for the strongest action |
-| `primary-hover` | that fill on hover |
 | `primary-fg` | text placed on top of the solid fill |
 | `primary-subtle` | tinted background for badges and callouts |
 | `primary-subtle-fg` | text on a tinted background |
 | `primary-border` | border matching a tinted background |
 
+Five, and there is no `primary-hover` among them — nor a `-hover` on any other family.
+A family says what it *is*; hover and pressed are a neutral tint laid over whatever
+background an element already has, which is one decision rather than one per family.
+See "Hover and pressed are one tint" below.
+
 Icons are the one thing with a ramp of its own — `icon-primary`, `icon-secondary`,
 `icon-disabled` — and it is separate from `fg` on purpose. An icon takes `currentColor`
 unless it is told otherwise, which means it is always exactly as loud as the sentence
-it sits in and had no way to be quieter than the words beside it. The three values
-start where `fg`, `fg-muted` and `fg-subtle` are today, because that is what icons are
-drawn in today; naming them apart is what lets the two ramps come apart later without
-every icon in the app moving with the text.
+it sits in and had no way to be quieter than the words beside it. The three are
+`var()` references to `fg`, `fg-muted` and `fg-subtle` rather than copies of their
+values, which is what let a whole change of identity move every icon in the app without
+a line in the icon group being touched. Naming them apart is still what lets the two
+ramps come apart later, on the day an icon should not weigh what the text beside it
+weighs.
+
+Two numbers about the neutrals are worth carrying. Text on them is comfortable — `fg`
+measures 14.7:1 on a card and `fg-muted` 6.9:1 — and `fg-subtle` is not: 3.6:1 on a
+card, 3.5:1 on the page, 3.2:1 on an inset. That is above the 3:1 a disabled control
+needs and below the 4.5:1 normal text needs, which makes it a correct colour for a
+disabled icon and a borderline one for the two places it is currently text, a field's
+placeholder and a comment's timestamp.
 
 If you need a colour that is not on the scale, add a token to `tokens.css` and give it
 a semantic name. Do not reach around the scale with a hex value.
@@ -44,9 +57,9 @@ a semantic name. Do not reach around the scale with a hex value.
 
 `<button className="...">` does not belong anywhere outside `Button/`. Use `Button`,
 which owns the five variants (`primary`, `secondary`, `ghost`, `danger`, `selected`),
-the two sizes (`sm`, `md`), the focus ring, the disabled treatment, and the
-`type="button"` default that stops a button inside a form from submitting it by
-accident.
+the two sizes (`sm`, `md`), the focus ring, the hover and pressed states, the disabled
+treatment, and the `type="button"` default that stops a button inside a form from
+submitting it by accident.
 
 `selected` is a variant and not a `className`, because "this is the one currently
 chosen" had been written five times in four different ways — a saved view, a date
@@ -125,7 +138,7 @@ library is a change to one component rather than to every screen that draws some
 
 A charting library ships its own palette, and a chart drawn in it is the one thing on
 the page that does not belong to this design system. Marks take their fill from the
-token custom properties — `var(--color-success)`, never `#16a34a` and never the
+token custom properties — `var(--color-success)`, never `#4f6f52` and never the
 library's fourth default colour — and so do the grid, the axis and the tooltip. A chart
 that needs a colour gets it from `tokens.css` like everything else.
 
@@ -168,6 +181,13 @@ one call site left to move.
 
 ## Type has a semantic layer, the way colour does
 
+The family is IBM Plex Sans, named in `tokens.css` and loaded in
+`apps/web/index.html`. Those two move together: a family named in a token and not
+loaded is a font every browser goes looking for, fails to find, and silently replaces
+with the next name in the stack — a design system that is correct in the CSS and wrong
+on the screen. The names after it are picked for metrics rather than taste, so the swap
+when the webfont arrives moves the text as little as a swap can.
+
 `tokens.css` names its type as well as its colours. `text-title` is the one heading
 at the top of a screen, `text-section` the heading on a card or a dialog,
 `text-subsection` a heading on a group inside one, and prose is `text-body` with
@@ -176,21 +196,36 @@ carry their weight, so a heading is never a raw size and a weight reassembled by
 hand — which is how six screens came to have six copies of the same page title and a
 seventh invented a level of its own.
 
-The layer underneath is a scale and not a list. Sizes are `round(12px × 1.15 ^ step)`
-for six steps, a ratio that doubles the scale every five steps and lands on 12, 14,
-16, 18, 20 and 24. Every size a semantic level needs falls out of that formula
-exactly. One raw step does not: the fourth comes out at 21px and is kept at 20px,
-which is today's value, because a scale is a way of choosing new numbers rather than
-a reason to move the ones already on screen. It is the only number on the scale that
-is not on the scale, and it is not currently used by anything.
+The layer underneath is a scale and not a list. Sizes are
+`round(12px × 2 ^ (step / 10))` — a 12px base, and a ratio that doubles the scale every
+ten steps. The six named sizes are 12, 13, 14, 17, 21 and 28, and every one of them is
+that formula rounded.
+
+The ratio is fine because it has to be. This identity wants a subsection at 13px and a
+body at 14px, seven per cent apart, and a scale whose step is fifteen per cent cannot
+hold two sizes seven per cent apart — one of the pair would have to come off the scale
+and be a number somebody typed. Ten steps to the octave is the coarsest ratio that
+rounds onto all five sizes the semantic layer needs. What it costs is that the scale is
+finer than the product is: the six names sit at steps 0, 1, 2, 5, 8 and 12 rather than
+at 0 through 5. A name marks a step this product spends, and the gaps between them are
+where the next size will come from.
+
+What it bought is an exception gone. The old scale had one number on it that was not on
+it — the fourth step, kept at 20px where the formula said 21 — and this one has none.
 
 Line height is computed, not chosen. Take 1.5 below 20px, 1.4 from 20 to 31px and
 1.25 at 32px and above; snap to the 4px grid; never come closer than fontSize + 4px.
-Five of the six steps already satisfied it, which is the useful thing the exercise
-found. The smallest does not: the rule asks 20px on 12px text and this file says
-16px, which is exactly the fontSize + 4px floor the rule itself sets. 1.67 on
-twelve-pixel meta text reads as a gap between lines rather than as lines, so the
-value stays and the rule is the one that is wrong at the small end.
+Five of the six steps satisfy it, as five of six did before. The smallest does not: the
+rule asks 20px on 12px text and this file says 16px, which is exactly the fontSize +
+4px floor the rule itself sets. 1.67 on twelve-pixel meta text reads as a gap between
+lines rather than as lines, so the value stays and the rule is the one that is wrong at
+the small end.
+
+The top of the scale is where the rule now shows its hand. A 24px title took 32px of
+line height; a 28px title takes 40px, because 39.2 snaps up rather than down. Nothing
+was chosen there — the size grew and the rule answered — and 1.43 on a page title is
+looser than the 1.33 it replaces. It is the one computed value on this scale worth
+checking on a screen rather than on paper.
 
 Weight is named too — `normal`, `medium`, `semibold`, `bold` — and the three heading
 levels reference `semibold` rather than each stating `600`. A bare number in three
@@ -200,8 +235,24 @@ at a weight is one decision, made once.
 A semantic level therefore restates nothing. `--text-section` is a `var()` at the
 step it sits on, its line height is that step's line height, and its weight is a
 named weight, so the numbers live at the bottom of the file and the vocabulary sits
-on top of them. That is the same arrangement as the colours, where `#2563eb` is a raw
+on top of them. That is the same arrangement as the colours, where `#335c67` is a raw
 value and `primary` is what this product does with it.
+
+Letter-spacing is the fourth axis on a level, and it is the first thing here that
+breaks that arrangement: it points at no raw token, because it has none. `title` is
+-0.02em and `section` is -0.01em, and those are optical corrections for two particular
+levels rather than steps on a ramp — a raw scale of two values each used once would be
+a layer with nothing in it.
+
+It costs five tokens to carry two values. `subsection`, `body` and `caption` declare
+`normal` rather than declaring nothing, because a level that says nothing about
+letter-spacing lets an inherited one through, and a level exists to settle a question
+rather than pass it on. What it does not cost is `cn()`. Tailwind emits a level's
+tracking as `var(--tw-tracking, …)`, which is the property `tracking-*` sets, so a
+caller asking for different tracking wins whatever the class order, and `tracking-` is
+a class group tailwind-merge already knows. It is the first token group added here that
+needs no matching entry in `cn.ts` — `TableHeaderCell` writes its own tracking and
+still wins.
 
 `Heading` takes a semantic `level` and an optional element `as`, because those are
 two questions and answering one should not answer the other: how much weight this
@@ -240,17 +291,22 @@ is now six names and each one says where it belongs:
 | `rounded-page` | a surface that fills the view it sits in |
 | `rounded-full` | a pill or a circle: an avatar, a status badge |
 
-The pixel values did not move; only the names did. `none` and `full` are Tailwind's
-own, `0` and an effective infinity, so `tokens.css` declares the four in between and
-names all six. The old names are gone from the theme rather than left beside the new
+`none` and `full` are Tailwind's own, `0` and an effective infinity, so `tokens.css`
+declares the four in between and names all six. The old names are gone from the theme rather than left beside the new
 ones, so `rounded-md` now produces no CSS at all — a missed call site is a corner that
 visibly squares itself rather than one nobody notices for a year.
+
+Naming them is also what made the corners sharper for nothing. All four values came
+down — 2, 3, 4 and 8 pixels now — and no call site moved, because no call site ever
+said how big a corner was. A scale named `sm` through `lg` would first have had to
+decide whether `md` still meant what it used to.
 
 **The concentric rule, for `inner`.** A rounded box with padding needs its inner
 corner at `max(0, outer − padding)`. Match the outer radius instead and the two curves
 run parallel rather than sharing a centre, and the gap between them visibly widens
 through the corner. In this product it currently resolves to zero everywhere it could
-apply — `Card` is an 8px corner around 16–20px of padding, so `max(0, 8 − 20)` is 0,
+apply, and by a wider margin than before — `Card` is a 4px corner around 12–16px of
+padding, so `max(0, 4 − 16)` is 0,
 which is what a square-cornered child already draws. `Card` therefore does not set it,
 and `inner` is here for the day a tighter container needs it.
 
@@ -274,6 +330,49 @@ else does. Two names, one token apart, beats one name and three exceptions.
 `Checkbox` has neither, on purpose: the box is drawn by the browser and so is the ring
 that fits it.
 
+## Hover and pressed are one tint
+
+Say `interactive`. Not a hover colour per variant.
+
+An element that answers a pointer gets both states from one pair of tokens:
+`--color-overlay-hover` and `--color-overlay-pressed`, the foreground ink at 5% and at
+10%. `Button`'s base carries it, so every variant has it, and so do the three controls
+built on `Button` — `ListRow`, `Tab`, and the presets in `DateRangeField` — without any
+of them saying anything at all. The nav link in `AppLayout` is not a `Button` and says
+`interactive` itself; so does the `Checkbox` label, which takes the click for the whole
+control and so should answer for the whole control.
+
+The mechanism is what makes one pair enough. The tint is a `background-image` — a
+gradient between one colour and itself, which is a flat layer — and a background image
+paints *over* a background colour rather than replacing it. The same two values
+therefore sit on a solid fill, on a tinted fill and on nothing at all, and a variant
+declares one background and no states. That is the property worth keeping: the sixth
+variant is free.
+
+What it replaced could not have been. Hover was a colour per family, of which exactly
+two were ever spent, so a new variant needed a new colour before it could be hovered at
+all. Pressed would have taken a `-pressed` on every family, nobody was going to write
+five of them, and so no control in this product had a pressed state — which is the whole
+argument for a layer rather than a palette entry, made by the thing that was missing
+rather than by the thing that was there.
+
+Two consequences worth knowing. The tint is weaker on the two solid fills than the
+colours it replaces: 5% of a dark ink over `primary` or `danger` is a small step on an
+already-dark fill, where `--color-primary-hover` was a deliberate one. And a `selected`
+control now answers the pointer, where before it restated its own two colours on hover
+in order not to — so the one control on screen already chosen was the only one ignoring
+you.
+
+`ghost` keeps a hover of its own, and it is a foreground rather than a background. The
+tint says "this is responding to you"; the text coming up from `fg-muted` to `fg` says
+"this is the one you are pointing at". A muted control is the only place the second
+question needs asking.
+
+A `TableRow` hover is not this, and should not become it. `features/tickets` tints its
+rows with `hover:bg-surface-muted`, and that is a reading aid — which row your eye is on
+across six columns — sitting on an element nobody can press. `interactive` would give it
+a pressed state it has no way to earn.
+
 ## Control height, border width and motion are tokens too
 
 **Height.** `Button`'s two sizes are `--size-element-sm` and `--size-element-md`, not
@@ -282,18 +381,54 @@ every control in the product lines up against lived inside one component and a d
 build of this app had no way to ask for them. `Input`, `Select` and `Textarea` are
 still sized by their padding, because a textarea has rows and a field grows with its
 font; that is worth revisiting and it is not settled here. The nav item in `AppLayout`
-is a third height written by hand, and it is the next thing to fix.
+is a third height written by hand, and it is the next thing to fix — it currently
+happens to agree with `--size-element-md`, which is a coincidence and not a fix.
+
+A density pass proves the point and finds the other half of it. Both control heights
+came down from `tokens.css` alone. The horizontal padding beside them did not, because
+it is a Tailwind class inside `Button` and there is no token for it — and the same is
+true of the three form controls, `Card`'s three strips, `TableCell` and `ListRow`. A
+control's height is a decision the theme holds; a control's padding is the same
+decision held by six components. Padding tokens are the fix and they are the next thing
+to add.
+
+**Elevation.** One shadow. `--shadow-card` is nothing: a card is the lighter surface on
+a darker page with a border, and that border is the whole of its edge. `--shadow-overlay`
+is the only thing left that lifts, and it draws in `--color-shadow` rather than a hex
+value written into a shadow. `Card` still spends the card token, so the decision lives
+in `tokens.css` and giving cards a shadow back is one value rather than a component
+edit. It is written `0 0 #0000` and not `none`, because Tailwind composes every shadow
+utility into one comma-separated `box-shadow` and `none` is legal only as the whole of
+that property, never as one item in the list.
 
 **Border width.** One token, `--default-border-width`, which is what `border` reads.
 There is no hairline and no heavy variant: a second width should be a decision
 somebody makes in `tokens.css` rather than an arbitrary value at a call site.
 
-**Motion.** Two durations and one easing, because there are two distances — a fade
-crosses no ground, a panel crosses the edge of the screen — and everything here is an
-entrance, and an entrance decelerates. The `--animate-*` tokens reference them instead
+**Motion.** Two durations, because there are two distances — a fade crosses no ground,
+a panel crosses the edge of the screen. The `--animate-*` tokens reference them instead
 of carrying `150ms ease-out` inline. Note that `--ease-enter` is the CSS `ease-out`
 keyword and *not* Tailwind's `--ease-out`, which is a different curve; they are easy
 to confuse and they do not look the same.
+
+Two curves, though, not one. `--ease-enter` is for entrances, which happen once and in
+one direction and can therefore afford to decelerate. `--ease-state` is `linear` and is
+what `interactive` transitions on: a hover or a press crosses no ground, and it is
+reversed halfway through — the pointer leaves, the button is released — as often as it
+completes, so the curve is played backwards as often as forwards and `linear` is the
+only one that looks the same both ways. Anything with a shape to it makes the release
+read as slower than the press even though the two take the same time. It also keeps
+`--ease-enter` honest: a tint appearing under a cursor has not entered from anywhere.
+
+That transition was the last piece of motion living outside this system. Every control
+said `transition-colors`, which reads Tailwind's *default* duration and *default* curve,
+so the one thing in the app that animated on every single interaction was the one thing
+not on the motion scale. `interactive` owns it now, at `--duration-fast` — a press is
+the smallest interaction there is, and a control that lags the finger is worse than one
+that does not move. Which is also why `transition-colors` is gone from `Button` and from
+the nav rather than left beside it: two transition declarations on one element are two
+rules fighting over the same properties, and which wins is a question about stylesheet
+order.
 
 ## Two primitives that look alike are not the same primitive
 
@@ -522,3 +657,8 @@ what this design system named. `semanticTextSizes` stops `text-title` being read
 colour; `semanticRadii` stops `rounded-element` being read as nothing at all, which is
 what lets `ListRow` square the corners of the `Button` it is built on. Add a semantic
 type token or a radius token to `tokens.css` and you have to add it there too.
+
+Not every axis costs that. A level's letter-spacing rides inside the font-size utility
+as `var(--tw-tracking, …)`, and `tracking-` is a namespace tailwind-merge already
+knows, so `--text-title--letter-spacing` needed no entry. The rule is about names
+tailwind-merge cannot classify, not about tokens in general.

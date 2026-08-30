@@ -16,7 +16,7 @@ export function TicketsToolbar({
   error = null,
 }: TicketsToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-4 border-b border-border px-4 py-3">
+    <div className="flex flex-wrap items-center justify-end gap-4 border-b border-border px-3 py-2">
       {/* An export that failed is an error, and `Alert` is what knows an error
           is announced assertively — this said it politely, through a
           `role="status"` written by hand. A line in a toolbar is not a callout,

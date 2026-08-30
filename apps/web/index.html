@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      The other half of `--font-sans` in `packages/ui/src/tokens.css`. Naming a
+      family in a token without loading it here means every browser goes looking
+      for a font nobody shipped and quietly falls back to the next name in the
+      stack, which is a design system that looks correct in the CSS and wrong on
+      screen.
+
+      Four weights, because `tokens.css` names four. A weight named there with no
+      face behind it is one the browser fakes by smearing the face next to it.
+      `display=swap` draws the fallback first and swaps: text is readable while
+      the font arrives, at the cost of one reflow, and the fallback stack is
+      picked for metrics so that reflow moves as little as possible.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    />
     <title>Support Desk</title>
   </head>
   <body>

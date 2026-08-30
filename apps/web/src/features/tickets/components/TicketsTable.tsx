@@ -91,7 +91,7 @@ export function TicketsTable({
             <TableCell>
               <TicketPriorityBadge priority={ticket.priority} />
             </TableCell>
-            <TableCell className="text-sm text-fg-muted">{formatDate(ticket.createdAt)}</TableCell>
+            <TableCell className="text-fg-muted">{formatDate(ticket.createdAt)}</TableCell>
           </TableRow>
         ))}
       </TableBody>

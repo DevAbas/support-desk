@@ -75,12 +75,12 @@ export function TableHeaderCell({ scope = 'col', className, ...props }: TableHea
   return (
     <th
       scope={scope}
-      className={cn('px-4 py-3 text-caption font-semibold tracking-wide text-fg-muted uppercase', className)}
+      className={cn('px-3 py-2 text-caption font-semibold tracking-wide text-fg-muted uppercase', className)}
       {...props}
     />
   )
 }
 
 export function TableCell({ className, ...props }: TableCellProps) {
-  return <td className={cn('px-4 py-3 align-middle text-fg', className)} {...props} />
+  return <td className={cn('px-3 py-2 align-middle text-fg', className)} {...props} />
 }

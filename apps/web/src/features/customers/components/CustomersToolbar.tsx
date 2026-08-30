@@ -40,7 +40,7 @@ export function CustomersToolbar({
   exportError,
 }: CustomersToolbarProps) {
   return (
-    <div className="flex flex-wrap items-end gap-4 border-b border-border px-4 py-3">
+    <div className="flex flex-wrap items-end gap-4 border-b border-border px-3 py-2">
       <Input
         label="Search"
         type="search"
@@ -76,7 +76,7 @@ export function CustomersToolbar({
             while the first page loads: the list already announces that, and two
             live regions reporting the same wait is one of them too many. */}
         {isLoading ? null : (
-          <p role="status" aria-live="polite" className="text-sm text-fg-muted">
+          <p role="status" aria-live="polite" className="text-body text-fg-muted">
             {`Showing ${String(loaded)} of ${String(total)}`}
           </p>
         )}

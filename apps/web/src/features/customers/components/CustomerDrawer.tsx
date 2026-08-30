@@ -86,7 +86,7 @@ function CustomerDetail({ customer }: CustomerDetailProps) {
         <div className="flex min-w-0 flex-col gap-1">
           <a
             href={`mailto:${customer.email}`}
-            className="truncate text-sm text-primary underline-offset-2 hover:underline focus-ring"
+            className="truncate text-body text-primary underline-offset-2 hover:underline focus-ring"
           >
             {customer.email}
           </a>

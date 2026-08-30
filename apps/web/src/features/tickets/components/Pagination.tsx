@@ -23,14 +23,14 @@ export function Pagination({
   return (
     <nav
       aria-label="Ticket list pagination"
-      className="flex items-center justify-between gap-4 border-t border-border px-4 py-3"
+      className="flex items-center justify-between gap-4 border-t border-border px-3 py-2"
     >
-      <p className="text-sm text-fg-muted">
+      <p className="text-body text-fg-muted">
         {total === 0 ? 'No tickets' : `Showing ${firstRow}–${lastRow} of ${total}`}
       </p>
 
       <div className="flex items-center gap-2">
-        <span className="text-sm text-fg-muted">
+        <span className="text-body text-fg-muted">
           Page {page} of {pageCount}
         </span>
         <Button

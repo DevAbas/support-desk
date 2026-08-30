@@ -113,7 +113,7 @@ export function TicketDetailPage() {
       <div className="flex flex-col gap-2">
         <Link
           to="/tickets"
-          className="inline-flex items-center gap-1 text-sm text-primary underline-offset-2 hover:underline focus-ring"
+          className="inline-flex items-center gap-1 text-body text-primary underline-offset-2 hover:underline focus-ring"
         >
           {/* Decorative: the direction is already in the words beside it, and
               an arrow inside the link text is read out as part of its name. */}

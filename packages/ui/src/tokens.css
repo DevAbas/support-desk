@@ -13,7 +13,7 @@
  * Several groups here are two layers: a raw scale, and a semantic layer that
  * references it with `var()`. Type is the clearest case — a size is a number, a
  * level is a decision — and the rule is the same one the colours follow, where
- * `#2563eb` is a raw colour and `primary` is what this product does with it.
+ * `#335c67` is a raw colour and `primary` is what this product does with it.
  */
 @theme {
   /* ---------------------------------------------------------------- colors */
@@ -24,19 +24,55 @@
   --color-white: #ffffff;
   --color-black: #000000;
 
-  /* Surfaces: page background, cards, and inset areas such as table headers. */
+  /* Surfaces: page background, cards, and inset areas such as table headers.
+     The page is not white here and the card is: a card is lifted by being the
+     lighter surface, which is the job the card shadow used to do. */
   --color-surface: #ffffff;
-  --color-surface-muted: #f8fafc;
-  --color-surface-inset: #f1f5f9;
+  --color-surface-muted: #fdfbf0;
+  --color-surface-inset: #f7f2de;
 
-  /* Borders and dividers. */
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
+  /* Borders and dividers. `border-strong` has no call site today; it is here
+     because every neutral in this file has a second step and a border with
+     only one has nowhere to go when something needs to be louder. */
+  --color-border: #e5ddc4;
+  --color-border-strong: #d3c7a4;
+
+  /* The shadow, and the two tints. `shadow` is what the one remaining shadow is
+     drawn in — the foreground ink rather than a neutral grey, so it belongs to
+     this palette instead of being the last thing on screen that does not.
+     `overlay-hover` and `overlay-pressed` are the tint an actionable element
+     wears when it is pointed at and when it is held down.
+
+     The tints are black and the shadow is not, and that split is the correction
+     to a rule this group used to apply to all three. A shadow is dark enough to
+     carry a hue; a tint at five and ten per cent is not, and the ink's red is
+     the only thing that survives at those alphas. On a white card the ink tint
+     took a* to +0.003 and +0.007 where black holds it at exactly zero, which is
+     a pink wash rather than a darkening — and on a fill it was worse than
+     neutral, because the red cancels the fill's own colour: the selected chip
+     lost nearly half its green at ten per cent (a* -0.019 to -0.010) where
+     black leaves it at -0.017. A tint's whole job is to darken what is under
+     it without saying anything about it.
+
+     A tint is a layer and not a colour, and that is the whole of why there are
+     two of them rather than two per family. It sits on top of whatever
+     background the element already has, so one pair covers `primary`,
+     `secondary`, `ghost`, `danger`, `selected`, a list row, a tab, a nav link
+     and the variant nobody has written yet. What it replaced was a `-hover`
+     colour on every family — which meant a new variant could not be hovered
+     until somebody picked a colour for it, and, since nobody was ever going to
+     pick a second one for each, meant no pressed state anywhere in the product.
+
+     Spent through the `interactive` utility at the bottom of this file, never
+     as a background class. */
+  --color-shadow: rgba(84, 11, 14, 0.12);
+  --color-overlay-hover: rgba(0, 0, 0, 0.05);
+  --color-overlay-pressed: rgba(0, 0, 0, 0.10);
 
   /* Foreground text, in descending emphasis. */
-  --color-fg: #0f172a;
-  --color-fg-muted: #475569;
-  --color-fg-subtle: #94a3b8;
+  --color-fg: #540b0e;
+  --color-fg-muted: #7a4f4a;
+  --color-fg-subtle: #a08079;
 
   /* Icons, in descending emphasis, and separate from the text scale above on
      purpose. An icon takes `currentColor` unless it is told otherwise, which
@@ -44,58 +80,107 @@
      way to be quieter than it — a chevron on a filter and the word beside it
      are not the same thing and should not have to weigh the same.
 
-     They start on the same three values as `fg`, `fg-muted` and `fg-subtle`
-     because that is what they are today. Naming them separately is what lets
-     the two ramps come apart later without every icon in the app moving with
-     the text. Reached through `Icon`'s `tone`, which defaults to inheriting. */
+     They are `var()` references rather than copied values, which is the whole
+     reason the group was written this way: a change of identity moves the text
+     ramp and the icons move with it, without a value in this group being
+     touched. Naming them separately is still what lets the two ramps come
+     apart later. Reached through `Icon`'s `tone`, which defaults to
+     inheriting. */
   --color-icon-primary: var(--color-fg);
   --color-icon-secondary: var(--color-fg-muted);
   --color-icon-disabled: var(--color-fg-subtle);
 
-  /* Muted: the neutral fill used by secondary controls and neutral badges. */
-  --color-muted: #f1f5f9;
-  --color-muted-hover: #e2e8f0;
-  --color-muted-fg: #475569;
+  /* Muted: the neutral fill used by secondary controls and neutral badges.
+     There is no `muted-hover`, and no `-hover` on any family: a fill declares
+     what it is and the `interactive` utility says what happens when it is
+     pointed at. */
+  --color-muted: #f7f2de;
+  --color-muted-fg: #7a4f4a;
 
-  /* Primary: the single accent colour of the product. */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-fg: #ffffff;
-  --color-primary-subtle: #eff6ff;
-  --color-primary-subtle-fg: #1d4ed8;
-  --color-primary-border: #bfdbfe;
+  /* Primary: the single accent colour of the product.
 
-  /* Info: informational, non-urgent state. */
-  --color-info: #0891b2;
-  --color-info-hover: #0e7490;
-  --color-info-fg: #ffffff;
-  --color-info-subtle: #ecfeff;
-  --color-info-subtle-fg: #0e7490;
-  --color-info-border: #a5f3fc;
+     The subtle pair is a tint of the primary carrying the page's yellow, and
+     that is the whole of the change from the blue-grey that used to be here.
+     Warm and cold on a light tint is one axis — b* in OKLab, yellow against
+     blue — and the page sits at b* +0.015 while `#e4edef` sat at -0.005: the
+     tint was on the far side of neutral from every surface it was ever drawn
+     on, which is why the nav item and the selected row read as stickers rather
+     than as part of the page. This value is b* +0.008, which is 58% of the
+     page's own yellow, with chroma at 0.029 against the old 0.010 so that it
+     reads as a colour rather than as a grey that got warm.
+
+     What it costs is hue, and the amount is worth writing down because it is
+     the argument: a tint of a teal cannot carry yellow and stay at the teal's
+     own 217°, so this sits at 163°. That is a green-teal, and it is 54° from
+     the solid it is named after. The family is not carried by the fill — it is
+     carried by `primary-subtle-fg` and `primary-border`, which are the two
+     things drawn on and around it and are both unmistakably this teal. A fill
+     at chroma 0.029 was never going to name a family on its own.
+
+     The floor on that rotation is `success-subtle` at 145°, and the distance to
+     it went up rather than down: ΔE 0.021 against the 0.012 the blue-grey had,
+     because the chroma here is two and a half times the success tint's. Warmer
+     than this starts reading as the resolved-ticket green.
+
+     `primary-border` moved with it, at the same hue. The two are one chip —
+     `Button`'s `selected` draws the border and the fill together — and a cool
+     rim around a warm fill is more visibly wrong than either was alone.
+
+     What did not move is `primary-subtle-fg`. The ink measures 8.1:1 on this
+     fill where it measured 8.3:1 on the blue-grey, so the pair is unchanged
+     where it matters: this is a hue change and not a contrast one. */
+  --color-primary: #335c67;
+  --color-primary-fg: #fdfbf0;
+  --color-primary-subtle: #d7eee2;
+  --color-primary-subtle-fg: #274852;
+  --color-primary-border: #bad3c6;
+
+  /* Info: informational, non-urgent state.
+
+     The subtle pair is warmed for the reason the primary one is, and it had to
+     be: `Badge status="info"` is the role badge in the header, which sits an
+     inch from the active nav item, and `Alert`'s info tone is the widest tinted
+     band on any screen. Leaving this family cold would have moved the problem
+     rather than fixed it.
+
+     It is warmed a step less than primary — b* +0.006 against +0.008, and a
+     lighter fill at lower chroma — because these two subtles were previously
+     the same colour to within a rounding error (ΔE 0.009 in OKLab, closer than
+     either was to anything else in this file) and a badge indistinguishable
+     from the nav item behind it is the other half of the same fault. That gap
+     is ΔE 0.016 now. Ink measures 6.5:1 on it, unchanged. */
+  --color-info: #4a7c8c;
+  --color-info-fg: #fdfbf0;
+  --color-info-subtle: #e0f1e8;
+  --color-info-subtle-fg: #2f5a66;
+  --color-info-border: #bfd6cb;
 
   /* Danger: destructive actions and error state. */
-  --color-danger: #dc2626;
-  --color-danger-hover: #b91c1c;
-  --color-danger-fg: #ffffff;
-  --color-danger-subtle: #fef2f2;
-  --color-danger-subtle-fg: #b91c1c;
-  --color-danger-border: #fecaca;
+  --color-danger: #9e2a2b;
+  --color-danger-fg: #fdfbf0;
+  --color-danger-subtle: #f6e3e2;
+  --color-danger-subtle-fg: #540b0e;
+  --color-danger-border: #e3bfbe;
 
   /* Success: completed or resolved state. */
-  --color-success: #16a34a;
-  --color-success-hover: #15803d;
-  --color-success-fg: #ffffff;
-  --color-success-subtle: #f0fdf4;
-  --color-success-subtle-fg: #15803d;
-  --color-success-border: #bbf7d0;
+  --color-success: #4f6f52;
+  --color-success-fg: #fdfbf0;
+  --color-success-subtle: #e6ede6;
+  --color-success-subtle-fg: #3a5340;
+  --color-success-border: #c2d2c3;
 
-  /* Warning: needs attention but is not an error. */
-  --color-warning: #d97706;
-  --color-warning-hover: #b45309;
-  --color-warning-fg: #ffffff;
-  --color-warning-subtle: #fffbeb;
-  --color-warning-subtle-fg: #b45309;
-  --color-warning-border: #fde68a;
+  /* Warning: needs attention but is not an error.
+
+     One value here does not follow the pattern the other four families do, and
+     it is forced by the fact that warning is the one family whose solid is
+     light: `warning-fg` is the ink rather than the cream every other family
+     puts on its solid, because cream on this amber measures 2.2:1 and the ink
+     measures 6.4:1. */
+  --color-warning: #e09f3e;
+  --color-warning-fg: #540b0e;
+  --color-warning-subtle: #fff3b0;
+  --color-warning-subtle-fg: #6b4a12;
+  --color-warning-border: #ebd79a;
 
   /* --------------------------------------------------------------- spacing */
 
@@ -105,18 +190,21 @@
 
   /* ---------------------------------------------------------------- sizing */
 
-  /* The height of an interactive control. These were `h-8` and `h-10` written
+  /* The height of an interactive control. These were height classes written
      into `Button`, which meant the two heights every control in the product is
      measured against were a Tailwind class rather than something a theme could
      reach: a denser build of this app had no way to say so without editing the
-     component.
+     component. This is that denser build, and both heights came down a step
+     from here rather than from `Button`.
 
      `sm` is the row-and-toolbar height, `md` the standalone one. `Input`,
      `Select` and `Textarea` are still sized by their padding rather than by
-     these, because a textarea has rows and a text field grows with its font;
-     that is worth revisiting, and it is not this change. */
-  --size-element-sm: 2rem;
-  --size-element-md: 2.5rem;
+     these, because a textarea has rows and a text field grows with its font —
+     which is why tightening those three meant editing three components and
+     tightening a button meant editing two numbers here. That is worth
+     revisiting, and it is not this change. */
+  --size-element-sm: 1.75rem;
+  --size-element-md: 2.25rem;
 
   /* ----------------------------------------------------------- border width */
 
@@ -140,6 +228,11 @@
      drift: a field's ring sits on its border rather than outside it, so the
      control does not appear to grow when it is focused. It is named here so
      that it stays one decision instead of becoming three.
+
+     The ring is drawn in `primary`, which measures 7.3:1 on the card surface
+     and 6.5:1 on the inset one — comfortably past the 3:1 a focus indicator
+     has to reach. That is the one place in this palette where the accent is
+     load-bearing for accessibility rather than for looks.
 
      Use them through `focus-ring` and `focus-ring-inset` below. */
   --focus-ring-width: 2px;
@@ -167,73 +260,113 @@
      infinity — so there is nothing to declare for them; the names are here
      because the scale is six steps and reads as one.
 
+     Every value below came down. The names did not move, which is the point of
+     having named them: a corner that got sharper is four numbers here and no
+     call sites, where a scale named `sm` through `lg` would have had to decide
+     whether `md` still meant what it used to.
+
      The concentric rule, for `inner`: a rounded box with padding needs its
      inner corner at `max(0, outer - padding)`, or the two curves run parallel
      instead of sharing a centre and the gap between them visibly widens at the
-     corner. In this product it currently resolves to zero everywhere it could
-     apply — `Card` is an 8px corner around 16-20px of padding, so `max(0, 8 -
-     20)` is 0, which is what a square-cornered child already draws. `inner`
-     exists for the day a tighter container needs it. */
+     corner. In this product it still resolves to zero everywhere it could
+     apply, and by a wider margin than before — `Card` is now a 4px corner
+     around 12-16px of padding, so `max(0, 4 - 16)` is 0, which is what a
+     square-cornered child already draws. `inner` exists for the day a tighter
+     container needs it. */
   --radius-*: initial;
-  --radius-inner: 0.25rem;
-  --radius-element: 0.375rem;
-  --radius-container: 0.5rem;
-  --radius-page: 0.75rem;
+  --radius-inner: 0.125rem;
+  --radius-element: 0.1875rem;
+  --radius-container: 0.25rem;
+  --radius-page: 0.5rem;
 
   /* ------------------------------------------------------------ typography */
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /* The family is named here and loaded in `apps/web/index.html`. Naming a
+     family without loading it means every browser goes looking for it, fails,
+     and quietly falls back — so the two have to move together, and the link
+     tag is the other half of this line.
+
+     The fallbacks are chosen for metrics rather than for taste. IBM Plex Sans
+     is a grotesque of ordinary width and x-height, and Helvetica Neue and Arial
+     are the closest things to it that are already on the machine, so the swap
+     when the webfont arrives moves the text as little as a swap can.
+
+     `--font-mono` is unchanged and stays a system stack. IBM Plex Mono would
+     pair with the sans, and it would be a second family downloaded for one
+     column of ticket ids. */
+  --font-sans: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, Roboto,
+    'Segoe UI', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
     'Liberation Mono', monospace;
 
   /* Weight, named. The three headings said `600` three times, which is a number
-     that means nothing on its own and cannot be changed in one place. */
+     that means nothing on its own and cannot be changed in one place. All four
+     are loaded faces; a weight named here with no face behind it is a weight
+     the browser draws by smearing the one next to it. */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Raw sizes: a geometric scale, `round(12px × 1.15 ^ step)` for steps 0 to 5.
-     The ratio is a fifth root of two, so the scale doubles every five steps.
+  /* Raw sizes: a geometric scale, `round(12px × 2 ^ (step / 10))`. A base of
+     12px, and a ratio that doubles the scale every ten steps.
 
-       step  0      1      2      3      4      5
-       exact 12     13.80  15.87  18.25  20.99  24.14
-       token 12     14     16     18     20     24
+     The ratio is what moved, and it moved because it had to. This identity
+     asks for a subsection at 13px and a body at 14px — seven per cent apart —
+     and the old ratio put a whole step at fifteen per cent, so no scale built
+     on it could hold both. Ten steps to the octave is the coarsest ratio that
+     rounds onto every size the semantic layer needs.
 
-     Every size the semantic layer needs — 12, 14, 18 and 24 — falls out of it
-     exactly. Step 4 does not: the scale puts it at 21px and this file says
-     20px. That is today's value kept rather than a value moved to satisfy a
-     formula, and it is the one number on this scale that is not on the scale.
+     The scale is therefore finer than the product is, and the six named sizes
+     sit at steps 0, 1, 2, 5, 8 and 12 rather than at 0 through 5. A name marks
+     a step this product spends; the steps between the names are where the next
+     size will come from.
 
-     Line height is computed rather than chosen. Take 1.5 below 20px, 1.4 from
-     20 to 31px and 1.25 at 32px and above; snap the result to the 4px grid;
-     never let it come closer than fontSize + 4px:
+       step   0      1      2      5      8      12
+       exact  12     12.86  13.78  16.97  20.90  27.57
+       token  12     13     14     17     21     28
+
+     Every named size is that formula rounded, with no exceptions. The old
+     scale had one number on it that was not on it — step 4, kept at 20px where
+     the formula said 21px, because a scale is a way of choosing new numbers
+     rather than a reason to move the ones already on screen. That exception is
+     gone, and it is gone for free: nothing was using it.
+
+     Line height is computed rather than chosen, by the rule this file has used
+     from the start. Take 1.5 below 20px, 1.4 from 20 to 31px and 1.25 at 32px
+     and above; snap the result to the 4px grid; never let it come closer than
+     fontSize + 4px:
 
        12 → 18 → 20    ← the rule and this file disagree; see below
+       13 → 19.5 → 20
        14 → 21 → 20
-       16 → 24 → 24
-       18 → 27 → 28
-       20 → 28 → 28
-       24 → 33.6 → 32
+       17 → 25.5 → 24
+       21 → 29.4 → 28
+       28 → 39.2 → 40
 
-     Five of the six already comply. `--text-xs` does not: the rule asks for
-     20px and this file says 16px. 16px is exactly the fontSize + 4px floor the
-     rule sets, and 1.67 on twelve-pixel text reads as a gap between lines
-     rather than as lines. Today's value is kept and the rule is the one that is
-     wrong at the small end. */
+     Five of the six comply. `--text-xs` does not, for the same reason it did
+     not before: the rule asks for 20px and this file says 16px, which is
+     exactly the fontSize + 4px floor the rule itself sets, and 1.67 on
+     twelve-pixel text reads as a gap between lines rather than as lines.
+     Today's value is kept and the rule is the one that is wrong at the small
+     end.
+
+     The top of the scale is the line worth looking at on screen. At 24px the
+     rule gave the title 32px; at 28px it gives 40px, because 39.2 snaps up
+     rather than down. That is the rule working — 1.43 where the old title was
+     1.33 — and it is a looser heading than the one it replaces. */
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
-  --text-sm: 0.875rem;
+  --text-sm: 0.8125rem;
   --text-sm--line-height: 1.25rem;
-  --text-base: 1rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg: 1.125rem;
-  --text-lg--line-height: 1.75rem;
-  --text-xl: 1.25rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.25rem;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.5rem;
+  --text-xl: 1.3125rem;
   --text-xl--line-height: 1.75rem;
-  --text-2xl: 1.5rem;
-  --text-2xl--line-height: 2rem;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 2.5rem;
 
   /* The scale above is raw sizes, the way the hex values above the colour names
      are raw colours. This is the vocabulary written on top of it: a screen has
@@ -247,32 +380,89 @@
      `font-semibold`. It is set through `--tw-font-weight`, so a caller that
      does want a different weight still wins.
 
-     `cn()` has to be told these are sizes — see `semanticTextSizes` in
-     `packages/shared/src/cn.ts`. Without it tailwind-merge reads `text-title` as
-     a colour, `text-title text-fg` collapses to `text-fg`, and every heading
-     silently loses its size. */
+     `subsection` and `body` are two steps apart now where they used to be the
+     same step told apart by weight alone. That is the one structural change in
+     this layer: a group heading is smaller than the prose under it and heavier,
+     rather than the same size and heavier.
+
+     Letter-spacing is the new axis, and it is the first thing on a level here
+     with no raw layer under it. Every other property points at a token that
+     holds the number; tracking states it. That is deliberate — -0.02em and
+     -0.01em are optical corrections for two particular levels, and a raw ramp
+     of two values used once each would be a layer with nothing in it — but it
+     is an exception to the arrangement the top of this file describes, and it
+     is the first one.
+
+     It costs three tokens to say nothing, as well. `subsection`, `body` and
+     `caption` declare `normal` rather than staying silent, because a level
+     that declares no letter-spacing lets an inherited one through, and a level
+     exists to settle the question rather than pass it on. Five tokens for two
+     values is the price of the axis.
+
+     What it does not cost is `cn()`. Tailwind emits a level's tracking as
+     `var(--tw-tracking, …)`, which is the property `tracking-*` sets, so a
+     caller asking for different tracking still wins whatever the class order —
+     and `tracking-` is a group tailwind-merge already knows, unlike `text-`
+     and `rounded-`. This is the first token group added here that needs no
+     matching entry in `packages/shared/src/cn.ts`.
+
+     `cn()` does still have to be told the sizes are sizes — see
+     `semanticTextSizes` in `packages/shared/src/cn.ts`. Without it
+     tailwind-merge reads `text-title` as a colour, `text-title text-fg`
+     collapses to `text-fg`, and every heading silently loses its size. */
   --text-title: var(--text-2xl);
   --text-title--line-height: var(--text-2xl--line-height);
   --text-title--font-weight: var(--font-weight-semibold);
+  --text-title--letter-spacing: -0.02em;
 
   --text-section: var(--text-lg);
   --text-section--line-height: var(--text-lg--line-height);
   --text-section--font-weight: var(--font-weight-semibold);
+  --text-section--letter-spacing: -0.01em;
 
   --text-subsection: var(--text-sm);
   --text-subsection--line-height: var(--text-sm--line-height);
   --text-subsection--font-weight: var(--font-weight-semibold);
+  --text-subsection--letter-spacing: normal;
 
-  --text-body: var(--text-sm);
-  --text-body--line-height: var(--text-sm--line-height);
+  --text-body: var(--text-base);
+  --text-body--line-height: var(--text-base--line-height);
+  --text-body--letter-spacing: normal;
 
   --text-caption: var(--text-xs);
   --text-caption--line-height: var(--text-xs--line-height);
+  --text-caption--letter-spacing: normal;
 
   /* --------------------------------------------------------------- shadows */
 
-  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.06);
-  --shadow-overlay: 0 10px 30px -10px rgb(15 23 42 / 0.3);
+  /* One shadow, now. A card carries its border and nothing else: `--shadow-card`
+     is `none`, and the class stays on `Card` so that the decision lives in this
+     file rather than in a component somebody would have to edit to take it
+     back.
+
+     What that leans on is worth knowing. A card is white on a cream page, which
+     is 1.04:1 of fill difference, so with the shadow gone the border is the
+     whole of the card's edge — and that border measures 1.31:1 against the
+     page. It reads, because a 1px line at that separation is a line; it is not
+     a boundary that survives a bad monitor. Removing the shadow is the change
+     that made it load-bearing.
+
+     The value is `0 0 #0000` and not the keyword `none`, and that is not a
+     style choice. Tailwind composes every shadow utility into one `box-shadow`
+     declaration of five comma-separated parts, and `none` is only legal as the
+     whole of a `box-shadow`, never as one item in a list. A theme value of
+     `none` therefore compiles to a declaration that is invalid after variable
+     substitution — which happens to render as no shadow, because an invalid
+     declaration falls back to the property's initial value, and for
+     `box-shadow` that is `none`. Right answer, wrong route: the same
+     invalidity would also blank a ring or an inset shadow drawn on the same
+     element. `0 0 #0000` is the transparent shadow Tailwind's own no-shadow
+     utility uses, and it says nothing at all in valid CSS.
+
+     `--shadow-overlay` is the only elevation left, and it draws in
+     `--color-shadow` rather than in a hex value written into a shadow. */
+  --shadow-card: 0 0 #0000;
+  --shadow-overlay: 0 8px 24px var(--color-shadow);
 
   /* ------------------------------------------------------------- animation */
 
@@ -285,10 +475,25 @@
      Two durations, because there are two distances: a fade crosses no ground,
      a panel crosses the edge of the screen. `--ease-enter` is the CSS `ease-out`
      keyword and not Tailwind's `--ease-out`, which is a different curve —
-     everything here is an entrance, and an entrance decelerates. */
+     everything animated here is an entrance, and an entrance decelerates.
+
+     `--ease-state` is the second curve, and it is `linear` on purpose. An
+     entrance happens once and in one direction, so it can afford to decelerate.
+     A hover or a press is a state rather than an arrival: it crosses no ground,
+     and it can be reversed halfway through — the pointer leaves, the button is
+     released — so the curve is played backwards as often as forwards, and
+     `linear` is the only one that looks the same both ways. Anything with a
+     shape to it makes the release read as slower than the press even though the
+     two take the same time. Reusing `--ease-enter` would also have made its own
+     name untrue: a tint appearing under a cursor has not entered from anywhere.
+
+     The fast band covers it. A press is the smallest interaction in the
+     product, and 200ms on a control that is about to be clicked again is a
+     control that feels behind the finger. */
   --duration-fast: 150ms;
   --duration-slow: 200ms;
   --ease-enter: ease-out;
+  --ease-state: linear;
 
   --animate-fade-in: fade-in var(--duration-fast) var(--ease-enter);
   --animate-slide-in-right: slide-in-right var(--duration-slow) var(--ease-enter);
@@ -349,5 +554,79 @@
     outline-style: var(--focus-ring-style);
     outline-color: var(--focus-ring-color);
     outline-offset: var(--focus-ring-offset-inset);
+  }
+}
+
+/*
+ * The hover and pressed states, written once.
+ *
+ * Anything that answers a pointer says `interactive`, the way anything
+ * focusable says `focus-ring`. It gets both states from one pair of tokens: the
+ * ink at five per cent when the element is pointed at, at ten when it is held
+ * down.
+ *
+ * Before this, hover was a colour per variant — a `-hover` on `primary` and on
+ * `danger`, and the neutral fill on the two variants that had none of their own
+ * — so a sixth variant needed a sixth colour before it could be hovered. Pressed
+ * was not expressible at all: it would have taken a `-pressed` on every family,
+ * and nobody was going to write five of them, so no control in the product had
+ * one.
+ *
+ * The tint is a `background-image` rather than a `background-color`, and that is
+ * what makes one pair enough. A gradient between one colour and itself is a flat
+ * layer, and a background image paints *over* the background colour instead of
+ * replacing it — so the same two values work on a solid fill, on a tinted fill
+ * and on nothing at all. A variant therefore declares one background and no
+ * states, which is the property that makes the next variant free.
+ *
+ * `--tint` is registered rather than merely set, because an unregistered custom
+ * property is a string, and strings do not interpolate: without `@property` the
+ * tint would appear and disappear rather than fade. `inherits: false` keeps a
+ * tinted control inside a tinted control from wearing both.
+ *
+ * The hover half sits behind `@media (hover: hover)` for the same reason
+ * Tailwind's own `hover:` variant does: a tap on a touch screen leaves the
+ * element in `:hover` until something else is tapped, so an unguarded hover tint
+ * is a button that stays lit after it has been used.
+ *
+ * `:active` is written after `:hover` so a held control reads as held rather
+ * than as pointed at, and `:disabled` after both, because a browser will happily
+ * match `:hover` on a control it will not let you use.
+ */
+@property --tint {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+@utility interactive {
+  background-image: linear-gradient(var(--tint), var(--tint));
+
+  /* This is also the app's only always-on transition, and until now it was the
+     one piece of motion not on the motion scale: every control said
+     `transition-colors`, which reads Tailwind's default duration and default
+     curve rather than anything in this file. */
+  transition-property: --tint, color, background-color, border-color, outline-color;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-state);
+
+  /* A state that does not animate is still a state. Reduced motion turns the
+     fade off; it does not turn the feedback off. */
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0ms;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      --tint: var(--color-overlay-hover);
+    }
+  }
+
+  &:active {
+    --tint: var(--color-overlay-pressed);
+  }
+
+  &:disabled {
+    --tint: transparent;
   }
 }

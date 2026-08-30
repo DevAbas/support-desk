@@ -99,7 +99,7 @@ export function ListRow({
 
   // `flex-1` rather than `w-full`, because the row may now have a checkbox
   // beside it: a full-width child of a flex row would push it off the end.
-  const rowClasses = 'flex min-w-0 flex-1 items-center gap-3 px-4 py-2 text-left'
+  const rowClasses = 'flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5 text-left'
 
   return (
     <li className={cn('flex items-center bg-surface', className)} {...props}>
@@ -107,7 +107,7 @@ export function ListRow({
         // A label around it so the column is the target rather than the
         // sixteen pixels of the box, and `self-stretch` so that column is the
         // height of the row.
-        <label className="flex shrink-0 cursor-pointer items-center self-stretch pl-4">
+        <label className="interactive flex shrink-0 cursor-pointer items-center self-stretch pl-3">
           <Checkbox
             label={selection.label}
             labelHidden
@@ -126,7 +126,6 @@ export function ListRow({
             rowClasses,
             // A row is as tall as what is in it, and square with its neighbours.
             'h-auto rounded-none border-0 font-normal',
-            !isSelected && 'hover:bg-surface-muted',
           )}
         >
           {content}

@@ -62,11 +62,28 @@ export function AppLayout() {
                       to={item.to}
                       className={({ isActive }) =>
                         cn(
-                          'inline-flex h-9 items-center rounded-element px-3 text-sm font-medium',
-                          'transition-colors focus-ring',
+                          'inline-flex h-9 items-center rounded-element px-3 text-body font-medium',
+                          // A link is not a `Button`, so it does not get the
+                          // states for free — but it answers a pointer like
+                          // one, and `interactive` is how it says so. `text-body`
+                          // is the rest of that: it is the level `Button` sets at
+                          // both sizes, so the nav sits on the same step as the
+                          // controls beside it instead of a raw one under them.
+                          'interactive focus-ring',
+                          // The one selected-looking thing in the product that
+                          // is not on the primary tint. A tint of this teal has
+                          // to carry the page's yellow to sit on it, and by the
+                          // time it does it is a green — which is where
+                          // `success` lives, so the nav item was announcing a
+                          // status it does not have. `surface-inset` is the
+                          // palette's own warm neutral: it collides with no
+                          // status, and it agrees with the neutral tint the
+                          // item beside it wears on hover. The state is carried
+                          // by the ink as much as the fill — `fg` at 13.1:1
+                          // against `fg-muted`'s 6.9:1 on the header.
                           isActive
-                            ? 'bg-primary-subtle text-primary-subtle-fg'
-                            : 'text-fg-muted hover:bg-muted hover:text-fg',
+                            ? 'bg-surface-inset text-fg'
+                            : 'text-fg-muted hover:text-fg',
                         )
                       }
                     >

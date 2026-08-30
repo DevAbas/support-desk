@@ -11,8 +11,14 @@ import type { CheckboxProps } from './Checkbox.types'
  */
 const controlClasses = 'size-4 accent-primary disabled:cursor-not-allowed disabled:opacity-50'
 
-/** The visible half: the words are a click target too, not just the box. */
-const labelClasses = 'flex cursor-pointer items-center gap-2 text-body text-fg'
+/**
+ * The visible half: the words are a click target too, not just the box.
+ *
+ * `interactive` because it is one — the whole label takes the click, so the
+ * whole label answers the pointer. The box itself is drawn by the browser and
+ * keeps its own states, the same way it keeps its own focus ring.
+ */
+const labelClasses = 'interactive flex cursor-pointer items-center gap-2 text-body text-fg'
 
 /**
  * A checkbox.

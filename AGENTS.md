@@ -16,11 +16,15 @@ with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`. Below is the
 - Always route a destructive action through `ConfirmDialog`.
 - Always mark an active row, tab or chip with `variant="selected"`. Never hand-write a
   selected state in `className`.
+- Never hand-write a hover or a pressed state either. `interactive` owns both and
+  `Button` already says it; anything actionable that is not a `Button` says it itself.
 
 ## Card padding
 
-- Always let `CardBody` own it. Never pad a raw `<div>` to the card scale: `px-5 py-4` is
+- Always let `CardBody` own it. Never pad a raw `<div>` to the card scale: `px-4 py-3` is
   what `CardBody` is, and eight padding values grew across the app before this was said.
+  The number in that sentence has already changed once — which is the argument for
+  asking `CardBody`, not for memorising it.
 
 ## Modal or Drawer
 

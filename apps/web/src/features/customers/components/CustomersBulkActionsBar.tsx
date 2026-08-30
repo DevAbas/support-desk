@@ -46,7 +46,7 @@ export function CustomersBulkActionsBar({
     <div
       aria-label="Bulk actions"
       role="group"
-      className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-primary-subtle px-4 py-3"
+      className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-primary-subtle px-3 py-2"
     >
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-body font-medium text-primary-subtle-fg">

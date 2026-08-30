@@ -221,7 +221,7 @@ export function CustomersPage() {
         {/* The end of the list, not a paginator. There is no page number to
             show because there are no pages to go back to — only more. */}
         {customers.hasNextPage ? (
-          <div className="flex justify-center border-t border-border px-4 py-3">
+          <div className="flex justify-center border-t border-border px-3 py-2">
             <Button
               variant="secondary"
               onClick={() => void customers.fetchNextPage()}
