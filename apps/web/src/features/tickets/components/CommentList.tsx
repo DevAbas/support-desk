@@ -17,7 +17,7 @@ export function CommentList({ comments }: CommentListProps) {
         <li key={comment.id} className="rounded-element border border-border bg-surface-muted p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <Text className="font-medium">{comment.author}</Text>
-            <time dateTime={comment.createdAt} className="text-xs text-fg-subtle">
+            <time dateTime={comment.createdAt} className="text-caption text-fg-subtle">
               {formatDateTime(comment.createdAt)}
             </time>
           </div>

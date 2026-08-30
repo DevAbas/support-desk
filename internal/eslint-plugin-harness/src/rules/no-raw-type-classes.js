@@ -18,15 +18,24 @@
  *
  * Scope and exemptions
  * --------------------
- * Feature code — `apps/web/src/features` — is where the copies were written, and
- * it has no reason to reach past the semantic layer.
+ * The whole of `apps/web/src`. It was `apps/web/src/features` when this was
+ * written, because that was where the copies were and, at the time, very nearly
+ * the whole of the app. It is not any more: `app/` now holds `AppLayout`,
+ * `AppRoutes` and the shell the authentication routes render outside, and the
+ * rule was not looking at any of it — which is exactly where the one raw level
+ * left in the app was hiding, a wordmark at `text-base font-semibold`. A scope
+ * drawn around where the defects happened to be found is a scope that goes stale
+ * the first time a directory is added.
  *
- * `packages/ui` is also in scope, because it is where a raw size would go
- * unnoticed, but it is where the semantic layer is *built*, so a raw class is
- * sometimes right there: it is right wherever the class sizes something that is
- * not type. Those cases are named in EXEMPTIONS below rather than in
- * `eslint.config.js`, so that the reason travels with the rule and a new one has
- * to be argued for in a diff to this file.
+ * `packages/ui` is in scope for a different reason: it is where a raw size would
+ * go unnoticed. It is also where the semantic layer is *built*, so a raw class is
+ * sometimes right there — wherever the class sizes something that is not type.
+ * Those cases are named in EXEMPTIONS below rather than in `eslint.config.js`, so
+ * that the reason travels with the rule and a new one has to be argued for in a
+ * diff to this file.
+ *
+ * `apps/api` and `packages/shared` are out of scope and stay out: neither renders
+ * anything, so a `text-` class there is a string that happens to look like one.
  */
 
 /** Variant prefixes (`md:`, `hover:`) and `!` are noise; the class is what matters. */
@@ -40,7 +49,7 @@ const RAW_SIZES = new Set(['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-x
 
 const RAW_WEIGHT = 'font-semibold'
 
-const FEATURE_SCOPE = 'apps/web/src/features/'
+const APP_SCOPE = 'apps/web/src/'
 
 const UI_SCOPE = 'packages/ui/src/'
 
@@ -135,10 +144,10 @@ export default {
  * The classes this file may use, or `null` when the file is out of scope.
  *
  * An empty set means "in scope, nothing exempted", which is every file in
- * `apps/web/src/features`.
+ * `apps/web/src`.
  */
 function allowedIn(filename) {
-  const inScope = filename.includes(FEATURE_SCOPE) || filename.includes(UI_SCOPE)
+  const inScope = filename.includes(APP_SCOPE) || filename.includes(UI_SCOPE)
 
   if (!inScope) return null
 

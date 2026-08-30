@@ -52,7 +52,10 @@ export function ReportAssigneeTable({ assignees, isLoading }: ReportAssigneeTabl
                 {row.byStatus[status]}
               </TableCell>
             ))}
-            <TableCell className="text-right font-semibold tabular-nums">{row.total}</TableCell>
+            {/* `font-medium` rather than semibold: this is an emphasised figure,
+                not a heading, and medium is the weight the assignee cell beside
+                it and every badge on the row already use. */}
+            <TableCell className="text-right font-medium tabular-nums">{row.total}</TableCell>
           </TableRow>
         ))}
       </TableBody>

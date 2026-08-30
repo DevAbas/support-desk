@@ -76,7 +76,7 @@ export function TicketsTable({
                 />
               </TableCell>
             ) : null}
-            <TableCell className="font-mono text-xs text-fg-muted">{ticket.id}</TableCell>
+            <TableCell className="font-mono text-caption text-fg-muted">{ticket.id}</TableCell>
             <TableCell>
               <Link
                 to={`/tickets/${ticket.id}`}

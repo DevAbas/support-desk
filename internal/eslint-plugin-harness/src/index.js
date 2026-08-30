@@ -49,10 +49,14 @@ const ROLLOUT = {
     strict: 'warn',
   },
   'no-raw-type-classes': {
-    // Nine raw sizes and one `font-semibold`, all in `apps/web/src/features`.
-    // Not fixed here: this change is the rules.
-    violations: 10,
-    strict: 'warn',
+    // Clean, and promoted. Ten when this table was written, all in
+    // `apps/web/src/features`; five were left when the scope was widened to the
+    // whole of `apps/web/src`, and two of those five — a wordmark at
+    // `text-base font-semibold` in `AppLayout` — were only visible *because* it
+    // was widened. The old scope had been reporting zero for the app shell by
+    // not looking at it.
+    violations: 0,
+    strict: 'error',
   },
   'no-primitive-class-copying': {
     // Clean. `Modal`, `Drawer` and `ReportToolbar` were moved onto the real

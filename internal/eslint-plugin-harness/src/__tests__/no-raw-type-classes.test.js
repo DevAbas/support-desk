@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import rule, { EXEMPTIONS } from '../rules/no-raw-type-classes.js'
-import { createRuleTester, featureFile, uiFile } from './ruleTester.js'
+import { appShellFile, createRuleTester, featureFile, uiFile } from './ruleTester.js'
 
 const ruleTester = createRuleTester()
 
@@ -25,9 +25,14 @@ ruleTester.run('no-raw-type-classes', rule, {
       code: 'const a = <p className="text-fg-muted text-caption">3 open</p>',
     },
     {
-      name: 'outside the scope: shared, api and the app shell are not feature code',
-      filename: '/repo/apps/web/src/app/AppLayout.tsx',
-      code: 'const a = <span className="text-sm">Harness</span>',
+      name: 'outside the scope: the api renders nothing, so a text- string is a string',
+      filename: '/repo/apps/api/src/app.ts',
+      code: "const a = { size: 'text-sm' }",
+    },
+    {
+      name: 'outside the scope: shared holds the contract, not appearance',
+      filename: '/repo/packages/shared/src/cn.ts',
+      code: "const semanticTextSizes = ['title', 'section', 'text-sm']",
     },
 
     /*
@@ -85,6 +90,24 @@ ruleTester.run('no-raw-type-classes', rule, {
       errors: [{ messageId: 'rawSize' }],
     },
     {
+      /*
+       * The scope used to stop at `apps/web/src/features`, and this was a valid
+       * case on the grounds that the app shell is not feature code. It is app
+       * code, it renders, and this is the exact line the old scope missed: the
+       * wordmark in `AppLayout`, a level reassembled out of a size and a weight.
+       */
+      name: 'the app shell is in scope: a hand-assembled level in AppLayout',
+      filename: appShellFile(),
+      code: 'const a = <span className="text-base font-semibold text-fg">Support Desk</span>',
+      errors: [{ messageId: 'rawSize' }, { messageId: 'rawWeight' }],
+    },
+    {
+      name: 'the whole of apps/web/src, not only the two directories that had defects',
+      filename: appShellFile('test/renderWithProviders.tsx'),
+      code: "const wrapper = <div className=\"text-lg\" />",
+      errors: [{ messageId: 'rawSize' }],
+    },
+    {
       name: 'packages/ui is in scope too, outside the exempted files',
       filename: uiFile('components/Modal/Modal.tsx'),
       code: 'const a = <h2 className="text-lg font-semibold">{title}</h2>',
@@ -115,8 +138,9 @@ describe('no-raw-type-classes messages', () => {
   })
 
   it('stay short and point at the README for the reasoning', () => {
-    // Ten violations of this rule in the repository today, so ten copies of
-    // whatever is written here in every lint run.
+    // Ten violations when the cap was written, so ten copies of whatever is
+    // written here in every lint run. The count is zero now; the cap stays,
+    // because it is the next ten that it is for.
     for (const message of Object.values(rule.meta.messages)) {
       expect(message.length).toBeLessThan(280)
       expect(message).toContain('internal/eslint-plugin-harness/README.md')

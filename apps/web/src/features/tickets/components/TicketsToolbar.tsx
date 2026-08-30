@@ -1,4 +1,4 @@
-import { Alert, Button } from '@harness-sample/ui'
+import { Alert, Button, Toolbar } from '@harness-sample/ui'
 
 interface TicketsToolbarProps {
   onExport: () => void
@@ -16,7 +16,7 @@ export function TicketsToolbar({
   error = null,
 }: TicketsToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-4 border-b border-border px-3 py-2">
+    <Toolbar className="justify-end">
       {/* An export that failed is an error, and `Alert` is what knows an error
           is announced assertively — this said it politely, through a
           `role="status"` written by hand. A line in a toolbar is not a callout,
@@ -32,6 +32,6 @@ export function TicketsToolbar({
       <Button variant="secondary" size="sm" onClick={onExport} disabled={disabled || isExporting}>
         {isExporting ? 'Exporting…' : 'Export CSV'}
       </Button>
-    </div>
+    </Toolbar>
   )
 }

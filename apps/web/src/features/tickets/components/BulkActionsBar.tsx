@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Select } from '@harness-sample/ui'
+import { Button, Select, Toolbar } from '@harness-sample/ui'
 import { TICKET_STATUSES, TICKET_STATUS_LABELS, type TicketStatus } from '@harness-sample/shared'
 
 const statusOptions = TICKET_STATUSES.map((status) => ({
@@ -41,10 +41,10 @@ export function BulkActionsBar({
   const [status, setStatus] = useState<TicketStatus>(DEFAULT_STATUS)
 
   return (
-    <div
+    <Toolbar
       aria-label="Bulk actions"
       role="group"
-      className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-primary-subtle px-3 py-2"
+      className="items-end justify-between bg-primary-subtle"
     >
       <p className="text-body font-medium text-primary-subtle-fg">
         {selectedCount} {selectedCount === 1 ? 'ticket' : 'tickets'} selected
@@ -70,6 +70,6 @@ export function BulkActionsBar({
           Delete selected
         </Button>
       </div>
-    </div>
+    </Toolbar>
   )
 }

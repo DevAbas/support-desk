@@ -109,7 +109,7 @@ Promotion is one edit to `ROLLOUT` in `src/index.js`, visible in a diff.
 | Rule | Violations today | `recommended` | `strict` | Ready to promote |
 | --- | --- | --- | --- | --- |
 | `no-glyph-icons` | 3 | `warn` | `warn` | when the count reaches 0 |
-| `no-raw-type-classes` | 10 | `warn` | `warn` | when the count reaches 0 |
+| `no-raw-type-classes` | 0 | `warn` | **`error`** | promoted |
 | `no-primitive-class-copying` | 0 | `warn` | **`error`** | promoted |
 | `harness/max-lines-per-function` | 0 | `warn` | **`error`** | promoted |
 | `harness/complexity` | 0 | `warn` | **`error`** | promoted |
@@ -120,6 +120,13 @@ Promotion is one edit to `ROLLOUT` in `src/index.js`, visible in a diff.
 The four counting rules are at zero because their thresholds were chosen to put
 them there — see [Thresholds](#thresholds) below. That is the ratchet's starting
 position, not a clean bill of health.
+
+`no-raw-type-classes` is the first rule to reach zero the other way, by the
+violations being fixed, and it is now an error in `strict`. The order that
+happened in is the part worth keeping: its scope was widened *first*, from
+`apps/web/src/features` to the whole of `apps/web/src`, which took the count from
+three to five before it went to zero. A rule promoted at three would have been
+promoted while blind to two.
 
 Today `npm run lint` and `npm run lint:strict` print the same thing, because
 every rule that is an error in `strict` is already clean. That is the intended
@@ -198,8 +205,26 @@ Flagged: `text-xs`, `text-sm`, `text-base`, `text-lg`, `text-xl`, `text-2xl`,
 `font-semibold`. Variant prefixes do not hide them — `md:text-lg` and
 `hover:!text-sm` are the same class.
 
-**Scope.** `apps/web/src/features`, which is where the copies were written, and
-`packages/ui/src`, which is where a raw size would go unnoticed.
+**Scope.** The whole of `apps/web/src`, and `packages/ui/src`. `apps/api` and
+`packages/shared` are out and stay out: neither renders anything, so a `text-`
+class there is a string that happens to look like one.
+
+It was `apps/web/src/features` when the rule was written, because that is where
+the copies were found and, at the time, very nearly the whole of the app. `app/`
+now holds `AppLayout`, `AppRoutes` and the shell the auth routes render outside
+of, and none of it was being read — the wordmark in `AppLayout` was
+`text-base font-semibold`, a level reassembled out of a size and a weight, which
+is the exact defect this rule exists for, sitting two directories from where it
+was looking. **A scope drawn around where the defects happened to be found goes
+stale the first time a directory is added**, and the rule reports zero for the
+part it cannot see, which reads the same as clean.
+
+Widening it surfaced two violations, both on that one line. The five that
+resulted are all fixed: the wordmark takes `text-section` directly (a `Heading`
+there would put an `h2` above every page's `h1`), the total in
+`ReportAssigneeTable` takes `font-medium`, which is what this codebase means by
+an emphasised line that is not a heading, and two `text-xs` meta lines take
+`text-caption`.
 
 **Exemptions**, which live in `src/rules/no-raw-type-classes.js` and not in
 `eslint.config.js`, so that the reason travels with the rule and a new one has to
@@ -211,6 +236,20 @@ and both halves of that are tested.
 | --- | --- | --- |
 | `primitives/Avatar/Avatar.tsx` | `text-xs` `text-sm` `text-lg` | Initials are not type. They are a mark inside a circle of a fixed size and they scale with the circle — `size-8` takes `text-xs`, `size-14` takes `text-lg`. A semantic level would tie the mark to the prose scale and break the fit at two of the three sizes. |
 | `components/Table/Table.tsx` | `font-semibold` | `text-caption` deliberately carries no weight: only the three heading levels do. A column header is a label rather than a heading, so the weight is added on top of the semantic size instead of replacing it. |
+
+**The Table exemption is the one to revisit, and widening the scope is what
+showed it.** Its reason is not about `Table` — it is that the type scale has no
+way to say "emphasis on something that is not a heading", so a label needing
+weight has to reach past the scale. That need is not confined to a column header:
+the total in `ReportAssigneeTable` and the wordmark in `AppLayout` are the same
+request, and they were both found outside `packages/ui`. Two of the three are
+answered by `font-medium`, which this rule does not flag and which the whole
+codebase already uses for exactly this; the third is a column header at 600.
+Either the scale grows a named non-heading weight and the exemption goes, or the
+exemption is admitted to be about the scale rather than about `Table` and is
+written that way. What it should not become is a third per-file entry, and it
+should certainly not become a line in `eslint.config.js`, where it would read as
+a file somebody had trouble with rather than as a hole in the scale.
 
 ## `no-primitive-class-copying`
 
@@ -245,9 +284,27 @@ Matched combinations, most specific first:
 **This rule is a heuristic, and it says so in its message and its docblock.** It
 matches appearance, not intent. A toolbar is also a bordered strip across a card
 and is genuinely not a `CardHeader`: a header says what a card is and pads to the
-card scale, a toolbar acts on it and sits on the tighter `px-4 py-3` scale a
-table uses. `TicketsToolbar` is that case and is correct as it stands — which is
-why the rule matches on the card scale rather than on "a strip with a border".
+card scale, a toolbar acts on it and sits on the tighter scale a table cell uses
+— which is why the rule matches on the card scale rather than on "a strip with a
+border".
+
+`TicketsToolbar` was the example here, and it was described as correct as it
+stands. It is not a `CardHeader` and never was, but "correct as it stands" was
+the wrong conclusion: it was one of six strips hand-writing the same padding
+under the same border, and a `Toolbar` primitive now owns all six. The
+distinction the rule draws was right; what it was protecting was a copy the rule
+had no signature for.
+
+**Two things about the signature table are worth knowing before anyone trusts
+this rule's zero.** The combinations above are the card scale as it was when they
+were written — `px-5 py-4` and `px-5 py-3`. A density pass has since moved
+`CardHeader` and `CardBody` to `px-4 py-3` and `CardFooter` to `px-4 py-2.5`, and
+these signatures were not moved with them, so the rule currently matches a scale
+that no longer exists anywhere in the codebase. Its zero is a rule looking for
+the wrong string, not a codebase with no copies in it. Correcting it is not free
+— `px-4 py-3` is also what `Alert`'s `callout` and `band` variants are, and they
+are legitimately not a `CardBody` — so it is a change with a decision in it
+rather than a typo, and it is left here rather than made quietly.
 
 Where it is still wrong, the classes are usually what to change. Where they are
 right, a disable comment carrying the reason is a fair answer and a reviewable

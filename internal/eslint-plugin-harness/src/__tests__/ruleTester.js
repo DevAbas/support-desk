@@ -33,6 +33,11 @@ export function featureFile(name = 'tickets/TicketListPage.tsx') {
   return `/repo/apps/web/src/features/${name}`
 }
 
+/** A path inside `apps/web/src` but outside `features`: the app shell. */
+export function appShellFile(name = 'app/AppLayout.tsx') {
+  return `/repo/apps/web/src/${name}`
+}
+
 /** A path inside `packages/ui/src`, where the design system lives. */
 export function uiFile(name = 'components/Modal/Modal.tsx') {
   return `/repo/packages/ui/src/${name}`

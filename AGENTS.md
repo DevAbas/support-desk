@@ -19,12 +19,23 @@ with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`. Below is the
 - Never hand-write a hover or a pressed state either. `interactive` owns both and
   `Button` already says it; anything actionable that is not a `Button` says it itself.
 
-## Card padding
+## Card padding, and strip padding
 
-- Always let `CardBody` own it. Never pad a raw `<div>` to the card scale: `px-4 py-3` is
-  what `CardBody` is, and eight padding values grew across the app before this was said.
-  The number in that sentence has already changed once — which is the argument for
-  asking `CardBody`, not for memorising it.
+- Always let `CardBody` own a card's. Never pad a raw `<div>` to the card scale:
+  `px-4 py-3` is what `CardBody` is, and eight padding values grew across the app before
+  this was said. The number in that sentence has already changed once — which is the
+  argument for asking `CardBody`, not for memorising it.
+- Always let `Toolbar` own a strip's, and the divider with it. A strip sits above, below
+  or inside a card and carries controls rather than content: the filters over a list, the
+  bar that appears when rows are ticked, the pagination, the load-more. Six call sites in
+  feature code wrote that padding by hand before `Toolbar` existed, and no token could
+  reach any of them.
+- Say what the strip *is* in props — `divider` for the edge it draws, `as` for a strip
+  that is a landmark. Say how its children sit in `className`: `justify-between`,
+  `items-end`, `bg-primary-subtle`. A prop per flexbox utility is the costume the design
+  system README warns about, pointing the other way.
+- Neither is `CardHeader`. A header says what a card is and has a heading in it; a strip
+  acts on the card and has none.
 
 ## Modal or Drawer
 

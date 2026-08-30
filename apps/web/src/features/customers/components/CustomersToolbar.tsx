@@ -1,4 +1,4 @@
-import { Alert, Button, Input, MultiSelect } from '@harness-sample/ui'
+import { Alert, Button, Input, MultiSelect, Toolbar } from '@harness-sample/ui'
 import type { CustomerPlan } from '@harness-sample/shared'
 import { planOptions, type CustomerFilters } from '../customerFilters'
 
@@ -40,7 +40,7 @@ export function CustomersToolbar({
   exportError,
 }: CustomersToolbarProps) {
   return (
-    <div className="flex flex-wrap items-end gap-4 border-b border-border px-3 py-2">
+    <Toolbar className="items-end">
       <Input
         label="Search"
         type="search"
@@ -92,6 +92,6 @@ export function CustomersToolbar({
           {isExporting ? 'Exporting…' : 'Export CSV'}
         </Button>
       </div>
-    </div>
+    </Toolbar>
   )
 }

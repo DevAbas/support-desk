@@ -73,3 +73,6 @@ export type { TextElement, TextProps, TextSize, TextTone } from './primitives/Te
 
 export { Textarea } from './primitives/Textarea'
 export type { TextareaProps } from './primitives/Textarea'
+
+export { Toolbar } from './components/Toolbar'
+export type { ToolbarDivider, ToolbarElement, ToolbarProps } from './components/Toolbar'

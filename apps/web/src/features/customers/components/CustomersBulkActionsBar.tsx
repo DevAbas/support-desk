@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Select } from '@harness-sample/ui'
+import { Button, Select, Toolbar } from '@harness-sample/ui'
 import type { CustomerPlan } from '@harness-sample/shared'
 import { planOptions } from '../customerFilters'
 
@@ -43,10 +43,10 @@ export function CustomersBulkActionsBar({
   const [plan, setPlan] = useState<CustomerPlan | ''>('')
 
   return (
-    <div
+    <Toolbar
       aria-label="Bulk actions"
       role="group"
-      className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-primary-subtle px-3 py-2"
+      className="items-end justify-between bg-primary-subtle"
     >
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-body font-medium text-primary-subtle-fg">
@@ -91,6 +91,6 @@ export function CustomersBulkActionsBar({
           Delete selected
         </Button>
       </div>
-    </div>
+    </Toolbar>
   )
 }

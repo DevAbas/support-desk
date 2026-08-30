@@ -97,6 +97,28 @@
   --color-muted: #f7f2de;
   --color-muted-fg: #7a4f4a;
 
+  /* The five subtle tints, as a set.
+
+     `muted`, `info-subtle`, `success-subtle`, `warning-subtle` and
+     `danger-subtle` are what `Badge` draws, which means all five can be on one
+     screen at once and usually are — Free, Starter, Pro and Enterprise down the
+     customer list; Open, Resolved and Medium across a ticket row. They have to
+     be five colours *side by side*, which is a stronger requirement than each
+     being a reasonable colour on its own, and it is the one this file failed:
+     three of them sat inside ΔE 0.021 of each other in OKLab, which is a colour
+     drawn three times.
+
+     The floor now is ΔE 0.052, between `muted` and `success-subtle`, and every
+     other pair of the five is further apart than that. `primary-subtle` is
+     measured in the same comparison even though it is not a badge, because it
+     is the fill under a bulk-action bar with badges in the rows below it; its
+     nearest neighbour is 0.044 away.
+
+     Two of the five did not move. `muted` is the anchor — it is also
+     `surface-inset`, the page's own neutral rather than a tint of anything —
+     and `warning-subtle` was already the loudest and least confusable of them
+     at chroma 0.086. The other three moved, and `primary-subtle` with them. */
+
   /* Primary: the single accent colour of the product.
 
      The subtle pair is a tint of the primary carrying the page's yellow, and
@@ -105,69 +127,101 @@
      blue — and the page sits at b* +0.015 while `#e4edef` sat at -0.005: the
      tint was on the far side of neutral from every surface it was ever drawn
      on, which is why the nav item and the selected row read as stickers rather
-     than as part of the page. This value is b* +0.008, which is 58% of the
-     page's own yellow, with chroma at 0.029 against the old 0.010 so that it
-     reads as a colour rather than as a grey that got warm.
+     than as part of the page. That argument stands, and this value keeps it at
+     b* +0.004.
 
      What it costs is hue, and the amount is worth writing down because it is
      the argument: a tint of a teal cannot carry yellow and stay at the teal's
-     own 217°, so this sits at 163°. That is a green-teal, and it is 54° from
-     the solid it is named after. The family is not carried by the fill — it is
-     carried by `primary-subtle-fg` and `primary-border`, which are the two
-     things drawn on and around it and are both unmistakably this teal. A fill
-     at chroma 0.029 was never going to name a family on its own.
+     own 217°, so this sits at 176°. That is a green-teal, 41° from the solid it
+     is named after, and the family is carried by `primary-subtle-fg` — which is
+     unmistakably this teal, at 220° — rather than by the fill.
 
-     The floor on that rotation is `success-subtle` at 145°, and the distance to
-     it went up rather than down: ΔE 0.021 against the 0.012 the blue-grey had,
-     because the chroma here is two and a half times the success tint's. Warmer
-     than this starts reading as the resolved-ticket green.
+     What moved. This was `#d7eee2`: 163°, chroma 0.029, L 0.929, and ΔE 0.021
+     from `success-subtle` and 0.016 from `info-subtle`. Warmth had been bought
+     by taking the chroma out, and a fill with no chroma left has no family; the
+     three of them arrived at the same pale green from three different
+     directions. It is darker and half again as saturated now — L 0.895, chroma
+     0.046 — which is what separates it from both without moving it out of the
+     warm half of the wheel: ΔE 0.044 to success, 0.047 to info. It can carry
+     that weight because of what it is: a bulk-action strip and a selected chip,
+     not a badge in a column of badges.
 
      `primary-border` moved with it, at the same hue. The two are one chip —
      `Button`'s `selected` draws the border and the fill together — and a cool
      rim around a warm fill is more visibly wrong than either was alone.
 
-     What did not move is `primary-subtle-fg`. The ink measures 8.1:1 on this
-     fill where it measured 8.3:1 on the blue-grey, so the pair is unchanged
-     where it matters: this is a hue change and not a contrast one. */
+     The ink did not move and did not need to: `primary-subtle-fg` measures
+     7.3:1 on this fill where it measured 8.1:1 on the lighter one. */
   --color-primary: #335c67;
   --color-primary-fg: #fdfbf0;
-  --color-primary-subtle: #d7eee2;
+  --color-primary-subtle: #bee7db;
   --color-primary-subtle-fg: #274852;
-  --color-primary-border: #bad3c6;
+  --color-primary-border: #94cfbe;
 
   /* Info: informational, non-urgent state.
 
-     The subtle pair is warmed for the reason the primary one is, and it had to
-     be: `Badge status="info"` is the role badge in the header, which sits an
-     inch from the active nav item, and `Alert`'s info tone is the widest tinted
-     band on any screen. Leaving this family cold would have moved the problem
-     rather than fixed it.
+     This is the family the warming pass got wrong, and the correction is what
+     the group above is for. `info-subtle` was warmed for the same reason
+     `primary-subtle` was — `Badge status="info"` is the role badge in the
+     header, and `Alert`'s info tone is the widest tinted band on any screen —
+     and it was warmed all the way to 163°, which is green. So was
+     `primary-subtle`. `success-subtle` was already green. Three families
+     converged on one colour, and on the customer list that is Free, Starter and
+     Pro drawn the same.
 
-     It is warmed a step less than primary — b* +0.006 against +0.008, and a
-     lighter fill at lower chroma — because these two subtles were previously
-     the same colour to within a rounding error (ΔE 0.009 in OKLab, closer than
-     either was to anything else in this file) and a badge indistinguishable
-     from the nav item behind it is the other half of the same fault. That gap
-     is ΔE 0.016 now. Ink measures 6.5:1 on it, unchanged. */
+     A badge names its family or it is decoration, so this one goes back to its
+     own half of the wheel: 196°, which is 24° from the solid's 220° where the
+     old value was 57° from it, at chroma 0.045 against 0.022.
+
+     It is the one tint in this file on the cool side of neutral — b* -0.013
+     against the page's +0.014 — and that is a considered exception rather than
+     a relapse. The sticker argument above is an argument about chrome: a nav
+     item and a selected row are on screen the whole time and have to belong to
+     the page. A status chip is small, it is surrounded by the surface rather
+     than covering it, and the alternative to being slightly cool is being
+     indistinguishable from the two chips beside it.
+
+     It reads as its own colour now: ΔE 0.053 to `success-subtle`, where the two
+     were 0.012 apart, and 0.047 to `primary-subtle`. Ink measures 6.4:1 on it,
+     against 6.5:1 before. */
   --color-info: #4a7c8c;
   --color-info-fg: #fdfbf0;
-  --color-info-subtle: #e0f1e8;
+  --color-info-subtle: #c9f5f5;
   --color-info-subtle-fg: #2f5a66;
-  --color-info-border: #bfd6cb;
+  --color-info-border: #9ddddd;
 
-  /* Danger: destructive actions and error state. */
+  /* Danger: destructive actions and error state.
+
+     `#f6e3e2` was chroma 0.021, which is a warm grey that remembers being pink.
+     It was the quietest of the five and the easiest to lose against `muted`
+     next to it. This is chroma 0.043 at the same hue — a tint rather than a
+     wash — and ΔE 0.061 from `muted`. The ink is untouched and still the
+     loudest pair in the file at 11.3:1, against 11.9:1 before. */
   --color-danger: #9e2a2b;
   --color-danger-fg: #fdfbf0;
-  --color-danger-subtle: #f6e3e2;
+  --color-danger-subtle: #ffd9d7;
   --color-danger-subtle-fg: #540b0e;
-  --color-danger-border: #e3bfbe;
+  --color-danger-border: #f0b8b5;
 
-  /* Success: completed or resolved state. */
+  /* Success: completed or resolved state.
+
+     The fill was `#e6ede6` at chroma 0.012 — a grey that leans green, near
+     enough to `info-subtle` (ΔE 0.012) and `primary-subtle` (0.021) that
+     Resolved, Open and a selected row were one colour. Chroma is what fixes it:
+     0.053, four times the old value.
+
+     135° rather than the solid's 147°, because this is the family that can
+     afford to move toward the page's yellow and the two beside it cannot. A
+     teal that warms turns green; a green that warms is still a green. Doing the
+     warming here rather than there is what buys `primary-subtle` its room at
+     176° and lets `info-subtle` go back to being blue.
+
+     Ink measures 6.8:1 on it, against 7.1:1 before. */
   --color-success: #4f6f52;
   --color-success-fg: #fdfbf0;
-  --color-success-subtle: #e6ede6;
+  --color-success-subtle: #d7eecb;
   --color-success-subtle-fg: #3a5340;
-  --color-success-border: #c2d2c3;
+  --color-success-border: #b5d5a4;
 
   /* Warning: needs attention but is not an error.
 

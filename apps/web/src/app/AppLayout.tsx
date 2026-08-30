@@ -53,7 +53,15 @@ export function AppLayout() {
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-8">
-            <span className="text-base font-semibold text-fg">Support Desk</span>
+            {/* The product's name, and not a `Heading`: every page inside this
+                shell renders its own `level="page"`, so a heading here would put
+                an `h2` above every `h1` in the app. It takes the semantic level
+                directly instead. What it replaced — `text-base font-semibold` —
+                was a level being reassembled by hand at a step the scale
+                deliberately does not have, since only the three headings carry
+                weight; `section` is the one that makes the wordmark out-weigh
+                the nav beside it, which is what a wordmark is for. */}
+            <span className="text-section text-fg">Support Desk</span>
             <nav aria-label="Main">
               <ul className="flex items-center gap-1">
                 {navigation.map((item) => (

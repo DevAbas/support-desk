@@ -43,6 +43,38 @@ a line in the icon group being touched. Naming them apart is still what lets the
 ramps come apart later, on the day an icon should not weigh what the text beside it
 weighs.
 
+**The five subtle tints are one set, and they have to be checked as one.**
+`muted`, `info-subtle`, `success-subtle`, `warning-subtle` and `danger-subtle` are
+what `Badge` draws, so all five can be on one screen at once and usually are: Free,
+Starter, Pro and Enterprise down the customer list; Open, Resolved and Medium across a
+ticket row. Each being a reasonable colour on its own is not the requirement. Five
+being five colours *side by side* is.
+
+That is the requirement this file has failed once already, and the way it failed is
+worth knowing, because it was not carelessness. `info-subtle` and `primary-subtle` were
+each warmed — correctly, one at a time — until they had crossed 50° of hue into green,
+where `success-subtle` already was; and warmth had been bought by taking the chroma
+out, which is what left them with no family to be recognised by. Three tints inside
+ΔE 0.021 of each other in OKLab, which is a colour drawn three times. On the customer
+list that is Free, Starter and Pro rendered the same.
+
+The floor is ΔE 0.052 now, between `muted` and `success-subtle`, with every other pair
+of the five further apart than that; `primary-subtle` is measured in the same
+comparison, because it is the fill under a bulk-action bar with badges in the rows
+below it, and its nearest neighbour is 0.044. Every `-subtle-fg` measures at least
+6.1:1 on its own `-subtle`. `tokens.css` carries the per-family numbers and the
+argument for each.
+
+One of the five is on the cool side of neutral, and it is deliberate: `info-subtle` is
+b* -0.013 against the page's +0.014, because a blue that is warmer than the page is not
+a blue. The warmth rule that produced the collision is an argument about *chrome* — a
+nav item and a selected row are on screen the whole time and have to belong to the page
+— and a status chip is not chrome.
+
+**Add a tint and you check it against the other five**, not against the page. A
+colour that looks right alone and lands ΔE 0.015 from the one beside it is the defect
+this paragraph exists for.
+
 Two numbers about the neutrals are worth carrying. Text on them is comfortable — `fg`
 measures 14.7:1 on a card and `fg-muted` 6.9:1 — and `fg-subtle` is not: 3.6:1 on a
 card, 3.5:1 on the page, 3.2:1 on an inset. That is above the 3:1 a disabled control
@@ -392,6 +424,12 @@ control's height is a decision the theme holds; a control's padding is the same
 decision held by six components. Padding tokens are the fix and they are the next thing
 to add.
 
+The same pass found the worse case, which was not a component at all: strip padding was
+held by *six call sites in feature code*, because no component owned it. All six are now
+`Toolbar` and the padding is in one place — which is the precondition for a token, not a
+substitute for one. A number owned by one component can become a token in one edit; a
+number spread across six features cannot become anything.
+
 **Elevation.** One shadow. `--shadow-card` is nothing: a card is the lighter surface on
 a darker page with a border, and that border is the whole of its edge. `--shadow-overlay`
 is the only thing left that lifts, and it draws in `--color-shadow` rather than a hex
@@ -484,7 +522,7 @@ the request was in flight and one did not, so one of them could be fired twice b
 double click. It takes a title, a description, a confirm label, a danger flag, a busy
 state and the two callbacks, and that is the whole of it.
 
-## A bar across a card is not always a `CardHeader`
+## A bar across a card is not always a `CardHeader`, and now it is a `Toolbar`
 
 `CardHeader` and `CardFooter` own the header and footer strips — the border, the
 padding, the heading, the row of actions — and anything that draws one of those
@@ -493,11 +531,62 @@ had one, and all three now use the real thing.
 
 `TicketsToolbar` looks like a fourth and is not. `CardHeader` renders a heading,
 requires a title to put in it, and pads to the card scale; a toolbar is a row of
-controls with nothing to head it, on the tighter scale a table uses. Dressing it as a
-`CardHeader` would mean making the title optional and then overriding five of the six
-classes that make a `CardHeader` a `CardHeader`, which is not reuse — it is a costume.
-The distinction to keep: a header says what a card is, a toolbar acts on it, and the
-fact that both are a strip with a border does not make them the same strip.
+controls with nothing to head it, on the tighter scale a table cell uses. Dressing it
+as a `CardHeader` would mean making the title optional and then overriding five of the
+six classes that make a `CardHeader` a `CardHeader`, which is not reuse — it is a
+costume. The distinction to keep: a header says what a card is, a toolbar acts on it,
+and the fact that both are a strip with a border does not make them the same strip.
+
+That distinction was right and the conclusion drawn from it — that `TicketsToolbar` was
+therefore correct as it stood — was not. It was not a `CardHeader`; it was one of six
+places writing the same strip by hand, and being unlike an existing primitive is not the
+same as being unlike every primitive. A density pass proved it: moving the strip padding
+one step edited thirteen lines across nine feature files, six of them this padding in six
+different features, and not one of the six could be reached from `tokens.css`, because
+`CardBody` owned the card's padding and nothing owned a strip's.
+
+`Toolbar` owns it now.
+
+```tsx
+<Toolbar className="justify-end">…</Toolbar>              {/* above a table  */}
+<Toolbar divider="top" className="justify-center">…</Toolbar>  {/* below a list */}
+<Toolbar as="nav" divider="top" aria-label="Ticket list pagination">…</Toolbar>
+```
+
+**What a strip is**, and therefore what belongs in one: it sits above, below or inside
+a card, it carries controls rather than content, and it owns its own padding and its
+own divider. The filters over a list, the bar that appears when rows are ticked, the
+pagination under a table, the load-more at the end of one.
+
+**Three decisions and no more.** `divider` says which edge draws — `bottom` for a strip
+above what it acts on, `top` for one below, `none` where the strips on either side
+already draw a line. `as` is `div` or `nav`, for a strip that is a landmark a reader
+navigates by.
+
+Everything else is the arrangement of the caller's own children, and it is said in
+`className` in this system's own vocabulary: `justify-between`, `items-end` where the
+strip holds labelled fields whose boxes stand taller than the buttons beside them,
+`bg-primary-subtle` where the strip appeared because something is selected. Those are
+not classes reassembled out of `Toolbar` — they are one class each, each saying what
+the caller wanted, and `cn()` resolves them against the defaults. That is the same line
+`Alert` draws in the section above: `variant="inline"` is a shape the caller asked for
+and had no other way to name; `justify-between` is plain flexbox and needs no second
+name. A prop per Tailwind utility would be the costume again, pointing the other way.
+
+**It is not `role="toolbar"`**, whatever it is called. That role is a promise about the
+keyboard — one tab stop for the whole strip, arrow keys moving between the controls in
+it — and none of these strips keeps it. `Toolbar` renders a `div` or a `nav` and takes
+whatever `role` and `aria-label` the caller actually means: `role="group"` on the bulk
+bars, a `nav` landmark on the pagination.
+
+**Which strips it does not cover.** `CardHeader` and `CardFooter` stay: a header has a
+heading in it and a footer has a fill and a scale of its own, and both are about the
+card rather than about the controls. `TableHeaderCell` and `TableCell` share the strip
+padding by coincidence of value, not of meaning — they are a grid, and a table's cell
+padding should be free to move without a toolbar following it. `StateMessage` is
+neither. And a bar that is a page's chrome rather than a card's — the app header in
+`AppLayout` — is not a strip across a card and does not become one by having a border
+at the bottom.
 
 ## An `Alert` has a tone and a shape, and they are two questions
 

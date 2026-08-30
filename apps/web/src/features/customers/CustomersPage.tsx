@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Button, Card, ConfirmDialog, Heading, Text } from '@harness-sample/ui'
+import { Alert, Button, Card, ConfirmDialog, Heading, Text, Toolbar } from '@harness-sample/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import type { CustomerPlan } from '@harness-sample/shared'
@@ -221,7 +221,7 @@ export function CustomersPage() {
         {/* The end of the list, not a paginator. There is no page number to
             show because there are no pages to go back to — only more. */}
         {customers.hasNextPage ? (
-          <div className="flex justify-center border-t border-border px-3 py-2">
+          <Toolbar divider="top" className="justify-center">
             <Button
               variant="secondary"
               onClick={() => void customers.fetchNextPage()}
@@ -229,7 +229,7 @@ export function CustomersPage() {
             >
               {customers.isFetchingNextPage ? 'Loading…' : 'Load more customers'}
             </Button>
-          </div>
+          </Toolbar>
         ) : null}
       </Card>
 

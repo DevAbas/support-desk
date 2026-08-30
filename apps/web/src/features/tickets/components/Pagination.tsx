@@ -1,4 +1,4 @@
-import { Button } from '@harness-sample/ui'
+import { Button, Toolbar } from '@harness-sample/ui'
 
 interface PaginationProps {
   page: number
@@ -21,10 +21,7 @@ export function Pagination({
   const lastRow = Math.min(page * pageSize, total)
 
   return (
-    <nav
-      aria-label="Ticket list pagination"
-      className="flex items-center justify-between gap-4 border-t border-border px-3 py-2"
-    >
+    <Toolbar as="nav" divider="top" aria-label="Ticket list pagination" className="justify-between">
       <p className="text-body text-fg-muted">
         {total === 0 ? 'No tickets' : `Showing ${firstRow}–${lastRow} of ${total}`}
       </p>
@@ -50,6 +47,6 @@ export function Pagination({
           Next
         </Button>
       </div>
-    </nav>
+    </Toolbar>
   )
 }
