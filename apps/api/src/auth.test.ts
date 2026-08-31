@@ -310,6 +310,18 @@ describe('the routes that require an administrator', () => {
     )
   })
 
+  it('refuses an agent the reports, which are a view of the agents', async () => {
+    const app = createApp({}, SEED_AGENT_EMAIL)
+
+    // Not a destructive route, and still administrators' work: the assignee
+    // report ranks named people by how much each of them resolved. The nav, the
+    // route guard and the global search all read the same `roles` on
+    // `NAVIGATION_TARGETS`; this is the half a client cannot talk its way past.
+    await expectError(await app.request('/api/reports/summary'), 403, 'forbidden')
+    await expectError(await app.request('/api/reports/breakdown'), 403, 'forbidden')
+    await expectError(await app.request('/api/reports/assignees'), 403, 'forbidden')
+  })
+
   it('leaves an agent the work that is theirs', async () => {
     const app = createApp({}, SEED_AGENT_EMAIL)
 

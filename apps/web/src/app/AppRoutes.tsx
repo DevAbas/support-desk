@@ -5,6 +5,7 @@ import { RequireSession } from '@/features/auth/RequireSession'
 import { UnauthorizedRedirect } from '@/features/auth/UnauthorizedRedirect'
 import { CustomersPage } from '@/features/customers/CustomersPage'
 import { ReportsPage } from '@/features/reports/ReportsPage'
+import { RequireRole } from '@/features/roles/RequireRole'
 import { NewTicketPage } from '@/features/tickets/NewTicketPage'
 import { TicketDetailPage } from '@/features/tickets/TicketDetailPage'
 import { TicketListPage } from '@/features/tickets/TicketListPage'
@@ -36,7 +37,14 @@ export function AppRoutes() {
             <Route path="tickets/new" element={<NewTicketPage />} />
             <Route path="tickets/:ticketId" element={<TicketDetailPage />} />
             <Route path="customers" element={<CustomersPage />} />
-            <Route path="reports" element={<ReportsPage />} />
+
+            {/* Not every screen is everyone's. The gate reads the same table the
+                nav is drawn from and the search is filtered by, so a screen an
+                agent is not offered is also one they cannot reach by typing the
+                address of it. */}
+            <Route element={<RequireRole target="reports" />}>
+              <Route path="reports" element={<ReportsPage />} />
+            </Route>
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>

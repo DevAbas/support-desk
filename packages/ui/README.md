@@ -101,10 +101,19 @@ appearance only. What tells assistive technology a control is chosen is
 `aria-current`, `aria-pressed` or `aria-selected`, whichever the pattern around it
 calls for, and choosing between those three stays with the caller.
 
-There is one selected thing in the app that is not a `Button`: the main nav in
-`AppLayout`, which is a `NavLink`. A link is not a button — it goes somewhere — and
-dressing it as one to reach this variant would be the wrong trade. It keeps its own
-classes until there is a nav item primitive to give it.
+There are two selected things in the app that are not a `Button`, and neither can be
+one. The main nav in `AppLayout` is a `NavLink`: a link goes somewhere, and dressing it
+as a button to reach this variant would be the wrong trade. An option in
+`CommandPalette` is a `role="option"` inside a listbox, and a button there is not an
+option at all.
+
+Two is the number at which this stops being an exception and starts being a hole. A
+variant can only be reached by the component that has it, and "this is the one currently
+chosen" is not a fact about buttons — it is a fact about controls, the way hover and
+pressed are, and those two are utilities (`interactive`, `focus-ring`) precisely so that
+anything can spend them. The fix is a `selected` utility beside them, and until it
+exists both call sites write the tint by hand: the nav item writes a fill and an ink,
+the palette option writes the fill alone.
 
 The same applies to the other primitives. If a text field, a dropdown, a card, a
 table, a list, or a dialog is needed, it comes from this folder. When a primitive
@@ -500,6 +509,9 @@ A **drawer** accompanies: the list it slid over is still the thing being worked
 through, and it is expected to be opened and closed a dozen times against it. What
 differs is placement and purpose, which is not a size prop.
 
+A **palette** is the third, and it is a third for the same reason there are two: what
+differs is not a size. See "The palette is a combobox" below.
+
 They share the dialog contract deliberately, and now they share it literally. `Dialog`
 holds the whole of it — the role, the accessible name taken from the title, the
 description wired through `aria-describedby`, Escape, the click on the overlay, focus
@@ -507,10 +519,16 @@ moved in on open, kept inside while open and given back to the trigger on close 
 dialog bug is fixed once instead of in whichever of the two someone noticed it in. It
 was written twice before, and the copies had already started to disagree.
 
-`Dialog` is not exported. Its props are the seams where a modal and a drawer differ —
-the overlay, the panel, the word on the close button, and the body, which each wraps
-itself because whether the contents scroll is one of the few things that genuinely is
-different. Those are not a product API. A feature reaching for `Dialog` would be
+`Dialog` is not exported. Its props are the seams where the three shapes differ — the
+overlay, the panel, the word on the close button, the body, which each wraps itself
+because whether the contents scroll is one of the few things that genuinely is
+different, and `header`, for a panel whose top is a control rather than a heading. Those
+are not a product API.
+
+`header` is the newest of them and it replaces chrome, not contract. A dialog is named
+by its `title` either way: drawn in a `CardHeader` when there is no `header`, and
+rendered visually hidden behind `aria-labelledby` when there is. One mechanism names a
+dialog, so there is no shape that can be drawn without a name. A feature reaching for `Dialog` would be
 choosing overlay and panel classes by hand, which is the thing this file opens by
 forbidding, and the result would be a third dialog that dismisses slightly
 differently.
@@ -521,6 +539,45 @@ every destructive action, and the copies had drifted: two disabled both buttons 
 the request was in flight and one did not, so one of them could be fired twice by a
 double click. It takes a title, a description, a confirm label, a danger flag, a busy
 state and the two callbacks, and that is the whole of it.
+
+## The palette is a combobox, and that decides nearly everything about it
+
+`CommandPalette` is one field over a grouped list of things it can take you to. It is
+`Dialog` like the other two, and it differs from them the way they differ from each
+other: a modal interrupts, a drawer accompanies, and a palette is a way of reaching
+something from anywhere — over everything while it is open, dismissed as often as it is
+used, and gone the moment it has taken you somewhere.
+
+**Focus never leaves the field.** Every keystroke inside a palette is a character in a
+query, including the arrow keys, which move a *pointer* into the list rather than moving
+focus into it. That pointer is `aria-activedescendant`, and it is why an option is a
+`div` with `role="option"` rather than a `Button`: a button inside a listbox is not an
+option, and one that took focus would take the next letter typed with it.
+
+**The options are data, not children.** `groups` is an array of groups of options, and
+the caller composes nothing. The arrow keys walk one flat sequence and
+`aria-activedescendant` names a position in it; built out of children, that sequence
+would be a second thing derived from the markup, and the day somebody nested an option
+one level deeper the keyboard would walk an order the screen does not show. One array is
+walked twice — once to draw, once to move — so the two cannot disagree.
+
+An option's shape is `ListRow`'s on purpose: something to lead with, a line, a quieter
+line under it, something at the end. It is deliberately not a `ListRow`, which renders an
+`li` and, when it is activatable, a `Button`. What the two share is what a reader sees,
+not the markup, and the eight lines they have in common are cheaper than a third
+component that both have to be bent through.
+
+**The active row is the one thing here the design system does not own.** "This is the one
+currently chosen" is `Button`'s `selected` variant, and an option cannot be a `Button`.
+This is the second thing in that position, after the nav link in `AppLayout`, and the
+shape of the fix is the one `interactive` and `focus-ring` already have: a utility rather
+than a variant, spendable by anything. Until then the palette writes the fill and *only*
+the fill — the ink stays `fg` and `fg-muted` — so there is one tint-and-ink pairing in
+this file rather than two that have to be kept in step.
+
+**What is the caller's.** What was found, how each result reads, where selecting one
+goes, and what the group headings say. `CommandPalette` knows about a field, a list and a
+keyboard; it does not know what a ticket is.
 
 ## A bar across a card is not always a `CardHeader`, and now it is a `Toolbar`
 
@@ -657,22 +714,30 @@ An arbitrary value is a sign that either the design is off-grid or the scale is
 missing a step. Both are worth resolving before the class is written.
 
 Motion is on a scale too — `--animate-fade-in`, `--animate-slide-in-right`, built out
-of `--duration-fast`, `--duration-slow` and `--ease-enter` — and it is short. `Drawer` is the only thing in the app that moves, and it moves because a panel
-that slides in from an edge says where it came from, and so where it will go back to.
-Anything animated pairs its class with `motion-reduce:animate-none`: a preference for
-less motion is not a preference for a panel that never appears.
+of `--duration-fast`, `--duration-slow` and `--ease-enter` — and it is short. `Drawer` is
+the only thing in the app whose panel travels, and it travels because a panel that slides
+in from an edge says where it came from, and so where it will go back to. The two things
+that cover the page — a drawer's overlay and a palette's — fade, which crosses no ground
+and is the shorter duration for exactly that reason. Anything animated pairs its class
+with `motion-reduce:animate-none`: a preference for less motion is not a preference for a
+panel that never appears.
 
 ## Interactive elements carry their accessible attributes
 
 - Every form control has a real `<label>` bound to it. `Input`, `Select`, and
   `Textarea` take a required `label` prop and generate their own `id` with `useId`,
   which is why they omit `id` from their props — the binding cannot be forgotten.
+  `Input` also takes `labelHidden`, the same prop and the same reason as `Checkbox`'s:
+  a field whose whole visible chrome is its placeholder — the one in the palette — is
+  still a control that has to be named, and a placeholder is not a name. It hides the
+  label rather than dropping it, so the generated binding is what names the field
+  either way and an `aria-label` never becomes a second answer to the same question.
 - Errors set `aria-invalid` and are wired to the control through `aria-describedby`.
   Pass the `error` prop rather than rendering error text alongside the field.
 - Icon-only controls need an `aria-label`.
 - `Table` requires a `caption` and renders it visually hidden; header cells carry
   `scope="col"`.
-- `Modal` and `Drawer` are real dialogs, and both are `Dialog`: `role="dialog"`,
+- `Modal`, `Drawer` and `CommandPalette` are real dialogs, and all three are `Dialog`: `role="dialog"`,
   `aria-modal`, an accessible name from the title, Escape to dismiss, a click on the
   overlay to dismiss, focus moved in on open and restored to the trigger on close, and
   Tab kept inside while it is open. The trap is the other half of `aria-modal`, which
@@ -704,6 +769,11 @@ less motion is not a preference for a panel that never appears.
   `aria-controls` pointing at the group, a `fieldset` with a legend around the
   checkboxes, and a trigger named by its label *and* by what is currently chosen.
   Escape closes it and hands focus back to the trigger.
+- `CommandPalette` is a real combobox over a real listbox: `role="combobox"` on the
+  field with `aria-expanded`, `aria-controls` and `aria-autocomplete="list"`, a
+  `role="listbox"` named by the palette's own label, a `role="group"` per heading, and
+  `aria-activedescendant` naming the active option — which is what lets the arrow keys
+  move a selection while focus, and therefore typing, stays in the field.
 - `Tabs` is a real tab strip: `role="tablist"`, an accessible name from its `label`, a
   single tab stop for the whole strip with the arrow keys moving between tabs, and each
   tab tied to its panel through a generated pair of ids. Only the selected panel is

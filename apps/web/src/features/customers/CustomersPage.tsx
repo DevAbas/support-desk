@@ -12,6 +12,7 @@ import { DEFAULT_FILTERS, toListCustomersFilters, type CustomerFilters } from '.
 import { useBulkDeleteCustomers } from './hooks/useBulkDeleteCustomers'
 import { useBulkUpdateCustomerPlan } from './hooks/useBulkUpdateCustomerPlan'
 import { useCustomers } from './hooks/useCustomers'
+import { useOpenCustomer } from './openCustomer'
 import { useCustomersExport } from './hooks/useCustomersExport'
 
 /**
@@ -51,7 +52,10 @@ export function CustomersPage() {
   const { canManageCustomers } = useRole()
 
   const [filters, setFilters] = useState<CustomerFilters>(DEFAULT_FILTERS)
-  const [openCustomerId, setOpenCustomerId] = useState<string | null>(null)
+  // In the URL rather than in state, so that the global search can take somebody
+  // to a customer — the drawer is not a route, so there is nothing else to send
+  // them to. Every write replaces, so a glance is still not a history entry.
+  const openCustomer = useOpenCustomer()
   const [selection, setSelection] = useState<string[]>([])
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
 
@@ -214,14 +218,12 @@ export function CustomersPage() {
       {
         onSuccess: () => {
           // The drawer holds an id and nothing else, so a customer deleted from
-          // under it would sit there refetching a 404. Read through the updater
-          // rather than off this closure: Escape dismisses the confirmation
-          // while the request is still in flight, which leaves the list — and so
-          // the drawer — reachable again, and what is open now is not what was
-          // open when this went out.
-          setOpenCustomerId((current) =>
-            current !== null && ids.includes(current) ? null : current,
-          )
+          // under it would sit there refetching a 404. `closeIfAmong` reads the
+          // URL as it is now rather than off this closure: Escape dismisses the
+          // confirmation while the request is still in flight, which leaves the
+          // list — and so the drawer — reachable again, and what is open now is
+          // not what was open when this went out.
+          openCustomer.closeIfAmong(ids)
 
           forgetSelected(ids)
           setIsConfirmingDelete(false)
@@ -289,8 +291,8 @@ export function CustomersPage() {
         <CustomerList
           customers={rows}
           isLoading={customers.isPending}
-          openCustomerId={openCustomerId}
-          onOpen={setOpenCustomerId}
+          openCustomerId={openCustomer.id}
+          onOpen={openCustomer.open}
           isSelectable={canManageCustomers}
           selectedIds={selectedIds}
           onToggleSelected={toggleSelected}
@@ -311,7 +313,7 @@ export function CustomersPage() {
         ) : null}
       </Card>
 
-      <CustomerDrawer customerId={openCustomerId} onClose={() => setOpenCustomerId(null)} />
+      <CustomerDrawer customerId={openCustomer.id} onClose={openCustomer.close} />
 
       <ConfirmDialog
         open={isConfirmingDelete}

@@ -113,6 +113,7 @@ export const handlers = [
   http.post('/api/auth/register', forward),
   http.post('/api/auth/login', forward),
   http.post('/api/auth/logout', forward),
+  http.get('/api/search', forward),
   http.get('/api/tickets', forward),
   http.post('/api/tickets', forward),
   http.patch('/api/tickets/bulk', forward),

@@ -19,6 +19,13 @@ export type { BarChartProps, ChartDatum, ChartTone } from './components/Chart'
 export { Checkbox } from './primitives/Checkbox'
 export type { CheckboxProps } from './primitives/Checkbox'
 
+export { CommandPalette } from './components/CommandPalette'
+export type {
+  CommandPaletteGroup,
+  CommandPaletteOption,
+  CommandPaletteProps,
+} from './components/CommandPalette'
+
 export { ConfirmDialog } from './components/ConfirmDialog'
 export type { ConfirmDialogProps } from './components/ConfirmDialog'
 

@@ -1,16 +1,11 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Badge, Button, Text } from '@harness-sample/ui'
-import { cn } from '@harness-sample/shared'
+import { cn, navigationTargetsFor } from '@harness-sample/shared'
 import { useSession } from '@/features/auth/useSession'
 import { useSignOut } from '@/features/auth/useSignOut'
 import { ROLE_LABELS } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
-
-const navigation = [
-  { to: '/tickets', label: 'Tickets' },
-  { to: '/customers', label: 'Customers' },
-  { to: '/reports', label: 'Reports' },
-]
+import { GlobalSearch } from '@/features/search/GlobalSearch'
 
 /**
  * Who you are, and the way out.
@@ -48,6 +43,23 @@ function SignedInAs() {
 }
 
 export function AppLayout() {
+  const { role } = useRole()
+
+  /**
+   * Drawn from the shared table rather than from a list of its own.
+   *
+   * There are three readers of what the screens are — this nav, the route guard
+   * behind it, and the global search — and the day they disagreed, the search
+   * would be the one offering an agent a door the header had already closed. One
+   * table, filtered by the same `roles` on all three, is what makes that
+   * impossible rather than merely unlikely.
+   *
+   * The role is settled by the time this renders: `RequireSession` is outside
+   * this component and holds the shell back until the session has answered, so
+   * there is no moment where an admin sees an agent's nav.
+   */
+  const navigation = navigationTargetsFor(role).filter((target) => target.inHeader)
+
   return (
     <div className="min-h-screen bg-surface-muted">
       <header className="border-b border-border bg-surface">
@@ -65,9 +77,9 @@ export function AppLayout() {
             <nav aria-label="Main">
               <ul className="flex items-center gap-1">
                 {navigation.map((item) => (
-                  <li key={item.to}>
+                  <li key={item.id}>
                     <NavLink
-                      to={item.to}
+                      to={item.path}
                       className={({ isActive }) =>
                         cn(
                           'inline-flex h-9 items-center rounded-element px-3 text-body font-medium',
@@ -103,7 +115,13 @@ export function AppLayout() {
             </nav>
           </div>
 
-          <SignedInAs />
+          <div className="flex items-center gap-4">
+            {/* Beside who you are rather than in the nav: the nav is a list of
+                places and this is a way of reaching any of them, including the
+                ones that are not places at all. */}
+            <GlobalSearch />
+            <SignedInAs />
+          </div>
         </div>
       </header>
 

@@ -6,7 +6,7 @@ const controlClasses =
   'block w-full rounded-element border bg-surface px-2.5 py-1.5 text-body text-fg ' +
   'placeholder:text-fg-subtle focus-ring-inset disabled:cursor-not-allowed disabled:bg-muted'
 
-export function Input({ label, error, hint, className, ...props }: InputProps) {
+export function Input({ label, labelHidden = false, error, hint, className, ...props }: InputProps) {
   const id = useId()
   const errorId = `${id}-error`
   const hintId = `${id}-hint`
@@ -14,7 +14,11 @@ export function Input({ label, error, hint, className, ...props }: InputProps) {
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-fg">
+      {/* Hidden rather than dropped, the same way `Checkbox` hides its own: a
+          field with no visible label still has to have one, and an `aria-label`
+          in its place would be a second way of naming a control this component
+          exists to name once. */}
+      <label htmlFor={id} className={cn('text-body font-medium text-fg', labelHidden && 'sr-only')}>
         {label}
       </label>
       <input

@@ -15,7 +15,10 @@ import { ReportsPage } from '@/features/reports/ReportsPage'
  * "this quarter" would start failing on its own in October.
  */
 async function renderReports() {
-  renderWithProviders(<ReportsPage />, { initialEntries: ['/reports'] })
+  // As an admin, because only an admin reaches this screen: the nav does not
+  // offer it to an agent, the route guard turns them away, and the API refuses
+  // all three requests behind it.
+  renderWithProviders(<ReportsPage />, { initialEntries: ['/reports'], role: 'admin' })
 
   return await screen.findByRole('table', { name: 'Tickets by status' })
 }

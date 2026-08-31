@@ -17,6 +17,7 @@ import { createCustomerStore, type CustomerStore } from './customerStore'
 import { createLoginLimiter, type LoginLimiter } from './loginLimiter'
 import { buildAssignees, buildBreakdown, buildSummary } from './reports'
 import { currentUser, fail, invalid, missing, readJsonBody, type AppEnv } from './respond'
+import { registerSearchRoute } from './search'
 import { createSessionStore, type SessionStore } from './sessionStore'
 import { createTicketStore, type TicketStore } from './store'
 import { createUserStore, type UserStore } from './userStore'
@@ -113,6 +114,11 @@ export function createApiApp(options: ApiAppOptions = {}) {
   app.use('/api/*', requireSession({ users, sessions, limiter }))
 
   registerAuthRoutes(app, { users, sessions, limiter })
+
+  // One question asked of everything at once. Registered from its own module,
+  // like the auth routes: this function is against a line ceiling, and what it
+  // answers with spans both stores rather than belonging to either.
+  registerSearchRoute(app, { store, customers })
 
   app.get('/api/me', (c) => c.json({ user: currentUser(c) }))
 
@@ -288,7 +294,14 @@ export function createApiApp(options: ApiAppOptions = {}) {
   // The reporting endpoints. They read the whole queue and answer with figures:
   // the aggregation happens here so that a client never fetches tickets in order
   // to count them. Every one of them is bounded by the same validated range.
-  app.get('/api/reports/summary', (c) => {
+  //
+  // All three are administrators' work, and refused here rather than merely
+  // absent from the nav. `ReportAssigneeTable` ranks named agents by how much
+  // each of them resolved, which is a manager's view of a team; every other
+  // screen in this product is somebody's daily work. The nav, the route guard
+  // and the global search all read the same `roles` on `NAVIGATION_TARGETS`, and
+  // this is the half of it a client cannot talk its way past.
+  app.get('/api/reports/summary', adminOnly, (c) => {
     const query = reportRangeQuerySchema.safeParse(c.req.query())
 
     if (!query.success) {
@@ -298,7 +311,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     return c.json(buildSummary(store.snapshot(), query.data))
   })
 
-  app.get('/api/reports/breakdown', (c) => {
+  app.get('/api/reports/breakdown', adminOnly, (c) => {
     const query = reportBreakdownQuerySchema.safeParse(c.req.query())
 
     if (!query.success) {
@@ -308,7 +321,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     return c.json(buildBreakdown(store.snapshot(), query.data))
   })
 
-  app.get('/api/reports/assignees', (c) => {
+  app.get('/api/reports/assignees', adminOnly, (c) => {
     const query = reportRangeQuerySchema.safeParse(c.req.query())
 
     if (!query.success) {

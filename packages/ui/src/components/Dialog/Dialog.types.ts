@@ -15,6 +15,22 @@ export interface DialogProps {
   /** Ellipsis rather than wrap, for a panel that cannot grow to fit its title. */
   truncateTitle?: boolean
   /**
+   * What sits at the top of the panel, in place of the heading and the close
+   * button.
+   *
+   * The fourth seam, and the same kind as the other three: a modal and a drawer
+   * differ in where the panel sits, how it arrives and what scrolls, and a
+   * palette differs in one more thing — its top is a control rather than a
+   * heading. Dressing that as a `CardHeader` would mean a title nobody reads
+   * above a field that is the whole point of the panel.
+   *
+   * `title` still names the dialog when this is given. It is rendered visually
+   * hidden and pointed at by `aria-labelledby`, exactly as it is otherwise, so
+   * there is one mechanism naming a dialog rather than one per shape and no
+   * shape that can be drawn without a name.
+   */
+  header?: ReactNode
+  /**
    * The body, wrapped by the caller.
    *
    * Deliberately not wrapped here: whether the contents scroll, and whether

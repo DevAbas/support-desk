@@ -19,7 +19,10 @@ import type { DialogProps } from './Dialog.types'
  * is fixed once rather than in whichever of the two someone noticed it in.
  *
  * What is left to the caller is what actually differs: where the panel sits, how
- * it arrives, and what scrolls inside it.
+ * it arrives, what scrolls inside it, and — for a panel whose top is a control
+ * rather than a heading — what the header is. `header` replaces the chrome and
+ * not the contract: `title` is still what names the dialog, rendered visually
+ * hidden instead of drawn.
  *
  * The header and footer are `CardHeader` and `CardFooter` rather than the same
  * class strings written out again — which is what they were.
@@ -33,6 +36,7 @@ export function Dialog({
   overlayClassName,
   panelClassName,
   truncateTitle = false,
+  header,
   children,
   footer,
 }: DialogProps) {
@@ -90,18 +94,32 @@ export function Dialog({
         tabIndex={-1}
         className={cn('outline-none', panelClassName)}
       >
-        <CardHeader
-          title={title}
-          description={description}
-          titleId={titleId}
-          descriptionId={descriptionId}
-          truncateTitle={truncateTitle}
-          actions={
-            <Button variant="ghost" size="sm" onClick={onClose} aria-label={closeLabel}>
-              <Icon name="close" size="sm" label={closeLabel} decorative />
-            </Button>
-          }
-        />
+        {header === undefined ? (
+          <CardHeader
+            title={title}
+            description={description}
+            titleId={titleId}
+            descriptionId={descriptionId}
+            truncateTitle={truncateTitle}
+            actions={
+              <Button variant="ghost" size="sm" onClick={onClose} aria-label={closeLabel}>
+                <Icon name="close" size="sm" label={closeLabel} decorative />
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            {/* The name and the description still exist, they are just not
+                drawn — `aria-labelledby` and `aria-describedby` above point at
+                these, so a dialog with its own header is named the same way one
+                with a `CardHeader` is. */}
+            <div className="sr-only">
+              <h2 id={titleId}>{title}</h2>
+              {description ? <p id={descriptionId}>{description}</p> : null}
+            </div>
+            {header}
+          </>
+        )}
 
         {children}
 

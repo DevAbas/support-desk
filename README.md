@@ -155,12 +155,38 @@ Six accounts are seeded, one per name the queue assigns tickets to, all with the
 Registering is open and always creates an agent. Sessions live in memory, so restarting
 the API signs everyone out — which is also the easiest way to see the 401 path work.
 
+## Searching everything at once
+
+`Cmd`/`Ctrl` + `K` from anywhere, or the control in the header, opens a palette over the
+page. It searches tickets by id, title and assignee, customers by name, company and
+email, and the screens themselves, and takes you to whatever you pick. The groups come
+back in that order because the queue is where the day is spent; the order is fixed
+rather than scored, so the row under the cursor does not move as you type.
+
+The server does the searching, on one endpoint — `GET /api/search`. Two list endpoints
+plus a locally filtered nav would be three places for "an agent cannot see this" to be
+true and one of them in the browser, and the queue's own list endpoint deliberately does
+not search an assignee, because that filter is the one above the ticket table. The
+request waits for a pause in typing, the way both list screens do.
+
+Nothing typed shows the screens this role can reach, which needs no request. The screens
+themselves come from `NAVIGATION_TARGETS` in the shared contract — one table, read by
+the header nav, the route guard and the search — so a screen a role cannot reach is
+absent from all three at once, and the records that live on it drop out of that role's
+search with it.
+
 ## Roles
 
 Two roles, `agent` and `admin`, and the role now comes from the session. Ticket deletion
 and the bulk actions on both lists are admin-only, enforced on the server: an agent
 calling one is refused with a 403 rather than merely not shown the button. The UI hides
 them too, which is a courtesy rather than the enforcement.
+
+**Reports are admin-only as well**, and that is the one gate that is not about writing.
+It is the only screen whose subject is the agents rather than the queue — the assignee
+table ranks named people by how much each of them resolved — where every other screen is
+somebody's daily work. An agent is not offered it in the nav, is redirected away from the
+address, and is refused by all three endpoints behind it.
 
 The role context carries `canManageTickets` and `canManageCustomers` separately, both
 true for an admin today: they are different powers, and a customer screen asking about

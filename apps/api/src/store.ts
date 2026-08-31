@@ -20,6 +20,13 @@ import { createSeedTickets } from './seed'
  * handle on the row, so a mutation cannot reach back through one.
  */
 
+/** A page of matches, and how many there were to page. */
+export interface TicketSearchResult {
+  rows: Ticket[]
+  /** Everything that matched, not only what is being served. */
+  total: number
+}
+
 export interface TicketStore {
   list: (query: ListTicketsQuery) => ListTicketsResponse
   /**
@@ -29,6 +36,18 @@ export interface TicketStore {
    * report silently wrong the day the queue outgrows `MAX_PAGE_SIZE`.
    */
   snapshot: () => Ticket[]
+  /**
+   * The queue as global search asks it: id, title or assignee, best match
+   * first, capped.
+   *
+   * Deliberately not `list` with a `search`. That one is the filter above the
+   * ticket table, and it reads a title and an id because those are the two
+   * things somebody narrowing a table types. This one has to find the ticket
+   * that was mentioned by who it is on as well, and widening `list` to do it
+   * would silently change what the ticket screen's own filter means. Two
+   * questions, two methods.
+   */
+  search: (query: string, limit: number) => TicketSearchResult
   get: (id: string) => Ticket | undefined
   create: (input: CreateTicketBody) => Ticket
   update: (id: string, patch: UpdateTicketBody) => Ticket | undefined
@@ -46,6 +65,23 @@ function cloneTicket(ticket: Ticket): Ticket {
 
 function byNewestFirst(a: Ticket, b: Ticket): number {
   return Date.parse(b.createdAt) - Date.parse(a.createdAt)
+}
+
+/**
+ * Best match first, which for a ticket means the id somebody typed in full.
+ *
+ * `TCK-0007` is a request for exactly one ticket, and the substring match that
+ * finds it also finds every id it is a prefix of; ranking is the difference
+ * between answering the question and putting the answer third. Everything else
+ * falls back to the queue's own order, because among partial matches recency is
+ * the only thing this store honestly knows.
+ */
+function byBestMatch(term: string): (a: Ticket, b: Ticket) => number {
+  return (a, b) => {
+    const exact = Number(b.id.toLowerCase() === term) - Number(a.id.toLowerCase() === term)
+
+    return exact === 0 ? byNewestFirst(a, b) : exact
+  }
 }
 
 function formatTicketId(sequence: number): string {
@@ -91,6 +127,27 @@ export function createTicketStore(): TicketStore {
 
     snapshot() {
       return tickets.map(cloneTicket)
+    },
+
+    search(query, limit) {
+      const term = query.trim().toLowerCase()
+
+      // An empty term matches every ticket by substring, which is the whole
+      // queue offered as a search result. Nothing typed is nothing found.
+      if (term === '') {
+        return { rows: [], total: 0 }
+      }
+
+      const matches = tickets
+        .filter(
+          (ticket) =>
+            ticket.id.toLowerCase().includes(term) ||
+            ticket.title.toLowerCase().includes(term) ||
+            ticket.assignee.toLowerCase().includes(term),
+        )
+        .sort(byBestMatch(term))
+
+      return { rows: matches.slice(0, limit).map(cloneTicket), total: matches.length }
     },
 
     get(id) {

@@ -37,12 +37,15 @@ with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`. Below is the
 - Neither is `CardHeader`. A header says what a card is and has a heading in it; a strip
   acts on the card and has none.
 
-## Modal or Drawer
+## Modal, Drawer or CommandPalette
 
 - Choose `Modal` for a question that must be answered before anything else happens —
   naming a saved view.
 - Choose `Drawer` for a panel that accompanies the screen behind it and can be dismissed
   without answering — a record viewed beside its list.
+- Choose `CommandPalette` for a field over a list of things to go to. Its options are
+  data, never children: the arrow keys walk the array you pass, and children would be a
+  second order to disagree with the one on screen.
 
 ## Table or List
 
@@ -65,6 +68,14 @@ with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`. Below is the
   line in a toolbar or a band across a card asks for that shape with `variant`.
 - Never hand-build a checkbox. `Checkbox` owns the size, the accent, the disabled
   treatment, the label it cannot be rendered without, and the indeterminate state.
+
+## Screens and who reaches them
+
+- Never write a list of the app's screens. `NAVIGATION_TARGETS` in the shared contract
+  is the one, and the header nav, the route guard and the global search all read it.
+- Say who may reach a screen with `roles` on that table, and ask with
+  `canReachNavigationTarget`. Gating a screen there gates the nav item, the route and
+  every search result that lives on it, in one edit.
 
 ## When a rule here is broken repeatedly
 

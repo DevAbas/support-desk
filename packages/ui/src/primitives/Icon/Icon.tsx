@@ -5,6 +5,7 @@ import {
   ArrowUp,
   ChevronDown,
   Pencil,
+  Search,
   X,
   type LucideIcon,
 } from 'lucide-react'
@@ -30,6 +31,7 @@ const icons: Record<IconName, LucideIcon> = {
   'chevron-down': ChevronDown,
   close: X,
   pencil: Pencil,
+  search: Search,
 }
 
 /**

@@ -116,6 +116,28 @@ describe('CustomersPage', () => {
     expect(screen.getByText('Showing 20 of 60')).toBeInTheDocument()
   })
 
+  it('opens the customer named in the address, so the search can land on one', async () => {
+    // The drawer is not a route and should not become one, but a global search
+    // result has to be able to *reach* a customer — so which one is open is a
+    // query parameter on the list rather than state nothing outside can set.
+    renderWithProviders(<CustomersPage />, {
+      initialEntries: ['/customers?customer=CUS-0001'],
+    })
+
+    expect(await screen.findByRole('dialog', { name: 'Priya Raman' })).toBeInTheDocument()
+  })
+
+  it('takes the customer back out of the address when the drawer is closed', async () => {
+    renderWithProviders(<CustomersPage />, {
+      initialEntries: ['/customers?customer=CUS-0001'],
+    })
+
+    await screen.findByRole('dialog', { name: 'Priya Raman' })
+    await userEvent.keyboard('{Escape}')
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it('marks the row whose drawer is open', async () => {
     await renderCustomers()
 

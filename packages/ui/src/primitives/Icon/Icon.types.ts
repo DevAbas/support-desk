@@ -16,6 +16,7 @@ export type IconName =
   | 'chevron-down'
   | 'close'
   | 'pencil'
+  | 'search'
 
 /** Sizes come from the spacing scale, not from the text an icon sits beside. */
 export type IconSize = 'sm' | 'md' | 'lg'
