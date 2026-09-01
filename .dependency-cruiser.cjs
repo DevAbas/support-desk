@@ -54,6 +54,7 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
+    exclude: { path: '(^|/)dist/' },
 
     // Type-only imports count. `import type { Ticket } from '@support-desk/web'`
     // erases at build time and would leave no trace in the bundle, which is
