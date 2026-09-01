@@ -112,6 +112,26 @@ describe('reaching the search', () => {
 
     expect(field()).toHaveValue('')
   })
+
+  it('does not answer the reopened palette with the search it was closed on', async () => {
+    await openSearch()
+    await userEvent.type(field(), 'Northwind')
+    await expectGroups(['Customers'])
+    expect(options()).toHaveLength(3)
+
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(screen.getByRole('button', { name: /Search/ }))
+
+    // One letter, and the debounce behind the field has not settled yet. What
+    // the query is still holding at this moment is the answer to the search that
+    // was just dismissed: it is not an answer to this question, so it is not on
+    // screen — and, since Enter opens whatever is on screen, not reachable.
+    await userEvent.type(field(), 'z')
+
+    expect(within(palette()).queryByRole('option', { name: /Northwind/ })).not.toBeInTheDocument()
+    expect(options()).toHaveLength(0)
+    expect(within(palette()).getByText('Searching…')).toBeInTheDocument()
+  })
 })
 
 describe('with nothing typed', () => {

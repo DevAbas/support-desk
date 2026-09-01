@@ -14,10 +14,10 @@ export function Input({ label, labelHidden = false, error, hint, className, ...p
 
   return (
     <div className="flex flex-col gap-1">
-      {/* Hidden rather than dropped, the same way `Checkbox` hides its own: a
-          field with no visible label still has to have one, and an `aria-label`
-          in its place would be a second way of naming a control this component
-          exists to name once. */}
+      {/* Hidden rather than dropped: `labelHidden` only takes the words off the
+          screen, so the `htmlFor` binding above names the field either way. Not
+          how `Checkbox` hides its own — it drops the element and names the box
+          with `aria-label`, because its label is the one that wraps the box. */}
       <label htmlFor={id} className={cn('text-body font-medium text-fg', labelHidden && 'sr-only')}>
         {label}
       </label>

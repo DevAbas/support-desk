@@ -15,6 +15,7 @@ interface RequireRoleProps {
  * cannot reach the reports" is one answer with three readers instead of three
  * implementations of one rule. A screen gated in `NAVIGATION_TARGETS` is gated
  * everywhere at once.
+ * Narrowing `tickets` needs a redirect target that is not the queue.
  *
  * It sits inside `RequireSession`, which is what makes reading the role safe: a
  * session that has not come back yet has no role, and this would send an

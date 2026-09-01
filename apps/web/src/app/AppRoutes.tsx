@@ -33,15 +33,30 @@ export function AppRoutes() {
         <Route element={<RequireSession />}>
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/tickets" replace />} />
-            <Route path="tickets" element={<TicketListPage />} />
-            <Route path="tickets/new" element={<NewTicketPage />} />
-            <Route path="tickets/:ticketId" element={<TicketDetailPage />} />
-            <Route path="customers" element={<CustomersPage />} />
 
-            {/* Not every screen is everyone's. The gate reads the same table the
-                nav is drawn from and the search is filtered by, so a screen an
-                agent is not offered is also one they cannot reach by typing the
-                address of it. */}
+            {/* Not every screen is everyone's, and every screen is behind the
+                gate that asks. `RequireRole` reads the same `roles` the nav is
+                drawn from and the search is filtered by, so naming a role on a
+                target in `NAVIGATION_TARGETS` closes the nav item, the address
+                and the search result together.
+
+                Three of these four gates let both roles through today, which is
+                the point: they are what makes that edit one edit. A guard added
+                at the moment a screen is first narrowed is a guard somebody has
+                to remember, and the day it is forgotten the search is still
+                offering a door the header has closed. */}
+            <Route element={<RequireRole target="tickets" />}>
+              <Route path="tickets" element={<TicketListPage />} />
+              {/* Not a screen of its own — it is where a ticket result goes, and
+                  the server gates those on the queue. */}
+              <Route path="tickets/:ticketId" element={<TicketDetailPage />} />
+            </Route>
+            <Route element={<RequireRole target="new-ticket" />}>
+              <Route path="tickets/new" element={<NewTicketPage />} />
+            </Route>
+            <Route element={<RequireRole target="customers" />}>
+              <Route path="customers" element={<CustomersPage />} />
+            </Route>
             <Route element={<RequireRole target="reports" />}>
               <Route path="reports" element={<ReportsPage />} />
             </Route>

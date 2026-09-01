@@ -727,11 +727,14 @@ panel that never appears.
 - Every form control has a real `<label>` bound to it. `Input`, `Select`, and
   `Textarea` take a required `label` prop and generate their own `id` with `useId`,
   which is why they omit `id` from their props — the binding cannot be forgotten.
-  `Input` also takes `labelHidden`, the same prop and the same reason as `Checkbox`'s:
-  a field whose whole visible chrome is its placeholder — the one in the palette — is
-  still a control that has to be named, and a placeholder is not a name. It hides the
-  label rather than dropping it, so the generated binding is what names the field
-  either way and an `aria-label` never becomes a second answer to the same question.
+  `Input` also takes `labelHidden`, for a field whose whole visible chrome is its
+  placeholder — the one in the palette — which is still a control that has to be
+  named, because a placeholder is not a name. It keeps the `<label>` and its binding
+  and makes it `sr-only`, so the same `htmlFor` names the field whether or not the
+  words are drawn. `Checkbox` has a prop of the same name that answers that question
+  the other way: no label element at all, and `aria-label` on the box. The difference
+  is where each label sits — a checkbox's wraps the box, which is what makes the words
+  a click target, and a wrapper with nothing visible in it is not worth keeping.
 - Errors set `aria-invalid` and are wired to the control through `aria-describedby`.
   Pass the `error` prop rather than rendering error text alongside the field.
 - Icon-only controls need an `aria-label`.

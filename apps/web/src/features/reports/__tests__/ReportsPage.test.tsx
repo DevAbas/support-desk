@@ -117,7 +117,9 @@ describe('ReportsPage', () => {
   it('reports a failed load and retries it from Try again', async () => {
     mswServer.use(http.get('/api/reports/summary', () => HttpResponse.error()))
 
-    renderWithProviders(<ReportsPage />, { initialEntries: ['/reports'] })
+    // As an admin here too, for the reason above: the provider defaults to an
+    // agent, and an agent on this screen is nobody the app can produce.
+    renderWithProviders(<ReportsPage />, { initialEntries: ['/reports'], role: 'admin' })
 
     expect(await screen.findByText('Could not load the summary')).toBeInTheDocument()
 
