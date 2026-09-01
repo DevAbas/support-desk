@@ -1,11 +1,11 @@
 import { http, type HttpResponseResolver } from 'msw'
-import { createApiApp } from '@harness-sample/api/app'
-import { createCustomerStore } from '@harness-sample/api/customerStore'
-import { createSessionStore } from '@harness-sample/api/sessionStore'
-import { createTicketStore } from '@harness-sample/api/store'
-import { createUserStore } from '@harness-sample/api/userStore'
-import { SESSION_COOKIE } from '@harness-sample/api/auth'
-import { SEED_ADMIN_EMAIL } from '@harness-sample/api/userSeed'
+import { createApiApp } from '@support-desk/api/app'
+import { createCustomerStore } from '@support-desk/api/customerStore'
+import { createSessionStore } from '@support-desk/api/sessionStore'
+import { createTicketStore } from '@support-desk/api/store'
+import { createUserStore } from '@support-desk/api/userStore'
+import { SESSION_COOKIE } from '@support-desk/api/auth'
+import { SEED_ADMIN_EMAIL } from '@support-desk/api/userSeed'
 
 /**
  * MSW intercepts the request and hands it to the real API.

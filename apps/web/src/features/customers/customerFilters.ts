@@ -1,10 +1,10 @@
-import type { SelectOption } from '@harness-sample/ui'
+import type { SelectOption } from '@support-desk/ui'
 import {
   CUSTOMER_PLANS,
   CUSTOMER_PLAN_LABELS,
   type CustomerPlan,
   type ListCustomersFilters,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 
 /**
  * The filter combination the customer list is showing.

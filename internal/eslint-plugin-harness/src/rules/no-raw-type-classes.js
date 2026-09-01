@@ -95,10 +95,10 @@ export default {
       rawSize:
         'Use a semantic type level instead of `{{className}}`: text-title, text-section, ' +
         'text-subsection, text-body, text-caption — or render Heading or Text from ' +
-        '@harness-sample/ui. See internal/eslint-plugin-harness/README.md.',
+        '@support-desk/ui. See internal/eslint-plugin-harness/README.md.',
       rawWeight:
         'Drop `{{className}}` and take the weight from a heading level — text-title, ' +
-        'text-section, text-subsection — or render Heading from @harness-sample/ui. ' +
+        'text-section, text-subsection — or render Heading from @support-desk/ui. ' +
         'See internal/eslint-plugin-harness/README.md.',
     },
   },

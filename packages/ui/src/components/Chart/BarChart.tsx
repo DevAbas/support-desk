@@ -10,7 +10,7 @@ import {
   YAxis,
 } from 'recharts'
 import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '../Table'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import { EMPTY_MESSAGE, LOADING_MESSAGE, StateMessage } from '../../primitives/StateMessage'
 import type { BarChartProps, ChartTone } from './Chart.types'
 

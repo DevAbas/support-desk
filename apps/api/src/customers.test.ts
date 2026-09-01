@@ -6,7 +6,7 @@ import {
   listCustomersResponseSchema,
   updatedCountSchema,
   type ListCustomersResponse,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { createApp } from './test/support'
 
 /**

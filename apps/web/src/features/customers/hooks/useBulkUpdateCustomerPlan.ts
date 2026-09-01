@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
-import type { BulkUpdateCustomerPlanBody, UpdatedCount } from '@harness-sample/shared'
+import type { BulkUpdateCustomerPlanBody, UpdatedCount } from '@support-desk/shared'
 import { bulkUpdateCustomerPlan } from '@/lib/api/customers'
 import { customerKeys } from '@/features/customers/customerKeys'
 

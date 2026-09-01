@@ -1,4 +1,4 @@
-import { Button, Toolbar } from '@harness-sample/ui'
+import { Button, Toolbar } from '@support-desk/ui'
 
 interface PaginationProps {
   page: number

@@ -3,7 +3,7 @@ import {
   MAX_CUSTOMER_PAGE_SIZE,
   type CustomerSummary,
   type ListCustomersFilters,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { listCustomers } from '@/lib/api/customers'
 import { toErrorMessage } from '@/lib/api/http'
 import { downloadTextFile } from '@/lib/download'

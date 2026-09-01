@@ -6,7 +6,7 @@ import {
   reportSummaryResponseSchema,
   ticketSchema,
   TICKET_STATUSES,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { createApp } from './test/support'
 
 /**

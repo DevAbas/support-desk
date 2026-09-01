@@ -1,6 +1,6 @@
 import { useId, useMemo, type KeyboardEvent } from 'react'
 import { Button } from '../../primitives/Button'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import { TabsContext, tabId, tabPanelId, useTabsContext } from './TabsContext'
 import type { TabListProps, TabPanelProps, TabProps, TabsProps } from './Tabs.types'
 

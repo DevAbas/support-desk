@@ -1,5 +1,5 @@
-import { Badge, type BadgeStatus } from '@harness-sample/ui'
-import { TICKET_PRIORITY_LABELS, type TicketPriority } from '@harness-sample/shared'
+import { Badge, type BadgeStatus } from '@support-desk/ui'
+import { TICKET_PRIORITY_LABELS, type TicketPriority } from '@support-desk/shared'
 
 const badgeStatusByPriority: Record<TicketPriority, BadgeStatus> = {
   low: 'neutral',

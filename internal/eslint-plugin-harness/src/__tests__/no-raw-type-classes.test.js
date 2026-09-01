@@ -131,7 +131,7 @@ ruleTester.run('no-raw-type-classes', rule, {
 describe('no-raw-type-classes messages', () => {
   it('name the semantic scale and where the primitives are imported from', () => {
     for (const message of Object.values(rule.meta.messages)) {
-      expect(message).toContain('@harness-sample/ui')
+      expect(message).toContain('@support-desk/ui')
       expect(message).toMatch(/text-title|text-section/)
       expect(message).toContain('{{className}}')
     }

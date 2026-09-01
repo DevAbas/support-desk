@@ -9,10 +9,10 @@ import {
   ListRow,
   StatCard,
   StateMessage,
-} from '@harness-sample/ui'
+} from '@support-desk/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { formatDate } from '@/lib/format'
-import type { Customer } from '@harness-sample/shared'
+import type { Customer } from '@support-desk/shared'
 // The mapping from a ticket status to a badge appearance already exists, and it
 // belongs to the ticket feature. A second copy here would be a second thing to
 // get wrong the day a status is added.

@@ -11,10 +11,10 @@ import {
   Input,
   Select,
   Text,
-} from '@harness-sample/ui'
+} from '@support-desk/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
-import { type TicketStatus } from '@harness-sample/shared'
+import { type TicketStatus } from '@support-desk/shared'
 import { useRole } from '@/features/roles/useRole'
 import { BulkActionsBar } from './components/BulkActionsBar'
 import { Pagination } from './components/Pagination'

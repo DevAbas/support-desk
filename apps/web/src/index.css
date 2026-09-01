@@ -1,9 +1,9 @@
 @import 'tailwindcss';
-@import '@harness-sample/ui/tokens.css';
+@import '@support-desk/ui/tokens.css';
 
 /*
  * Automatic source detection stops at `node_modules`, and the workspace symlink
- * for `@harness-sample/ui` points there, so the design system has to be named
+ * for `@support-desk/ui` points there, so the design system has to be named
  * explicitly. Without this every class it uses is detected as unused and
  * compiled away, silently and without an error. The path is relative to this
  * file.

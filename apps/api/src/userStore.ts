@@ -1,4 +1,4 @@
-import type { RegisterBody, User } from '@harness-sample/shared'
+import type { RegisterBody, User } from '@support-desk/shared'
 import { hashPassword, verifyPassword } from './password'
 import { createSeedUsers, formatUserId, type UserRecord } from './userSeed'
 

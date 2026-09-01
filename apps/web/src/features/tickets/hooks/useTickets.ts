@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query'
-import type { ListTicketsQuery, ListTicketsResponse } from '@harness-sample/shared'
+import type { ListTicketsQuery, ListTicketsResponse } from '@support-desk/shared'
 import { listTickets } from '@/lib/api/tickets'
 import { ticketKeys } from '@/features/tickets/ticketKeys'
 

@@ -1,4 +1,4 @@
-import type { Role, User } from '@harness-sample/shared'
+import type { Role, User } from '@support-desk/shared'
 import { hashPassword } from './password'
 
 /**

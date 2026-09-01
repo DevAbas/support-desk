@@ -1,4 +1,4 @@
-import type { CustomerPlan, CustomerSummary, Ticket } from '@harness-sample/shared'
+import type { CustomerPlan, CustomerSummary, Ticket } from '@support-desk/shared'
 import { createRandom, createSeedTickets, SEED_EPOCH } from './seed'
 
 /**

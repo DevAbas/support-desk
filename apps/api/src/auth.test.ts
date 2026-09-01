@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { apiErrorSchema, meResponseSchema, userSchema } from '@harness-sample/shared'
+import { apiErrorSchema, meResponseSchema, userSchema } from '@support-desk/shared'
 import { SESSION_COOKIE } from './auth'
 import { LOGIN_WINDOW_MS, MAX_LOGIN_FAILURES } from './loginLimiter'
 import { SESSION_TTL_MS } from './sessionStore'

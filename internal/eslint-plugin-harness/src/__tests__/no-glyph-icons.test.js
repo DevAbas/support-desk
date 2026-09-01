@@ -87,7 +87,7 @@ describe('no-glyph-icons message', () => {
 
   it('names the replacement, where it is imported from, and the escape hatch', () => {
     expect(message).toContain('Icon')
-    expect(message).toContain('@harness-sample/ui')
+    expect(message).toContain('@support-desk/ui')
     expect(message).toContain('string literal')
   })
 

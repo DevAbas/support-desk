@@ -1,6 +1,6 @@
-import { StateMessage, Text } from '@harness-sample/ui'
+import { StateMessage, Text } from '@support-desk/ui'
 import { formatDateTime } from '@/lib/format'
-import type { TicketComment } from '@harness-sample/shared'
+import type { TicketComment } from '@support-desk/shared'
 
 interface CommentListProps {
   comments: TicketComment[]

@@ -11,14 +11,14 @@ import {
   Select,
   StateMessage,
   Text,
-} from '@harness-sample/ui'
+} from '@support-desk/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { formatDateTime } from '@/lib/format'
 import {
   TICKET_STATUSES,
   TICKET_STATUS_LABELS,
   type TicketStatus,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { ROLE_LABELS } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
 import { AssigneeForm } from './components/AssigneeForm'

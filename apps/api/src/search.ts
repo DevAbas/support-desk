@@ -14,7 +14,7 @@ import {
   type SearchResult,
   type SearchResultType,
   type Ticket,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import type { CustomerStore } from './customerStore'
 import { currentUser, invalid, type AppEnv } from './respond'
 import type { TicketStore } from './store'

@@ -86,7 +86,7 @@ export default {
     // it is what tells a reader a false positive is possible at all.
     messages: {
       copiedClasses:
-        'Import {{primitive}} from @harness-sample/ui instead of writing `{{classes}}` onto a ' +
+        'Import {{primitive}} from @support-desk/ui instead of writing `{{classes}}` onto a ' +
         '`<{{element}}>`. This is a heuristic class match — a toolbar is a bordered strip and ' +
         'is not a CardHeader. See internal/eslint-plugin-harness/README.md.',
     },

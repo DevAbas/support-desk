@@ -1,10 +1,10 @@
-import type { ChartTone } from '@harness-sample/ui'
+import type { ChartTone } from '@support-desk/ui'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_STATUS_LABELS,
   type ReportBucketKey,
   type ReportDimension,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 
 /**
  * How a report is presented: the three views, and the domain-to-presentation

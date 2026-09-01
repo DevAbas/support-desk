@@ -1,4 +1,4 @@
-import type { ListCustomersFilters } from '@harness-sample/shared'
+import type { ListCustomersFilters } from '@support-desk/shared'
 
 /**
  * Every cache key the customer screens use.

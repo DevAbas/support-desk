@@ -1,4 +1,4 @@
-import { TICKET_PRIORITIES, TICKET_STATUSES } from '@harness-sample/shared'
+import { TICKET_PRIORITIES, TICKET_STATUSES } from '@support-desk/shared'
 import type { PriorityFilter, StatusFilter, TicketFilters } from './ticketFilters'
 
 /**

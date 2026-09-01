@@ -12,7 +12,7 @@ import {
   type ReportSummaryResponse,
   type Ticket,
   type TicketStatus,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 
 /**
  * The reporting aggregation.

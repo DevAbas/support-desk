@@ -1,5 +1,5 @@
 import { skipToken, useQuery, type UseQueryResult } from '@tanstack/react-query'
-import type { Customer } from '@harness-sample/shared'
+import type { Customer } from '@support-desk/shared'
 import { getCustomer } from '@/lib/api/customers'
 import { customerKeys } from '@/features/customers/customerKeys'
 

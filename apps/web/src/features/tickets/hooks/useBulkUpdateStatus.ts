@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
-import type { BulkUpdateBody, UpdatedCount } from '@harness-sample/shared'
+import type { BulkUpdateBody, UpdatedCount } from '@support-desk/shared'
 import { bulkUpdateStatus } from '@/lib/api/tickets'
 import { ticketKeys } from '@/features/tickets/ticketKeys'
 

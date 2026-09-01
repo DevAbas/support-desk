@@ -9,7 +9,7 @@ import {
   type ReportBreakdownResponse,
   type ReportRangeQuery,
   type ReportSummaryResponse,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { apiRequest } from './http'
 
 /**

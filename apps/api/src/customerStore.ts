@@ -6,7 +6,7 @@ import type {
   ListCustomersQuery,
   ListCustomersResponse,
   Ticket,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { createSeedCustomers, type CustomerRecord } from './customerSeed'
 import type { TicketStore } from './store'
 

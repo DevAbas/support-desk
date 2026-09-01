@@ -1,5 +1,5 @@
 import type { ReactNode, SubmitEventHandler } from 'react'
-import { Alert, Button, Card, CardBody, CardFooter, CardHeader, Heading, Text } from '@harness-sample/ui'
+import { Alert, Button, Card, CardBody, CardFooter, CardHeader, Heading, Text } from '@support-desk/ui'
 
 interface AuthCardProps {
   title: string

@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query'
-import { DEFAULT_SEARCH_LIMIT, type SearchResponse } from '@harness-sample/shared'
+import { DEFAULT_SEARCH_LIMIT, type SearchResponse } from '@support-desk/shared'
 import { search } from '@/lib/api/search'
 import { searchKeys } from '../searchKeys'
 

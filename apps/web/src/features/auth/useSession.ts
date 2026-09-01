@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
-import type { MeResponse } from '@harness-sample/shared'
+import type { MeResponse } from '@support-desk/shared'
 import { getMe } from '@/lib/api/session'
 import { sessionKeys } from './sessionKeys'
 

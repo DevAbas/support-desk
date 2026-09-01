@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import { apiErrorSchema, type ApiErrorCode } from '@harness-sample/shared'
+import { apiErrorSchema, type ApiErrorCode } from '@support-desk/shared'
 
 /**
  * The one way this app talks to the API.

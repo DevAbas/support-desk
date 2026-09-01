@@ -1,4 +1,4 @@
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { HeadingElement, HeadingLevel, HeadingProps } from './Heading.types'
 
 // Keyed by the union, so adding a level without styling it is a type error.

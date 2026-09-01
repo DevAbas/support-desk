@@ -1,4 +1,4 @@
-import type { SearchQuery } from '@harness-sample/shared'
+import type { SearchQuery } from '@support-desk/shared'
 
 /**
  * Every cache key the search uses.

@@ -1,6 +1,6 @@
 import { useState, type SubmitEventHandler } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { Input } from '@harness-sample/ui'
+import { Input } from '@support-desk/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { AuthCard } from './AuthCard'
 import { NEXT_PARAM, safeNextPath } from './nextPath'

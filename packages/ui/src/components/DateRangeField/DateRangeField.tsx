@@ -1,6 +1,6 @@
 import { Button } from '../../primitives/Button'
 import { Input } from '../../primitives/Input'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { DateRange, DateRangeFieldProps } from './DateRangeField.types'
 
 /**

@@ -9,7 +9,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { IconName, IconProps, IconSize, IconTone } from './Icon.types'
 
 /**

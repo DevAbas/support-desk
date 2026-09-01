@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { SEED_AGENT_EMAIL } from '@harness-sample/api/userSeed'
+import { SEED_AGENT_EMAIL } from '@support-desk/api/userSeed'
 import { signInTestUser } from '@/test/msw/server'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { AppRoutes } from '@/app/AppRoutes'

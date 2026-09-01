@@ -1,6 +1,6 @@
 import type { Hono, MiddlewareHandler } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
-import { loginBodySchema, registerBodySchema } from '@harness-sample/shared'
+import { loginBodySchema, registerBodySchema } from '@support-desk/shared'
 import type { LoginLimiter } from './loginLimiter'
 import { fail, invalid, readJsonBody, type ApiContext, type AppEnv } from './respond'
 import type { SessionStore } from './sessionStore'

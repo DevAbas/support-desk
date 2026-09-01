@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { z } from 'zod'
-import type { ApiErrorBody, ApiErrorCode, User } from '@harness-sample/shared'
+import type { ApiErrorBody, ApiErrorCode, User } from '@support-desk/shared'
 
 /**
  * The one way this API answers a failure, and the one way it reads a body.

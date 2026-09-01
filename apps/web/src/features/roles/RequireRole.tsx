@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { canReachNavigationTarget, type NavigationTargetId } from '@harness-sample/shared'
+import { canReachNavigationTarget, type NavigationTargetId } from '@support-desk/shared'
 import { useRole } from './useRole'
 
 interface RequireRoleProps {

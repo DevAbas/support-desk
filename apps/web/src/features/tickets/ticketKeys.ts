@@ -1,4 +1,4 @@
-import type { ListTicketsQuery } from '@harness-sample/shared'
+import type { ListTicketsQuery } from '@support-desk/shared'
 
 /**
  * Every cache key the ticket screens use.

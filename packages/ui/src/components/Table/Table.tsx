@@ -1,4 +1,4 @@
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import { EMPTY_MESSAGE, LOADING_MESSAGE, StateMessage } from '../../primitives/StateMessage'
 import type {
   TableBodyProps,

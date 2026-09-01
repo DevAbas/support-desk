@@ -11,7 +11,7 @@ import {
   reportBreakdownQuerySchema,
   reportRangeQuerySchema,
   updateTicketBodySchema,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { registerAuthRoutes, requireAdmin, requireSession } from './auth'
 import { createCustomerStore, type CustomerStore } from './customerStore'
 import { createLoginLimiter, type LoginLimiter } from './loginLimiter'

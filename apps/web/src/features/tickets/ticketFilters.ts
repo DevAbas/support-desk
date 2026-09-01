@@ -1,4 +1,4 @@
-import type { SelectOption } from '@harness-sample/ui'
+import type { SelectOption } from '@support-desk/ui'
 import {
   TICKET_PRIORITIES,
   TICKET_PRIORITY_LABELS,
@@ -7,7 +7,7 @@ import {
   type ListTicketsQuery,
   type TicketPriority,
   type TicketStatus,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 
 /**
  * The filter combination the ticket list is showing.

@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { MAX_PAGE_SIZE, type ListTicketsQuery } from '@harness-sample/shared'
+import { MAX_PAGE_SIZE, type ListTicketsQuery } from '@support-desk/shared'
 import { toErrorMessage } from '@/lib/api/http'
 import { listTickets } from '@/lib/api/tickets'
 import { downloadTextFile } from '@/lib/download'

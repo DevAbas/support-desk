@@ -1,4 +1,4 @@
-import { Alert, Button, Toolbar } from '@harness-sample/ui'
+import { Alert, Button, Toolbar } from '@support-desk/ui'
 
 interface TicketsToolbarProps {
   onExport: () => void

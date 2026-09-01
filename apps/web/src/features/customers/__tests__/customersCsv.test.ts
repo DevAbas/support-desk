@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { CustomerSummary } from '@harness-sample/shared'
+import type { CustomerSummary } from '@support-desk/shared'
 import { customersCsvFilename, customersToCsv } from '@/features/customers/customersCsv'
 
 function makeCustomer(overrides: Partial<CustomerSummary> = {}): CustomerSummary {

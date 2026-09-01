@@ -1,4 +1,4 @@
-import { CUSTOMER_PLAN_LABELS, type CustomerSummary } from '@harness-sample/shared'
+import { CUSTOMER_PLAN_LABELS, type CustomerSummary } from '@support-desk/shared'
 import { CSV_MIME_TYPE, toCsv, toFilenameDate } from '@/lib/csv'
 
 /**

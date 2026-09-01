@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { AvatarProps, AvatarSize } from './Avatar.types'
 
 const baseClasses =

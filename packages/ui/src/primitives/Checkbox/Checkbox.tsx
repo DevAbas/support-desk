@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { CheckboxProps } from './Checkbox.types'
 
 /**

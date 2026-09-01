@@ -6,7 +6,7 @@ import {
   type LoginBody,
   type MeResponse,
   type RegisterBody,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { apiRequest } from './http'
 
 /**

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
-import type { DeletedCount } from '@harness-sample/shared'
+import type { DeletedCount } from '@support-desk/shared'
 import { deleteTicket } from '@/lib/api/tickets'
 import { ticketKeys } from '@/features/tickets/ticketKeys'
 

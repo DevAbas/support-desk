@@ -69,7 +69,7 @@ const ROLLOUT = {
 
 const plugin = {
   meta: {
-    name: '@harness-sample/eslint-plugin-harness',
+    name: '@support-desk/eslint-plugin-harness',
     version: '0.0.0',
   },
   rules: {

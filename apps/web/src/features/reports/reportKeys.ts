@@ -1,4 +1,4 @@
-import type { ReportBreakdownQuery, ReportRange } from '@harness-sample/shared'
+import type { ReportBreakdownQuery, ReportRange } from '@support-desk/shared'
 
 /**
  * Every cache key the reports screen uses.

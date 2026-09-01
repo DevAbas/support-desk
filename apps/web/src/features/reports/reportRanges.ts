@@ -1,5 +1,5 @@
-import type { DateRangePreset } from '@harness-sample/ui'
-import type { ReportRange } from '@harness-sample/shared'
+import type { DateRangePreset } from '@support-desk/ui'
+import type { ReportRange } from '@support-desk/shared'
 
 /**
  * The ranges the reports screen offers.

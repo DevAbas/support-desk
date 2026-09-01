@@ -1,4 +1,4 @@
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import { CardBody } from '../Card'
 import { Dialog } from '../Dialog'
 import type { DrawerProps, DrawerSide } from './Drawer.types'

@@ -3,7 +3,7 @@ import {
   searchResponseSchema,
   type SearchQuery,
   type SearchResponse,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { apiRequest } from './http'
 
 /**

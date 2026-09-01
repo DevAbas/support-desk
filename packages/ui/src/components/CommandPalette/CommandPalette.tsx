@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type RefObject } from 'react'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import { Button } from '../../primitives/Button'
 import { Icon } from '../../primitives/Icon'
 import { Input } from '../../primitives/Input'

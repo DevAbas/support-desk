@@ -1,5 +1,5 @@
 import { Card } from '../Card'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import { Icon, type IconName } from '../../primitives/Icon'
 import { LOADING_MESSAGE, StateMessage } from '../../primitives/StateMessage'
 import type { StatCardProps, StatChangeDirection, StatChangeIntent } from './StatCard.types'

@@ -13,7 +13,7 @@ import {
   type ListCustomersQuery,
   type ListCustomersResponse,
   type UpdatedCount,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { apiRequest, type QueryParams } from './http'
 
 /**

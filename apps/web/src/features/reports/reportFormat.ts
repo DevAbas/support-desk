@@ -1,5 +1,5 @@
-import type { StatChange, StatChangeDirection, StatChangeIntent } from '@harness-sample/ui'
-import type { ReportMetric } from '@harness-sample/shared'
+import type { StatChange, StatChangeDirection, StatChangeIntent } from '@support-desk/ui'
+import type { ReportMetric } from '@support-desk/shared'
 
 /**
  * Turning report figures into the strings the screen shows.

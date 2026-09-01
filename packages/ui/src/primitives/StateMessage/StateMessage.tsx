@@ -1,4 +1,4 @@
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { StateMessageProps } from './StateMessage.types'
 
 const baseClasses = 'px-4 py-12 text-center text-body text-fg-muted'

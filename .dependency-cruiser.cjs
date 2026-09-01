@@ -4,7 +4,7 @@
  * The split into `apps/` and `packages/` was done so that the design system and
  * the shared contract could not learn what a ticket screen is. Today that is
  * enforced by nothing but package resolution — `packages/ui` does not depend on
- * `@harness-sample/web`, so an import of it does not resolve, so nobody writes
+ * `@support-desk/web`, so an import of it does not resolve, so nobody writes
  * one. That is a real constraint right up to the moment someone adds the
  * dependency, or a path alias, or merges two workspaces during a restructure,
  * at which point the boundary is gone and no diff says so.
@@ -55,13 +55,13 @@ module.exports = {
   options: {
     doNotFollow: { path: 'node_modules' },
 
-    // Type-only imports count. `import type { Ticket } from '@harness-sample/web'`
+    // Type-only imports count. `import type { Ticket } from '@support-desk/web'`
     // erases at build time and would leave no trace in the bundle, which is
     // exactly what makes it the easy way to cross a boundary by accident.
     tsPreCompilationDeps: true,
 
     // Workspace packages are symlinks into `packages/`. Following them to the
-    // real path is the point: `@harness-sample/ui` has to be reported as
+    // real path is the point: `@support-desk/ui` has to be reported as
     // `packages/ui/...` for a rule keyed on that path to see it at all.
     preserveSymlinks: false,
 

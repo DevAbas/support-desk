@@ -6,7 +6,7 @@ import type {
   Ticket,
   TicketStatus,
   UpdateTicketBody,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { createSeedTickets } from './seed'
 
 /**

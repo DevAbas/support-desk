@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { StateMessage } from '@harness-sample/ui'
+import { StateMessage } from '@support-desk/ui'
 import { useSession } from './useSession'
 import { toLoginPath } from './nextPath'
 

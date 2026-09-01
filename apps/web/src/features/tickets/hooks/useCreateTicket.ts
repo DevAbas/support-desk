@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
-import type { CreateTicketBody, Ticket } from '@harness-sample/shared'
+import type { CreateTicketBody, Ticket } from '@support-desk/shared'
 import { createTicket } from '@/lib/api/tickets'
 import { ticketKeys } from '@/features/tickets/ticketKeys'
 

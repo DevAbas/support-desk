@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Button, Select, Toolbar } from '@harness-sample/ui'
-import { TICKET_STATUSES, TICKET_STATUS_LABELS, type TicketStatus } from '@harness-sample/shared'
+import { Button, Select, Toolbar } from '@support-desk/ui'
+import { TICKET_STATUSES, TICKET_STATUS_LABELS, type TicketStatus } from '@support-desk/shared'
 
 const statusOptions = TICKET_STATUSES.map((status) => ({
   value: status,

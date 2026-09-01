@@ -126,7 +126,7 @@ describe('no-primitive-class-copying message', () => {
   const message = rule.meta.messages.copiedClasses
 
   it('names the primitive, the import path, and its own fallibility', () => {
-    expect(message).toContain('@harness-sample/ui')
+    expect(message).toContain('@support-desk/ui')
     expect(message).toContain('{{primitive}}')
     expect(message).toContain('heuristic')
     // The rule is wrong about toolbars often enough that the message has to say

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Button } from '../../primitives/Button'
 import { Checkbox } from '../../primitives/Checkbox'
 import { Icon } from '../../primitives/Icon'
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { MultiSelectProps } from './MultiSelect.types'
 
 /**

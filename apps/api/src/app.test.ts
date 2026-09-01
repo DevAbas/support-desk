@@ -6,7 +6,7 @@ import {
   meResponseSchema,
   ticketSchema,
   updatedCountSchema,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { createApp, createSignedOutApp } from './test/support'
 import { SEED_AGENT_EMAIL } from './userSeed'
 

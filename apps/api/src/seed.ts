@@ -1,4 +1,4 @@
-import type { Ticket, TicketComment, TicketPriority, TicketStatus } from '@harness-sample/shared'
+import type { Ticket, TicketComment, TicketPriority, TicketStatus } from '@support-desk/shared'
 
 /**
  * The seed data is generated deterministically: the same 40 tickets, in the same

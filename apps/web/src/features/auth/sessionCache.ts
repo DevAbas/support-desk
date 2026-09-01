@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import type { MeResponse } from '@harness-sample/shared'
+import type { MeResponse } from '@support-desk/shared'
 import { sessionKeys } from './sessionKeys'
 
 const [SESSION_SCOPE] = sessionKeys.all()

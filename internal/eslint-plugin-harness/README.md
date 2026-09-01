@@ -68,7 +68,7 @@ type, was buried in an essay the reader had already skipped nine times.
 > **Too much**
 >
 > ```
-> Use the Icon primitive from @harness-sample/ui instead of the glyph "×" —
+> Use the Icon primitive from @support-desk/ui instead of the glyph "×" —
 > `<Icon name="close" label="Close" />`, naming it from the IconName union. An
 > icon carries its own size scale and colour; a text character inherits both
 > from the type around it, and a screen reader announces it as a word
@@ -82,7 +82,7 @@ type, was buried in an essay the reader had already skipped nine times.
 > **Right**
 >
 > ```
-> Use the Icon primitive from @harness-sample/ui instead of the glyph "×", named
+> Use the Icon primitive from @support-desk/ui instead of the glyph "×", named
 > from the IconName union — or, if it is genuinely text, move it into a string
 > literal. See internal/eslint-plugin-harness/README.md.
 > ```
@@ -414,7 +414,7 @@ npm run lint:boundaries
 `packages/shared` must not import from either, and must not import `packages/ui`.
 
 This boundary is currently enforced only by package resolution: `packages/ui`
-does not depend on `@harness-sample/web`, so an import of it does not resolve, so
+does not depend on `@support-desk/web`, so an import of it does not resolve, so
 nobody writes one. That is a real constraint right up to the moment someone adds
 the dependency, or a path alias, or merges two workspaces during a restructure —
 at which point the boundary is gone and no diff says so. The workspace split was
@@ -422,7 +422,7 @@ done for this; making it explicit means a future restructure cannot quietly undo
 it.
 
 `tsPreCompilationDeps` is on, so type-only imports count. `import type { Ticket }
-from '@harness-sample/web'` erases at build time and leaves no trace in the
+from '@support-desk/web'` erases at build time and leaves no trace in the
 bundle, which is exactly what makes it the easy way across a boundary by
 accident.
 

@@ -1,5 +1,5 @@
-import { Badge, type BadgeStatus } from '@harness-sample/ui'
-import { TICKET_STATUS_LABELS, type TicketStatus } from '@harness-sample/shared'
+import { Badge, type BadgeStatus } from '@support-desk/ui'
+import { TICKET_STATUS_LABELS, type TicketStatus } from '@support-desk/shared'
 
 /**
  * The domain-to-presentation mapping. `Badge` knows about appearances; this file

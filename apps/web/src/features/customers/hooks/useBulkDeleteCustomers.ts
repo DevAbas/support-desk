@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
-import type { BulkDeleteCustomersBody, DeletedCount } from '@harness-sample/shared'
+import type { BulkDeleteCustomersBody, DeletedCount } from '@support-desk/shared'
 import { bulkDeleteCustomers } from '@/lib/api/customers'
 import { customerKeys } from '@/features/customers/customerKeys'
 

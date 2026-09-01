@@ -50,7 +50,7 @@ export default {
       // against an ellipsis, where moving it into a string is the right answer
       // and an Icon is not. `IconName` is the pointer that works for both.
       glyphInJsxText:
-        'Use the Icon primitive from @harness-sample/ui instead of the glyph {{glyphs}}, named ' +
+        'Use the Icon primitive from @support-desk/ui instead of the glyph {{glyphs}}, named ' +
         'from the IconName union — or, if it is genuinely text, move it into a string literal. ' +
         'See internal/eslint-plugin-harness/README.md.',
     },

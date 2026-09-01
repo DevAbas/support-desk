@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query'
-import type { ReportRange, ReportSummaryResponse } from '@harness-sample/shared'
+import type { ReportRange, ReportSummaryResponse } from '@support-desk/shared'
 import { getReportSummary } from '@/lib/api/reports'
 import { reportKeys } from '@/features/reports/reportKeys'
 

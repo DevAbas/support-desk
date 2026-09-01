@@ -12,11 +12,11 @@ import {
   TabPanel,
   Tabs,
   Text,
-} from '@harness-sample/ui'
+} from '@support-desk/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { downloadTextFile } from '@/lib/download'
 import { formatDate } from '@/lib/format'
-import type { ReportBreakdownQuery, ReportRange } from '@harness-sample/shared'
+import type { ReportBreakdownQuery, ReportRange } from '@support-desk/shared'
 import { ReportAssigneeTable } from './components/ReportAssigneeTable'
 import { ReportBreakdownChart } from './components/ReportBreakdownChart'
 import { ReportSummaryCards } from './components/ReportSummaryCards'

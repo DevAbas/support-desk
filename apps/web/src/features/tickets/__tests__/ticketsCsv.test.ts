@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Ticket } from '@harness-sample/shared'
+import type { Ticket } from '@support-desk/shared'
 import { ticketsCsvFilename, ticketsToCsv } from '@/features/tickets/ticketsCsv'
 
 function makeTicket(overrides: Partial<Ticket> = {}): Ticket {

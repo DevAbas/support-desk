@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
-import type { LoginBody, MeResponse } from '@harness-sample/shared'
+import type { LoginBody, MeResponse } from '@support-desk/shared'
 import { signIn } from '@/lib/api/session'
 import { replaceSession } from './sessionCache'
 

@@ -1,5 +1,5 @@
 import { useState, type SubmitEventHandler } from 'react'
-import { Button, Input } from '@harness-sample/ui'
+import { Button, Input } from '@support-desk/ui'
 import { toErrorMessage } from '@/lib/api/http'
 
 interface AssigneeFormProps {

@@ -1,4 +1,4 @@
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { AlertProps, AlertTone, AlertVariant } from './Alert.types'
 
 const baseClasses = 'flex justify-between gap-4 text-body'

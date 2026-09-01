@@ -1,9 +1,9 @@
-import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '@harness-sample/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from '@support-desk/ui'
 import {
   TICKET_STATUSES,
   TICKET_STATUS_LABELS,
   type ReportAssigneesResponse,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 
 interface ReportAssigneeTableProps {
   assignees: ReportAssigneesResponse | undefined

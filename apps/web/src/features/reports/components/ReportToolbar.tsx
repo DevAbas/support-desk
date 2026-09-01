@@ -1,4 +1,4 @@
-import { Button, CardFooter, Text } from '@harness-sample/ui'
+import { Button, CardFooter, Text } from '@support-desk/ui'
 
 interface ReportToolbarProps {
   onExport: () => void

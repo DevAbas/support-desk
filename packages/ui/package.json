@@ -1,5 +1,5 @@
 {
-  "name": "@harness-sample/ui",
+  "name": "@support-desk/ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "./tokens.css": "./src/tokens.css"
   },
   "dependencies": {
-    "@harness-sample/shared": "*",
+    "@support-desk/shared": "*",
     "lucide-react": "^1.37.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

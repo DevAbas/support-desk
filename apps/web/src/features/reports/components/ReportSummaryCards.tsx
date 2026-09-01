@@ -1,5 +1,5 @@
-import { StatCard } from '@harness-sample/ui'
-import type { ReportSummaryResponse } from '@harness-sample/shared'
+import { StatCard } from '@support-desk/ui'
+import type { ReportSummaryResponse } from '@support-desk/shared'
 import { rangeLengthInDays } from '../reportRanges'
 import { formatCount, formatOptionalDuration, toStatChange } from '../reportFormat'
 

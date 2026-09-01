@@ -1,6 +1,6 @@
 import { skipToken, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { getTicket } from '@/lib/api/tickets'
-import type { Ticket } from '@harness-sample/shared'
+import type { Ticket } from '@support-desk/shared'
 import { ticketKeys } from '@/features/tickets/ticketKeys'
 
 /**

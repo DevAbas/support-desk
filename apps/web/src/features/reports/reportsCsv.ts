@@ -4,7 +4,7 @@ import {
   type ReportAssigneesResponse,
   type ReportBreakdownResponse,
   type ReportRange,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { CSV_MIME_TYPE, toCsv } from '@/lib/csv'
 import { BUCKET_LABELS, DIMENSION_LABELS, type ReportView } from './reportViews'
 

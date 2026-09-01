@@ -11,9 +11,9 @@ import {
   Select,
   Text,
   Textarea,
-} from '@harness-sample/ui'
+} from '@support-desk/ui'
 import { useCreateTicket } from './hooks/useCreateTicket'
-import { TICKET_PRIORITIES, TICKET_PRIORITY_LABELS, type TicketPriority } from '@harness-sample/shared'
+import { TICKET_PRIORITIES, TICKET_PRIORITY_LABELS, type TicketPriority } from '@support-desk/shared'
 
 const priorityOptions = TICKET_PRIORITIES.map((priority) => ({
   value: priority,

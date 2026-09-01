@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Badge, Button, Text } from '@harness-sample/ui'
-import { cn, navigationTargetsFor } from '@harness-sample/shared'
+import { Badge, Button, Text } from '@support-desk/ui'
+import { cn, navigationTargetsFor } from '@support-desk/shared'
 import { useSession } from '@/features/auth/useSession'
 import { useSignOut } from '@/features/auth/useSignOut'
 import { ROLE_LABELS } from '@/features/roles/role.types'

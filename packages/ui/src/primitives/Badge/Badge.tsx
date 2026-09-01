@@ -1,4 +1,4 @@
-import { cn } from '@harness-sample/shared'
+import { cn } from '@support-desk/shared'
 import type { BadgeProps, BadgeStatus } from './Badge.types'
 
 const baseClasses =

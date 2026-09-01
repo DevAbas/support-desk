@@ -1,4 +1,4 @@
-import { TICKET_PRIORITY_LABELS, TICKET_STATUS_LABELS, type Ticket } from '@harness-sample/shared'
+import { TICKET_PRIORITY_LABELS, TICKET_STATUS_LABELS, type Ticket } from '@support-desk/shared'
 import { CSV_MIME_TYPE, toCsv, toFilenameDate } from '@/lib/csv'
 
 /**

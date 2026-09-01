@@ -4,7 +4,7 @@ import {
   type InfiniteData,
   type UseInfiniteQueryResult,
 } from '@tanstack/react-query'
-import type { ListCustomersFilters, ListCustomersResponse } from '@harness-sample/shared'
+import type { ListCustomersFilters, ListCustomersResponse } from '@support-desk/shared'
 import { listCustomers } from '@/lib/api/customers'
 import { customerKeys } from '@/features/customers/customerKeys'
 

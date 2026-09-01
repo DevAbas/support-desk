@@ -9,7 +9,7 @@ import {
   ConfirmDialog,
   Icon,
   StateMessage,
-} from '@harness-sample/ui'
+} from '@support-desk/ui'
 import type { SavedView } from '@/features/tickets/savedViews'
 import { SavedViewNameDialog } from './SavedViewNameDialog'
 

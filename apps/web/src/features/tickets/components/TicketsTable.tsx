@@ -7,9 +7,9 @@ import {
   TableHead,
   TableHeaderCell,
   TableRow,
-} from '@harness-sample/ui'
+} from '@support-desk/ui'
 import { formatDate } from '@/lib/format'
-import type { Ticket } from '@harness-sample/shared'
+import type { Ticket } from '@support-desk/shared'
 import { TicketPriorityBadge } from './TicketPriorityBadge'
 import { TicketStatusBadge } from './TicketStatusBadge'
 

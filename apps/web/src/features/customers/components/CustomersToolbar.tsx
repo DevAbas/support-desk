@@ -1,5 +1,5 @@
-import { Alert, Button, Input, MultiSelect, Toolbar } from '@harness-sample/ui'
-import type { CustomerPlan } from '@harness-sample/shared'
+import { Alert, Button, Input, MultiSelect, Toolbar } from '@support-desk/ui'
+import type { CustomerPlan } from '@support-desk/shared'
 import { planOptions, type CustomerFilters } from '../customerFilters'
 
 interface CustomersToolbarProps {

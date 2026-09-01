@@ -1,6 +1,6 @@
-import { Avatar, List, ListRow } from '@harness-sample/ui'
+import { Avatar, List, ListRow } from '@support-desk/ui'
 import { formatDate } from '@/lib/format'
-import type { CustomerSummary } from '@harness-sample/shared'
+import type { CustomerSummary } from '@support-desk/shared'
 import { CustomerPlanBadge } from './CustomerPlanBadge'
 
 interface CustomerListProps {

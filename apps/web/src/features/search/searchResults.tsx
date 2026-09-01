@@ -1,10 +1,10 @@
-import { Avatar, Icon, type CommandPaletteGroup, type CommandPaletteOption } from '@harness-sample/ui'
+import { Avatar, Icon, type CommandPaletteGroup, type CommandPaletteOption } from '@support-desk/ui'
 import type {
   NavigationTarget,
   SearchGroup,
   SearchResult,
   SearchResultType,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { CustomerPlanBadge } from '@/features/customers/components/CustomerPlanBadge'
 import { customerPath } from '@/features/customers/openCustomer'
 import { TicketStatusBadge } from '@/features/tickets/components/TicketStatusBadge'

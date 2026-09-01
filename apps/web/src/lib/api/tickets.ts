@@ -19,7 +19,7 @@ import {
   type Ticket,
   type UpdateTicketBody,
   type UpdatedCount,
-} from '@harness-sample/shared'
+} from '@support-desk/shared'
 import { apiRequest } from './http'
 
 /**
