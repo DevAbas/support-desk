@@ -13,7 +13,9 @@ import {
  * The filter combination the ticket list is showing.
  *
  * `all` is a UI-only widening of the domain unions: it means "do not filter on
- * this". A saved view is a name attached to one of these — see `savedViews.ts`.
+ * this". A saved view is a name attached to one of these — `savedViews.ts`
+ * describes this shape to the shared mechanism, including what its canonical
+ * form is, which is where the trimming that used to live here went.
  */
 
 export type StatusFilter = TicketStatus | 'all'
@@ -46,26 +48,13 @@ export const priorityFilterOptions: readonly SelectOption<PriorityFilter>[] = [
 ]
 
 /**
- * Whether two filter combinations would produce the same list.
- *
- * The search term is compared trimmed because `listTickets` trims it too: a
- * trailing space changes nothing on screen, so it must not make a saved view
- * look modified.
- */
-export function areFiltersEqual(a: TicketFilters, b: TicketFilters): boolean {
-  return (
-    a.status === b.status && a.priority === b.priority && a.search.trim() === b.search.trim()
-  )
-}
-
-/**
  * The filters as the list endpoint wants them.
  *
  * Every field is named, so a filter added to the contract is a compile error
  * here rather than a filter the query — and the cache key built from it —
- * quietly ignores. The search term is trimmed for the same reason
- * `areFiltersEqual` trims it: trailing space is not a different question, and it
- * should not become a different cache entry or a new request.
+ * quietly ignores. The search term is trimmed for the same reason a saved view
+ * is stored trimmed: trailing space is not a different question, and it should
+ * not become a different cache entry or a new request.
  */
 export function toListTicketsQuery(
   filters: TicketFilters,

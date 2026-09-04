@@ -1,22 +1,64 @@
 import { TICKET_PRIORITIES, TICKET_STATUSES } from '@support-desk/shared'
-import type { PriorityFilter, StatusFilter, TicketFilters } from './ticketFilters'
+import type { SavedViewScope } from '@/features/savedViews/savedViews.types'
+import {
+  DEFAULT_FILTERS,
+  type PriorityFilter,
+  type StatusFilter,
+  type TicketFilters,
+} from './ticketFilters'
 
 /**
- * Saved views: a named filter combination, kept in localStorage.
+ * The ticket queue's saved views: this screen's filters, described to the shared
+ * mechanism in `features/savedViews`.
  *
- * These never reach the API, and they are not in the query cache either — a view
- * is a shortcut the person using the screen keeps for themselves, so it lives in
- * the browser rather than on the server.
+ * The whole of what is per-screen is below. The storage, the sidebar, the naming
+ * dialog, which view is selected and whether the filters have drifted from it
+ * are all one mechanism now, shared with the customer list — see
+ * `features/savedViews/savedViews.types.ts` for what a scope is and why the two
+ * screens' filters stay different shapes.
  */
 
-export interface SavedView {
-  id: string
-  name: string
-  filters: TicketFilters
+/**
+ * Exported so tests can seed and inspect what the screen actually reads.
+ *
+ * Not `….tickets`, which is the shape a second screen's key takes, because this
+ * one predates there being a second screen and every view already saved is
+ * under it. A key is not worth a migration to make symmetrical.
+ */
+export const SAVED_VIEWS_STORAGE_KEY = 'support-desk.saved-views'
+
+export const TICKET_SAVED_VIEWS: SavedViewScope<TicketFilters> = {
+  storageKey: SAVED_VIEWS_STORAGE_KEY,
+  allLabel: 'All tickets',
+  filtersDescription: 'The status, priority, and search on screen are stored under this name.',
+  defaultFilters: DEFAULT_FILTERS,
+  normaliseFilters,
+  parseFilters,
 }
 
-/** Exported so tests can seed and inspect what the screen actually reads. */
-export const SAVED_VIEWS_STORAGE_KEY = 'support-desk.saved-views'
+/**
+ * The search term is trimmed because `listTickets` trims it too: a trailing
+ * space changes nothing on screen, so it must neither be stored nor make a saved
+ * view look modified.
+ */
+function normaliseFilters(filters: TicketFilters): TicketFilters {
+  return { ...filters, search: filters.search.trim() }
+}
+
+function parseFilters(value: unknown): TicketFilters | null {
+  if (typeof value !== 'object' || value === null) {
+    return null
+  }
+
+  const candidate = value as Record<string, unknown>
+  const { status, priority, search } = candidate
+
+  if (!isStatusFilter(status) || !isPriorityFilter(priority) || typeof search !== 'string') {
+    return null
+  }
+
+  return normaliseFilters({ status, priority, search })
+}
 
 function isStatusFilter(value: unknown): value is StatusFilter {
   return (
@@ -30,79 +72,4 @@ function isPriorityFilter(value: unknown): value is PriorityFilter {
     typeof value === 'string' &&
     (value === 'all' || TICKET_PRIORITIES.some((priority) => priority === value))
   )
-}
-
-function isTicketFilters(value: unknown): value is TicketFilters {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-
-  const candidate = value as Record<string, unknown>
-
-  return (
-    isStatusFilter(candidate.status) &&
-    isPriorityFilter(candidate.priority) &&
-    typeof candidate.search === 'string'
-  )
-}
-
-function isSavedView(value: unknown): value is SavedView {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-
-  const candidate = value as Record<string, unknown>
-
-  return (
-    typeof candidate.id === 'string' &&
-    typeof candidate.name === 'string' &&
-    isTicketFilters(candidate.filters)
-  )
-}
-
-/**
- * Reads the stored views, dropping anything that no longer parses.
- *
- * Storage is shared with older builds of the app and with whatever else has
- * written to this origin, so nothing that comes back is trusted: a malformed
- * entry — or a status that has since been removed from the domain — is skipped
- * rather than allowed to break the screen.
- */
-export function readSavedViews(): SavedView[] {
-  try {
-    const raw = window.localStorage.getItem(SAVED_VIEWS_STORAGE_KEY)
-
-    if (!raw) {
-      return []
-    }
-
-    const parsed: unknown = JSON.parse(raw)
-
-    return Array.isArray(parsed) ? parsed.filter(isSavedView) : []
-  } catch {
-    // Unavailable or unparseable storage means no saved views, not a crash.
-    return []
-  }
-}
-
-export function writeSavedViews(views: readonly SavedView[]): void {
-  try {
-    window.localStorage.setItem(SAVED_VIEWS_STORAGE_KEY, JSON.stringify(views))
-  } catch {
-    // Private-mode and quota failures lose the view, but not the session.
-  }
-}
-
-/** `crypto.randomUUID` needs a secure context, which a LAN dev server is not. */
-function createId(): string {
-  return `view-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-export function createSavedView(name: string, filters: TicketFilters): SavedView {
-  return {
-    id: createId(),
-    name: name.trim(),
-    // Stored trimmed so that reapplying the view puts a clean value in the field.
-    filters: { ...filters, search: filters.search.trim() },
-  }
 }

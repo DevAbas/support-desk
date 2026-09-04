@@ -17,6 +17,10 @@ interface SavedViewNameDialogProps {
  *
  * Mounted only while it is open, so the field starts from `initialName` every
  * time without an effect to reset it.
+ *
+ * Nothing here is per-screen. It takes the words it says and the names it must
+ * not collide with, which is why one dialog serves every screen that has saved
+ * views rather than each of them carrying a copy with different strings in it.
  */
 export function SavedViewNameDialog({
   title,

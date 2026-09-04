@@ -16,21 +16,20 @@ import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import type { TicketTransitionId } from '@support-desk/shared'
 import { useRole } from '@/features/roles/useRole'
+import { SavedViewsSidebar } from '@/features/savedViews/SavedViewsSidebar'
+import { useSavedViews } from '@/features/savedViews/useSavedViews'
 import { BulkActionsBar } from './components/BulkActionsBar'
 import { BulkMoveReport } from './components/BulkMoveReport'
 import { Pagination } from './components/Pagination'
-import { SavedViewsSidebar } from './components/SavedViewsSidebar'
 import { TicketsTable } from './components/TicketsTable'
 import { TicketsToolbar } from './components/TicketsToolbar'
 import { useBulkDeleteTickets } from './hooks/useBulkDeleteTickets'
 import { useBulkMoveTickets } from './hooks/useBulkMoveTickets'
-import { useSavedViews } from './hooks/useSavedViews'
 import { useTickets } from './hooks/useTickets'
 import { useTicketSelection } from './hooks/useTicketSelection'
 import { useTicketsExport } from './hooks/useTicketsExport'
-import type { SavedView } from './savedViews'
+import { TICKET_SAVED_VIEWS } from './savedViews'
 import {
-  areFiltersEqual,
   DEFAULT_FILTERS,
   priorityFilterOptions,
   statusFilterOptions,
@@ -51,10 +50,12 @@ export function TicketListPage() {
 
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<TicketFilters>(DEFAULT_FILTERS)
-  const [activeViewId, setActiveViewId] = useState<string | null>(null)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
 
-  const savedViews = useSavedViews()
+  // Which view is selected, and whether the filters still match it, belong to
+  // the mechanism. What is this screen's is `applyFilters`: taking a view's
+  // filters here means going back to the top of the queue.
+  const savedViews = useSavedViews(TICKET_SAVED_VIEWS, filters, applyFilters)
 
   // The field stays instant. Only the request, and the cache key built from it,
   // wait for a pause in typing.
@@ -74,11 +75,6 @@ export function TicketListPage() {
 
   const selection = useTicketSelection(rows, canManageTickets)
   const { selectedIds } = selection
-
-  // Derived: a view deleted elsewhere in this render simply stops being
-  // found, and the filters are compared against what is on screen right now.
-  const activeView = savedViews.views.find((view) => view.id === activeViewId) ?? null
-  const isViewModified = !areFiltersEqual(filters, activeView?.filters ?? DEFAULT_FILTERS)
 
   /**
    * Drops the report over the table.
@@ -120,24 +116,10 @@ export function TicketListPage() {
     changePage(1)
   }
 
-  function selectView(view: SavedView | null) {
-    setFilters(view ? { ...view.filters } : DEFAULT_FILTERS)
-    setActiveViewId(view?.id ?? null)
+  /** Taking a saved view's filters: the second of the three, whole rather than patched. */
+  function applyFilters(next: TicketFilters) {
+    setFilters(next)
     changePage(1)
-  }
-
-  function saveView(name: string) {
-    setActiveViewId(savedViews.saveView(name, filters).id)
-  }
-
-  function deleteView(id: string) {
-    savedViews.deleteView(id)
-
-    // The filters on screen are the person's current work; deleting the view
-    // they came from drops the label, not the filtering.
-    if (id === activeViewId) {
-      setActiveViewId(null)
-    }
   }
 
   function applyBulkMove(move: TicketTransitionId, reason: string | undefined) {
@@ -178,15 +160,7 @@ export function TicketListPage() {
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <SavedViewsSidebar
-          views={savedViews.views}
-          activeViewId={activeViewId}
-          isModified={isViewModified}
-          onSelectView={selectView}
-          onSaveView={saveView}
-          onRenameView={savedViews.renameView}
-          onDeleteView={deleteView}
-        />
+        <SavedViewsSidebar {...savedViews} />
 
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           <Card>

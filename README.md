@@ -122,7 +122,18 @@ in `src/lib/api/http.ts`. Cache keys are only ever built through the factory in
 `src/features/tickets/ticketKeys.ts`.
 
 Saved views are not server state. They are a shortcut a person keeps for themselves, so
-they stay in localStorage — see `src/features/tickets/savedViews.ts`.
+they stay in localStorage — see `src/features/savedViews/`.
+
+There is one saved-view mechanism and both lists use it. A saved view is a named set of
+filters that belongs to a screen, and a screen asks for the views that are its own by
+handing the mechanism a *scope*: where its views are kept, what it calls the absence of
+one, what "no filters" means, the canonical form of a combination, and how to get one
+back out of storage anything may have written to. `src/features/tickets/savedViews.ts`
+and `src/features/customers/savedViews.ts` are those two scopes, and they are the whole
+of what is per-screen — the storage, the sidebar, the naming dialog, which view is
+selected and whether the filters have drifted from it are shared. The filters themselves
+stay different shapes on purpose: a widened single value on the queue, a set on the
+customer list. Adding saved views to a third screen is writing a third scope.
 
 Tests intercept HTTP with MSW and hand the request to the real API, so a test exercises
 the real query layer against the real routing and validation rather than agreeing with a

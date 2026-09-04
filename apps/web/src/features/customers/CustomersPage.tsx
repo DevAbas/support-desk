@@ -4,6 +4,8 @@ import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
 import { MAX_CUSTOMER_BULK_IDS, type CustomerPlan } from '@support-desk/shared'
 import { useRole } from '@/features/roles/useRole'
+import { SavedViewsSidebar } from '@/features/savedViews/SavedViewsSidebar'
+import { useSavedViews } from '@/features/savedViews/useSavedViews'
 import { CustomerDrawer } from './components/CustomerDrawer'
 import { CustomerList } from './components/CustomerList'
 import { CustomersBulkActionsBar } from './components/CustomersBulkActionsBar'
@@ -14,6 +16,7 @@ import { useBulkUpdateCustomerPlan } from './hooks/useBulkUpdateCustomerPlan'
 import { useCustomers } from './hooks/useCustomers'
 import { useOpenCustomer } from './openCustomer'
 import { useCustomersExport } from './hooks/useCustomersExport'
+import { CUSTOMER_SAVED_VIEWS } from './savedViews'
 
 /**
  * Everyone who uses the product.
@@ -29,6 +32,12 @@ import { useCustomersExport } from './hooks/useCustomersExport'
  *   working through the list, and a glance should not be a history entry.
  * - A set filter rather than a widened single value. "Pro and Enterprise" is a
  *   question a `<select>` cannot ask.
+ *
+ * The saved views are the exception, and they are one deliberately. A named
+ * filter combination is the same idea on both screens, so it is the same
+ * mechanism — `features/savedViews`, handed the scope in `savedViews.ts` beside
+ * this file. What differs is only the shape of the filters, and a scope is where
+ * a screen says that.
  *
  * The bulk actions follow the list rather than the table, and the difference is
  * what "everything" means. A ticket selection is bounded by the page it was made
@@ -58,6 +67,11 @@ export function CustomersPage() {
   const openCustomer = useOpenCustomer()
   const [selection, setSelection] = useState<string[]>([])
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+
+  // Which view is selected, and whether the filters still match it, belong to
+  // the mechanism. What is this screen's is `applyFilters` — see `changeFilters`
+  // below for why taking a view's filters drops the band and nothing else.
+  const savedViews = useSavedViews(CUSTOMER_SAVED_VIEWS, filters, applyFilters)
 
   // The field stays instant. Only the request, and the cache key built from it,
   // wait for a pause in typing.
@@ -122,6 +136,12 @@ export function CustomersPage() {
   function changeFilters(patch: Partial<CustomerFilters>) {
     forgetBulkFailure()
     setFilters((current) => ({ ...current, ...patch }))
+  }
+
+  /** Taking a saved view's filters: the same change, arriving whole rather than patched. */
+  function applyFilters(next: CustomerFilters) {
+    forgetBulkFailure()
+    setFilters(next)
   }
 
   /**
@@ -239,79 +259,83 @@ export function CustomersPage() {
         <Text tone="muted">Everyone using the product, and what they have raised.</Text>
       </div>
 
-      <Card className="overflow-hidden">
-        <CustomersToolbar
-          filters={filters}
-          onChange={changeFilters}
-          total={total}
-          loaded={rows.length}
-          isLoading={customers.isPending}
-          onExport={() => void csv.exportCsv()}
-          isExporting={csv.isExporting}
-          exportError={csv.error}
-        />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <SavedViewsSidebar {...savedViews} />
 
-        {selectedIds.length > 0 ? (
-          <CustomersBulkActionsBar
-            selectedCount={selectedIds.length}
-            loadedCount={rows.length}
-            maxBulkIds={MAX_CUSTOMER_BULK_IDS}
-            onSelectAll={selectAllLoaded}
-            onDeselectAll={() => forgetSelected(rows.map((customer) => customer.id))}
-            onClearSelection={() => {
-              forgetBulkFailure()
-              setSelection([])
-            }}
-            onApplyPlan={applyPlan}
-            onDelete={askToDelete}
-            isBusy={isBulkBusy}
+        <Card className="min-w-0 flex-1 overflow-hidden">
+          <CustomersToolbar
+            filters={filters}
+            onChange={changeFilters}
+            total={total}
+            loaded={rows.length}
+            isLoading={customers.isPending}
+            onExport={() => void csv.exportCsv()}
+            isExporting={csv.isExporting}
+            exportError={csv.error}
           />
-        ) : null}
 
-        {planError ? (
-          <Alert tone="danger" variant="band">
-            {planError}
-          </Alert>
-        ) : null}
+          {selectedIds.length > 0 ? (
+            <CustomersBulkActionsBar
+              selectedCount={selectedIds.length}
+              loadedCount={rows.length}
+              maxBulkIds={MAX_CUSTOMER_BULK_IDS}
+              onSelectAll={selectAllLoaded}
+              onDeselectAll={() => forgetSelected(rows.map((customer) => customer.id))}
+              onClearSelection={() => {
+                forgetBulkFailure()
+                setSelection([])
+              }}
+              onApplyPlan={applyPlan}
+              onDelete={askToDelete}
+              isBusy={isBulkBusy}
+            />
+          ) : null}
 
-        {loadError ? (
-          <Alert
-            tone="danger"
-            variant="band"
-            action={
-              <Button variant="secondary" size="sm" onClick={() => void customers.refetch()}>
-                Try again
-              </Button>
-            }
-          >
-            {loadError}
-          </Alert>
-        ) : null}
+          {planError ? (
+            <Alert tone="danger" variant="band">
+              {planError}
+            </Alert>
+          ) : null}
 
-        <CustomerList
-          customers={rows}
-          isLoading={customers.isPending}
-          openCustomerId={openCustomer.id}
-          onOpen={openCustomer.open}
-          isSelectable={canManageCustomers}
-          selectedIds={selectedIds}
-          onToggleSelected={toggleSelected}
-        />
-
-        {/* The end of the list, not a paginator. There is no page number to
-            show because there are no pages to go back to — only more. */}
-        {customers.hasNextPage ? (
-          <Toolbar divider="top" className="justify-center">
-            <Button
-              variant="secondary"
-              onClick={() => void customers.fetchNextPage()}
-              disabled={customers.isFetchingNextPage}
+          {loadError ? (
+            <Alert
+              tone="danger"
+              variant="band"
+              action={
+                <Button variant="secondary" size="sm" onClick={() => void customers.refetch()}>
+                  Try again
+                </Button>
+              }
             >
-              {customers.isFetchingNextPage ? 'Loading…' : 'Load more customers'}
-            </Button>
-          </Toolbar>
-        ) : null}
-      </Card>
+              {loadError}
+            </Alert>
+          ) : null}
+
+          <CustomerList
+            customers={rows}
+            isLoading={customers.isPending}
+            openCustomerId={openCustomer.id}
+            onOpen={openCustomer.open}
+            isSelectable={canManageCustomers}
+            selectedIds={selectedIds}
+            onToggleSelected={toggleSelected}
+          />
+
+          {/* The end of the list, not a paginator. There is no page number to
+              show because there are no pages to go back to — only more. */}
+          {customers.hasNextPage ? (
+            <Toolbar divider="top" className="justify-center">
+              <Button
+                variant="secondary"
+                onClick={() => void customers.fetchNextPage()}
+                disabled={customers.isFetchingNextPage}
+              >
+                {customers.isFetchingNextPage ? 'Loading…' : 'Load more customers'}
+              </Button>
+            </Toolbar>
+          ) : null}
+        </Card>
+      </div>
 
       <CustomerDrawer customerId={openCustomer.id} onClose={openCustomer.close} />
 
