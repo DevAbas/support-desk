@@ -221,11 +221,18 @@ asks why**, which is one rule read off the statuses' order rather than six decis
 and `workflow.test.ts` asserts it over the table, so a seventh move cannot be added
 that quietly skips it.
 
-`packages/shared/src/workflow.ts` is all of it: three tables and four pure functions,
-read by both ends. Adding a fifth status is an entry in `TICKET_STATUSES` and the moves
-that reach it — no screen that renders a status has to change, because no screen decides
-anything. The filters, the saved views, the reports and the CSV export read
-`TICKET_STATUSES` for its members and never learn that a workflow exists.
+`packages/shared/src/workflow.ts` is all of it: the guards and the transitions as
+tables, and pure functions over them, read by both ends. Adding a fifth status is an
+entry in `TICKET_STATUSES`, a label beside it in `TICKET_STATUS_LABELS`, a badge
+appearance in `TicketStatusBadge`, and the moves that reach it. Those two records are
+keyed by `TicketStatus`, so a status added without them does not compile — and that is
+the design rather than a gap in it: the alternative is a lookup with a fallback, which
+draws an unknown status grey and unnamed on every screen at once and never tells
+anybody.
+
+Nothing else changes, and no screen *decides* anything. The filters, the saved views,
+the reports and the CSV export read `TICKET_STATUSES` for its members and never learn
+that a workflow exists.
 
 **The server is the authority and the interface asks.** `GET /api/tickets/:id/moves`
 answers with every move this role may make from where the ticket is, and whether each

@@ -83,10 +83,13 @@ with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`. Below is the
   priority and an assignee — because a status changes by making a *named move*
   through `POST /api/tickets/:id/moves`.
 - `packages/shared/src/workflow.ts` is the whole workflow: which moves exist, who may
-  make each, and what has to be true first. It is three tables and four pure
-  functions, and both ends read it. Adding a fifth status is an entry in
-  `TICKET_STATUSES` plus the moves that reach it; no screen that draws a status has to
-  change, and a status nothing reaches fails `workflow.test.ts`.
+  make each, and what has to be true first. It is tables and pure functions over them,
+  and both ends read it. Adding a fifth status is an entry in `TICKET_STATUSES`, a
+  label in `TICKET_STATUS_LABELS`, a badge in `TicketStatusBadge` and the moves that
+  reach it. Both records are keyed by `TicketStatus`, so leaving either out is a
+  compile error rather than a status drawn grey and unnamed, and a status nothing
+  reaches fails `workflow.test.ts`. Nothing that reads `TICKET_STATUSES` for its
+  members changes: the filters, the saved views, the reports, the CSV export.
 - Never branch on a status to work out what can be done to a ticket. Ask
   `ticketMoveOffers` — and in the interface, ask the server: it may hide a move it has
   been told is unavailable, and it never decides availability, because a condition

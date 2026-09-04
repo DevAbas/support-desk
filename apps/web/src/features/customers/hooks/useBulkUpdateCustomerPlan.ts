@@ -7,7 +7,7 @@ import { customerKeys } from '@/features/customers/customerKeys'
  * Moves a selection of customers onto one plan.
  *
  * Every list is invalidated, but only the details of the customers that were
- * actually in the selection — the same division `useBulkUpdateStatus` makes, for
+ * actually in the selection — the same division `useBulkMoveTickets` makes, for
  * the same reason: a customer nobody ticked keeps its cached copy.
  *
  * Invalidating the lists refetches every page the infinite query holds, not just

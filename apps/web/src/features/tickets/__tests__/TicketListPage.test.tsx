@@ -114,6 +114,28 @@ describe('TicketListPage', () => {
     expect(screen.queryByRole('group', { name: 'Bulk actions' })).not.toBeInTheDocument()
   })
 
+  it('drops the report once the rows it describes are gone', async () => {
+    await renderList('admin')
+
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'resolved')
+    await screen.findByText('Showing 1–10 of 13')
+
+    await userEvent.click(screen.getByLabelText('Select all tickets on this page'))
+    await userEvent.selectOptions(screen.getByLabelText('Move'), 'close')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    expect(await screen.findByText('10 tickets moved.')).toBeInTheDocument()
+
+    // A report is about one selection over one set of rows, and a filter
+    // replaces both. Mutation state is held until something asks for it to be
+    // let go, so without that the band stays counting ten tickets over a table
+    // none of them are in. A saved view and a page change come through the same
+    // door.
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'open')
+
+    expect(screen.queryByText('10 tickets moved.')).not.toBeInTheDocument()
+  })
+
   it('moves what it can, leaves the rest ticked, and says which condition failed', async () => {
     await renderList('admin')
 

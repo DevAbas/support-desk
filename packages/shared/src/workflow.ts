@@ -21,20 +21,23 @@ import {
  * check on a screen, but the absence of any notion that the statuses have an
  * order and that the steps between them are things a person does.
  *
- * **The whole workflow is this file, and it is data.** Three tables — the
- * statuses' order, the guards, the transitions — and four pure functions over
- * them. Adding a fifth status is an entry in `TICKET_STATUSES` and the moves
- * that reach it; no screen that renders a status has to change, because no
- * screen decides anything. `ticketMoveOffers` answers "what can be done here",
- * `evaluateTicketMove` answers "may this be done", and both sides call them:
- * the server to enforce, the interface to draw.
+ * **The whole workflow is this file, and it is data.** The guards and the
+ * transitions are tables, and everything else here is a pure function over them.
+ * Adding a fifth status is an entry in `TICKET_STATUSES`, a label beside it, a
+ * badge appearance in `TicketStatusBadge`, and the moves that reach it — the two
+ * records keyed by `TicketStatus` will not compile without their entries, which
+ * is the point of keying them. What no screen does is *decide*:
+ * `ticketMoveOffers` answers "what can be done here", `evaluateTicketMove`
+ * answers "may this be done", and both sides call them: the server to enforce,
+ * the interface to draw.
  *
  * **The server is still the authority.** The interface renders the offers the
  * server hands back rather than computing its own, because a guard reads ticket
  * state the browser may hold a stale copy of and because the role gate must not
  * have a second implementation in JavaScript. What the interface reads directly
- * out of these tables is presentation — a move's label, and whether committing it
- * asks for a reason — which is exactly the half a server should not be sending.
+ * out of these tables is presentation — a move's label, whether committing it
+ * asks for a reason, and why an empty answer is empty — which is exactly the half
+ * a server should not be sending.
  *
  * **Nothing that reads `TICKET_STATUSES` for its members learns any of this.**
  * The filters, the saved views, the reports and the CSV export want the set of

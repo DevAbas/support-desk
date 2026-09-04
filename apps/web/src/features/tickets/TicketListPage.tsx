@@ -80,15 +80,50 @@ export function TicketListPage() {
   const activeView = savedViews.views.find((view) => view.id === activeViewId) ?? null
   const isViewModified = !areFiltersEqual(filters, activeView?.filters ?? DEFAULT_FILTERS)
 
+  /**
+   * Drops the report over the table.
+   *
+   * `BulkMoveReport` draws mutation state, and a mutation holds its result until
+   * something asks for it to be let go — so a report on one selection stays
+   * pinned above rows it stopped describing several filters ago. The reset is on
+   * the way *in* to whatever replaces those rows rather than on the way out of
+   * the move, which is the line `CustomersPage` draws: a move's whole point is
+   * the report it leaves behind, so there is no moment on the way out to drop it.
+   *
+   * Only once the mutation has settled — which is also exactly when there is a
+   * report to drop. `reset()` on one still running takes the `onSuccess` waiting
+   * to run with it, because the callbacks handed to `mutate` belong to the
+   * observer's current mutation, and nothing on this screen is disabled while a
+   * bulk move is in flight.
+   *
+   * Unmount needs nothing: mutation state belongs to the observer, so a screen
+   * left and come back to comes back idle.
+   */
+  function forgetBulkMoveReport() {
+    if (bulkMove.isSuccess || bulkMove.isError) {
+      bulkMove.reset()
+    }
+  }
+
+  /**
+   * The one place the rows under the report change, which is what makes one
+   * reset enough for three of the four ways it goes stale: a filter change and a
+   * saved view both come back to the top, and paging is the third.
+   */
+  function changePage(next: number) {
+    forgetBulkMoveReport()
+    setPage(next)
+  }
+
   function changeFilters(patch: Partial<TicketFilters>) {
     setFilters((current) => ({ ...current, ...patch }))
-    setPage(1)
+    changePage(1)
   }
 
   function selectView(view: SavedView | null) {
     setFilters(view ? { ...view.filters } : DEFAULT_FILTERS)
     setActiveViewId(view?.id ?? null)
-    setPage(1)
+    changePage(1)
   }
 
   function saveView(name: string) {
@@ -118,6 +153,9 @@ export function TicketListPage() {
   }
 
   function confirmBulkDelete() {
+    // The fourth way. A move's report would otherwise sit above a delete that
+    // worked, still counting tickets, some of which are now gone.
+    forgetBulkMoveReport()
     bulkDelete.mutate(
       { ids: selectedIds },
       {
@@ -234,7 +272,7 @@ export function TicketListPage() {
               total={total}
               pageSize={PAGE_SIZE}
               disabled={tickets.isFetching}
-              onPageChange={setPage}
+              onPageChange={changePage}
             />
           </Card>
         </div>

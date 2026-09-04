@@ -163,9 +163,12 @@ describe('TicketDetailPage', () => {
       signInTestUser(SEED_AGENT_EMAIL)
       await renderDetail('TCK-0001', 'agent')
 
-      expect(
-        await screen.findByText('There is nowhere to take a closed ticket from here.'),
-      ).toBeInTheDocument()
+      // Nothing on offer, and the reason is the role rather than the ticket: a
+      // closed ticket has a way on, and reopening is the one move that is not an
+      // agent's. The move stays absent rather than disabled — a control
+      // explaining a power you do not have is somebody else's job on your screen
+      // — so the card is where the reason has to be said.
+      expect(await screen.findByText('Reopen is for administrators.')).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Reopen' })).not.toBeInTheDocument()
     })
 
@@ -221,7 +224,12 @@ describe('TicketDetailPage', () => {
       )
     })
 
-    it('reports a refused move with the condition that failed', async () => {
+    it('reports a refused move, and goes back for the ticket it was refused on', async () => {
+      const paths: string[] = []
+      mswServer.events.on('request:start', ({ request }) => {
+        paths.push(`${request.method} ${new URL(request.url).pathname}`)
+      })
+
       await renderDetail('TCK-0032')
 
       // A ticket can move under somebody while they are reading it, so a
@@ -245,6 +253,19 @@ describe('TicketDetailPage', () => {
       expect(
         await screen.findByText('Resolve is a move out of Pending, and this ticket is Resolved.'),
       ).toBeInTheDocument()
+
+      // That refusal is the server saying this screen is out of date, and
+      // nothing else would correct it: the cache does not refetch on focus. So
+      // the ticket and its moves are asked for again, rather than leaving the
+      // person to click a second time into the same sentence.
+      await vi.waitFor(() => {
+        const after = paths.slice(paths.indexOf('POST /api/tickets/TCK-0032/moves'))
+
+        expect(after).toContain('GET /api/tickets/TCK-0032')
+        expect(after).toContain('GET /api/tickets/TCK-0032/moves')
+      })
+
+      mswServer.events.removeAllListeners()
     })
   })
 })
