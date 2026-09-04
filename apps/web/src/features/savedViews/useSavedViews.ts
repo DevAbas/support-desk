@@ -7,11 +7,12 @@ import type { SavedView, SavedViewScope, SavedViewsPanel } from './savedViews.ty
  * The saved views on one screen: the collection, which of them is selected, and
  * whether the filters on screen still match it.
  *
- * All three used to be split between a hook that held only the collection and a
- * screen that worked out the other two — which meant the second screen to want
- * saved views had to work them out again, the same way, from scratch. They are
- * together here because they are one idea: a view is selected, until the filters
- * drift from it, until it is saved over or another is chosen.
+ * The three are held together because they are one idea: a view is selected,
+ * until the filters drift from it, until it is saved over or another is chosen.
+ * On the ticket queue they were split — a hook that held only the collection,
+ * and the screen working out selection and drift beside its own state — and a
+ * mechanism that kept only the list would have left every screen to assemble the
+ * other two for itself. Holding all three is what makes a scope enough.
  *
  * What is left to the screen is `onApply`, and only that. Filters are the
  * screen's state — the list query is built from them, the search field is

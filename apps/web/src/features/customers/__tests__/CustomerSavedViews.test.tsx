@@ -14,8 +14,7 @@ import { SAVED_VIEWS_STORAGE_KEY } from '@/features/tickets/savedViews'
  * behaviour is one behaviour, and what the customer list brought to it is one
  * scope describing a set filter instead of a widened single value. Where the two
  * files differ is where the filters differ — a plan is ticked rather than
- * selected, and ticking the same two plans in the other order is the same
- * question.
+ * selected, and the same plans in another order are the same question.
  */
 
 async function renderList() {
@@ -128,15 +127,35 @@ describe('customer saved views', () => {
     expect(within(viewRow('Northwind')).queryByText('Modified')).not.toBeInTheDocument()
   })
 
-  it('does not call a view modified over the order the same plans were ticked in', async () => {
-    // The question a set filter asks is which plans, not in which order they
-    // were chosen — the one thing here the ticket screen's comparison has no
-    // opinion about, because a widened single value cannot be reordered.
-    await renderList()
-    await tickPlans('Pro', 'Enterprise')
-    await screen.findByText('Showing 14 of 14')
-    await saveCurrentFiltersAs('Paying customers')
+  it('does not call a view stored with its plans in another order modified', async () => {
+    /*
+     * The question a set filter asks is which plans, not in which order they
+     * were chosen — the one thing here the ticket screen's comparison has no
+     * opinion about, because a widened single value cannot be reordered.
+     *
+     * Seeded rather than saved through the screen, because the screen cannot
+     * produce this: `MultiSelect` emits in `options` order, so every set the
+     * toolbar makes is already in domain order and putting one back into it
+     * would change nothing. A view stored by some other build is the case the
+     * canonical form exists for, and it arrives the only way it can.
+     */
+    window.localStorage.setItem(
+      CUSTOMER_SAVED_VIEWS_STORAGE_KEY,
+      JSON.stringify([
+        {
+          id: 'a',
+          name: 'Paying customers',
+          filters: { plans: ['enterprise', 'pro'], search: '' },
+        },
+      ]),
+    )
 
+    await renderList()
+    await userEvent.click(viewRow('Paying customers'))
+    expect(await screen.findByText('Showing 14 of 14')).toBeInTheDocument()
+
+    // The same two plans, off and back on, so that what is on screen is the set
+    // the toolbar built rather than the one that came out of storage.
     await tickPlans('Pro')
     await screen.findByText('Showing 5 of 5')
     await tickPlans('Pro')

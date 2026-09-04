@@ -32,10 +32,13 @@ function makeScope(storageKey: string): SavedViewScope<TestFilters> {
     allLabel: 'Everything',
     filtersDescription: 'The tags and search on screen are stored under this name.',
     defaultFilters: { tags: [], search: '' },
+    // Spread, the way `TICKET_SAVED_VIEWS` does it: a canonical form says what
+    // it changes and passes on what it does not, so an optional filter is
+    // present here exactly when the screen had it.
     normaliseFilters: (filters) => ({
+      ...filters,
       tags: [...filters.tags].sort(),
       search: filters.search.trim(),
-      onlyMine: filters.onlyMine,
     }),
     parseFilters: (value) => {
       if (typeof value !== 'object' || value === null) {
@@ -62,11 +65,11 @@ function makeScope(storageKey: string): SavedViewScope<TestFilters> {
 
 const scope = makeScope('test.saved-views')
 
-describe('saved view storage', () => {
-  beforeEach(() => {
-    window.localStorage.clear()
-  })
+beforeEach(() => {
+  window.localStorage.clear()
+})
 
+describe('saved view storage', () => {
   it('has no views until something is written', () => {
     expect(readSavedViews(scope)).toEqual([])
   })
@@ -85,7 +88,7 @@ describe('saved view storage', () => {
     // Otherwise a view is modified the instant it is saved, because what is on
     // screen and what was stored differ by the space nobody meant to type.
     expect(view.name).toBe('Mine')
-    expect(view.filters).toEqual({ tags: ['a', 'b'], search: 'x', onlyMine: undefined })
+    expect(view.filters).toEqual({ tags: ['a', 'b'], search: 'x' })
   })
 
   it('survives storage that cannot be parsed', () => {
@@ -165,14 +168,36 @@ describe('sameFilters', () => {
   })
 
   /**
-   * The defect the per-screen comparison had. Written by hand it named every
-   * field it compared, so a filter the screen grew was silently not compared:
-   * the view stayed unmodified while the list underneath it changed. Comparing
-   * the whole normalised value has no field to forget.
+   * The hole a per-screen comparison leaves. Written by hand it names every
+   * field it compares — `areFiltersEqual` named all three of the queue's — so a
+   * filter the screen grows later is silently not compared, and the view stays
+   * unmodified while the list underneath it changes. Comparing the whole
+   * normalised value has no field to forget.
    */
   it('sees a filter the screen has grown since the view was saved', () => {
     expect(
       sameFilters(scope, { tags: [], search: '' }, { tags: [], search: '', onlyMine: true }),
     ).toBe(false)
+  })
+
+  /**
+   * Both halves at once, which is the only place this shows.
+   *
+   * `JSON.stringify` drops a key whose value is `undefined`, so an optional
+   * filter nobody set goes into storage as an absent key and comes back as one,
+   * while the screen goes on holding the key with nothing in it. Counted as a
+   * difference, that marks the view modified the instant it is saved and on
+   * every reload after, with nothing the person can do to clear it — the failure
+   * `createSavedView` stores canonically to prevent.
+   */
+  it('does not call a view modified over an optional filter nobody set', () => {
+    const onScreen: TestFilters = { tags: ['a'], search: 'x', onlyMine: undefined }
+
+    writeSavedViews(scope, [createSavedView(scope, 'Mine', onScreen)])
+
+    const stored = readSavedViews(scope)
+
+    expect(stored).toHaveLength(1)
+    expect(sameFilters(scope, onScreen, stored[0].filters)).toBe(true)
   })
 })

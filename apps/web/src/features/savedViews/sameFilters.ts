@@ -51,12 +51,28 @@ function isSameValue(a: unknown, b: unknown): boolean {
 
   const left = a as Record<string, unknown>
   const right = b as Record<string, unknown>
-  const leftKeys = Object.keys(left)
+  const leftKeys = storedKeys(left)
 
-  // Both key sets are checked, so a field present on one side and absent on the
-  // other is a difference whichever side it is on.
+  // Both key sets are counted, so a field present on one side and absent on the
+  // other is a difference whichever side it is on — a key the other side does
+  // not have reads as `undefined` there, which no key kept below can equal.
   return (
-    leftKeys.length === Object.keys(right).length &&
-    leftKeys.every((key) => key in right && isSameValue(left[key], right[key]))
+    leftKeys.length === storedKeys(right).length &&
+    leftKeys.every((key) => isSameValue(left[key], right[key]))
   )
+}
+
+/**
+ * The keys of a filter combination that survive being stored.
+ *
+ * `JSON.stringify` drops a key whose value is `undefined`, so an optional filter
+ * nobody set is written as an absent key and read back as one — while the screen
+ * goes on producing the key with nothing in it. Counting it present on the one
+ * side and absent on the other would mark the view modified the instant it was
+ * saved and on every reload after, with no way for the person to clear it, which
+ * is the failure `createSavedView` stores canonically to prevent. Absent and set
+ * to `undefined` are the same filter, so they are the same combination here.
+ */
+function storedKeys(value: Record<string, unknown>): string[] {
+  return Object.keys(value).filter((key) => value[key] !== undefined)
 }

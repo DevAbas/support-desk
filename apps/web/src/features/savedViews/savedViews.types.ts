@@ -1,11 +1,11 @@
 /**
  * A saved view is a named set of filters that belongs to a screen.
  *
- * There is one mechanism and there are several screens, so everything that
- * differs between them is in `SavedViewScope` and everything that does not is
- * in this folder. That split is the whole point of the folder: adding saved
- * views to a third screen is writing a scope, not writing a third sidebar and a
- * third dialog.
+ * There is one mechanism and there are two screens, so everything that differs
+ * between them is in `SavedViewScope` and everything that does not is in this
+ * folder. That split is the whole point of the folder: adding saved views to a
+ * third screen is writing a scope, not writing a second sidebar and a second
+ * dialog.
  *
  * A view never reaches the API and is not in the query cache either. It is a
  * shortcut the person using the screen keeps for themselves, so it lives in

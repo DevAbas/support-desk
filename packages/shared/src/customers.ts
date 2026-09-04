@@ -83,14 +83,27 @@ export const customerCursorSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}\|[A-Za-z0-9-]{1,40}$/, 'Must be a cursor this endpoint issued.')
 
 /**
+ * A set of plans in domain order, whatever order they were chosen in.
+ *
+ * Choosing Pro then Free and choosing Free then Pro are one question, so they
+ * have to be one value. Exported because more than one thing has to agree about
+ * what that value is: `planFilterSchema` below puts a parsed query into this
+ * order, so the two spellings are one cache key and one request, and the
+ * customer list's saved-view scope puts a stored view into it, so a view written
+ * by some other build is not read as a different question under the same name.
+ * Written out twice, the two would eventually stop agreeing.
+ */
+export function plansInDomainOrder(plans: readonly CustomerPlan[]): CustomerPlan[] {
+  return CUSTOMER_PLANS.filter((plan) => plans.includes(plan))
+}
+
+/**
  * Plans travel comma-joined — `plans=pro,enterprise` — so that a filter with
  * several values is still one query parameter, one cache key and one string.
  *
  * The preprocess step accepts either form: a string off the wire, or the array
  * the client already holds, so both ends parse with this and neither has to
- * know which side it is on. The result is put back into domain order, so
- * choosing Pro then Free and choosing Free then Pro are one cached question
- * rather than two.
+ * know which side it is on.
  */
 const planFilterSchema = z
   .preprocess(
@@ -98,7 +111,7 @@ const planFilterSchema = z
     z.array(customerPlanSchema).max(CUSTOMER_PLANS.length),
   )
   .default([])
-  .transform((plans): CustomerPlan[] => CUSTOMER_PLANS.filter((plan) => plans.includes(plan)))
+  .transform((plans): CustomerPlan[] => plansInDomainOrder(plans))
 
 /**
  * Unlike `listTicketsQuerySchema`, one field here is genuinely optional: there
