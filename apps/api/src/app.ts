@@ -3,7 +3,6 @@ import {
   addCommentBodySchema,
   bulkDeleteBodySchema,
   bulkDeleteCustomersBodySchema,
-  bulkUpdateBodySchema,
   bulkUpdateCustomerPlanBodySchema,
   createTicketBodySchema,
   listCustomersQuerySchema,
@@ -15,6 +14,7 @@ import {
 import { registerAuthRoutes, requireAdmin, requireSession } from './auth'
 import { createCustomerStore, type CustomerStore } from './customerStore'
 import { createLoginLimiter, type LoginLimiter } from './loginLimiter'
+import { registerTicketMoveRoutes } from './moves'
 import { buildAssignees, buildBreakdown, buildSummary } from './reports'
 import { currentUser, fail, invalid, missing, readJsonBody, type AppEnv } from './respond'
 import { registerSearchRoute } from './search'
@@ -120,6 +120,11 @@ export function createApiApp(options: ApiAppOptions = {}) {
   // answers with spans both stores rather than belonging to either.
   registerSearchRoute(app, { store, customers })
 
+  // The workflow's three routes, from their own module for the same reason.
+  // Registered ahead of the ticket routes below so that `POST /tickets/bulk/moves`
+  // is matched before anything can read `bulk` as a ticket id.
+  registerTicketMoveRoutes(app, { store })
+
   app.get('/api/me', (c) => c.json({ user: currentUser(c) }))
 
   app.get('/api/tickets', (c) => {
@@ -150,22 +155,10 @@ export function createApiApp(options: ApiAppOptions = {}) {
 
   // Registered ahead of `/api/tickets/:id` so that `bulk` is read as the
   // collection operation it is rather than as a ticket id.
-  app.patch('/api/tickets/bulk', adminOnly, async (c) => {
-    const raw = await readJsonBody(c)
-
-    if (!raw.ok) {
-      return fail(c, 400, 'validation_failed', 'The request body is not valid JSON.')
-    }
-
-    const body = bulkUpdateBodySchema.safeParse(raw.value)
-
-    if (!body.success) {
-      return invalid(c, body.error, 'bulk update')
-    }
-
-    return c.json({ updated: store.bulkUpdateStatus(body.data.ids, body.data.status) })
-  })
-
+  //
+  // There is no bulk status route beside it any more. Applying a status to a
+  // selection was the same defect as setting one on a ticket, in bulk; the
+  // collection operation is now `POST /api/tickets/bulk/moves`, in `moves.ts`.
   app.delete('/api/tickets/bulk', adminOnly, async (c) => {
     const raw = await readJsonBody(c)
 
@@ -203,6 +196,8 @@ export function createApiApp(options: ApiAppOptions = {}) {
       return invalid(c, body.error, 'ticket patch')
     }
 
+    // A patch carries a priority and an assignee and nothing else: a status is
+    // a position, reached by a move — see `moves.ts`.
     const ticket = store.update(id, body.data)
 
     return ticket ? c.json(ticket) : missing(c, 'Ticket', id)

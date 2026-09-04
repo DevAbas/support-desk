@@ -191,3 +191,68 @@ address, and is refused by all three endpoints behind it.
 The role context carries `canManageTickets` and `canManageCustomers` separately, both
 true for an admin today: they are different powers, and a customer screen asking about
 tickets is a line that reads wrong.
+
+## A status is a position, not a value
+
+A ticket's status used to be one of four values, and any of them could be written over
+any other. So a ticket nobody had worked could be closed, a closed one could be opened
+again with a click and no explanation, and a ticket could be resolved while it was still
+unassigned. Nothing stopped any of it, because a status was a field and the four values
+had no order between them.
+
+They have one now, and the steps between them are named. The four statuses, their
+labels and their badges are unchanged — what changed is that a status is somewhere a
+ticket gets *taken*:
+
+| Move | From | To | Who | What has to be true |
+| --- | --- | --- | --- | --- |
+| Start work | Open | Pending | both | the ticket has an owner |
+| Resolve | Pending | Resolved | both | the ticket has an owner |
+| Close | Resolved | Closed | both | — |
+| Not fixed | Resolved | Pending | both | a reason is given |
+| Return to queue | Pending | Open | both | a reason is given |
+| Reopen | Closed | Open | **admin** | a reason is given |
+
+Two rules do most of the work here, and neither is written out six times.
+**A ticket cannot be resolved before somebody owns it** because there is no move from
+Open to Resolved at all: the only way in is out of Pending, and the only way into
+Pending will not run on an unowned ticket. **Every move that takes a ticket backwards
+asks why**, which is one rule read off the statuses' order rather than six decisions —
+and `workflow.test.ts` asserts it over the table, so a seventh move cannot be added
+that quietly skips it.
+
+`packages/shared/src/workflow.ts` is all of it: three tables and four pure functions,
+read by both ends. Adding a fifth status is an entry in `TICKET_STATUSES` and the moves
+that reach it — no screen that renders a status has to change, because no screen decides
+anything. The filters, the saved views, the reports and the CSV export read
+`TICKET_STATUSES` for its members and never learn that a workflow exists.
+
+**The server is the authority and the interface asks.** `GET /api/tickets/:id/moves`
+answers with every move this role may make from where the ticket is, and whether each
+can be made right now; the ticket screen draws that answer. It could read the shared
+table itself, and deliberately does not: a condition turns on ticket state the browser
+may be a moment behind on, and the role rule must not have a second implementation in
+JavaScript. What it does read from the table is a move's label and whether committing it
+asks for a reason — presentation, which was never the server's to send.
+
+A move a role may not make is absent rather than greyed out: a disabled control
+explaining a power you do not have is a screen telling you about somebody else's job. A
+move that is *yours* but blocked by the ticket is drawn disabled with the condition as
+its description, so an unassigned ticket says what it is waiting for instead of showing
+an empty card. Either way the server refuses it too — a 403 for a role, a 409 for a
+position or a condition — and the message is the condition that failed, never that the
+request was refused.
+
+**A bulk move does not pretend a selection is one ticket.**
+`POST /api/tickets/bulk/moves` applies the move to every ticket that can take it and
+answers with the ids it moved and the rest with the condition that stopped each. So the
+bar leaves the refused rows ticked — they are the ones that still need something — and
+says how many moved and why the others did not. Ten pending tickets with three of them
+unassigned is "7 tickets moved. 3 were left where they were," and one sentence
+explaining it.
+
+**A ticket keeps its moves**, in `history`, and that is what makes asking for a reason
+worth anything: the sentence is kept for whoever opens the ticket next and wants to know
+why a closed one is back in their queue. Seeded tickets have none — the seed puts them
+straight into the status they are in, and a history invented for them would be a record
+of moves nobody made.

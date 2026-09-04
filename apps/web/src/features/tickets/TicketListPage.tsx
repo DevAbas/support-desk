@@ -14,17 +14,19 @@ import {
 } from '@support-desk/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
-import { type TicketStatus } from '@support-desk/shared'
+import type { TicketTransitionId } from '@support-desk/shared'
 import { useRole } from '@/features/roles/useRole'
 import { BulkActionsBar } from './components/BulkActionsBar'
+import { BulkMoveReport } from './components/BulkMoveReport'
 import { Pagination } from './components/Pagination'
 import { SavedViewsSidebar } from './components/SavedViewsSidebar'
 import { TicketsTable } from './components/TicketsTable'
 import { TicketsToolbar } from './components/TicketsToolbar'
 import { useBulkDeleteTickets } from './hooks/useBulkDeleteTickets'
-import { useBulkUpdateStatus } from './hooks/useBulkUpdateStatus'
+import { useBulkMoveTickets } from './hooks/useBulkMoveTickets'
 import { useSavedViews } from './hooks/useSavedViews'
 import { useTickets } from './hooks/useTickets'
+import { useTicketSelection } from './hooks/useTicketSelection'
 import { useTicketsExport } from './hooks/useTicketsExport'
 import type { SavedView } from './savedViews'
 import {
@@ -50,7 +52,6 @@ export function TicketListPage() {
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<TicketFilters>(DEFAULT_FILTERS)
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
-  const [selection, setSelection] = useState<string[]>([])
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
 
   const savedViews = useSavedViews()
@@ -61,24 +62,20 @@ export function TicketListPage() {
   const query = toListTicketsQuery({ ...filters, search: debouncedSearch }, page, PAGE_SIZE)
 
   const tickets = useTickets(query)
-  const bulkUpdateStatus = useBulkUpdateStatus()
+  const bulkMove = useBulkMoveTickets()
   const bulkDelete = useBulkDeleteTickets()
 
   const rows = tickets.data?.rows ?? []
   const total = tickets.data?.total ?? 0
-  const isBulkBusy = bulkUpdateStatus.isPending || bulkDelete.isPending
+  const isBulkBusy = bulkMove.isPending || bulkDelete.isPending
   const loadError = tickets.isError ? toErrorMessage(tickets.error, 'Could not load tickets.') : null
 
   const csv = useTicketsExport(query, total)
 
-  // Derived rather than stored, so the selection cannot go stale: rows that are
-  // no longer on screen, and any selection at all once admin is lost, drop out
-  // without an effect having to reset them.
-  const selectedIds = canManageTickets
-    ? selection.filter((id) => rows.some((ticket) => ticket.id === id))
-    : []
+  const selection = useTicketSelection(rows, canManageTickets)
+  const { selectedIds } = selection
 
-  // Also derived: a view deleted elsewhere in this render simply stops being
+  // Derived: a view deleted elsewhere in this render simply stops being
   // found, and the filters are compared against what is on screen right now.
   const activeView = savedViews.views.find((view) => view.id === activeViewId) ?? null
   const isViewModified = !areFiltersEqual(filters, activeView?.filters ?? DEFAULT_FILTERS)
@@ -108,27 +105,16 @@ export function TicketListPage() {
     }
   }
 
-  function toggleTicket(id: string) {
-    setSelection((current) =>
-      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+  function applyBulkMove(move: TicketTransitionId, reason: string | undefined) {
+    // Drops what the server says it moved, and nothing else. Two things are
+    // deliberately kept ticked: anything selected while the request was in
+    // flight, which was not part of what was done — `CustomersPage` draws the
+    // same line — and the tickets the move was refused for, which are the ones
+    // still needing something doing and so the ones to act on next.
+    bulkMove.mutate(
+      { ids: selectedIds, move, reason },
+      { onSuccess: (result) => selection.drop(result.moved) },
     )
-  }
-
-  function toggleAll(selected: boolean) {
-    setSelection(selected ? rows.map((ticket) => ticket.id) : [])
-  }
-
-  function applyBulkStatus(nextStatus: TicketStatus, onApplied: () => void) {
-    const ids = selectedIds
-    const onSuccess = () => {
-      // Drops the ids the request acted on rather than emptying the selection:
-      // it was in flight for a while, and anything ticked in the meantime was
-      // not part of what was just done. `CustomersPage` draws the same line.
-      setSelection((current) => current.filter((id) => !ids.includes(id)))
-      onApplied()
-    }
-
-    bulkUpdateStatus.mutate({ ids, status: nextStatus }, { onSuccess })
   }
 
   function confirmBulkDelete() {
@@ -136,7 +122,7 @@ export function TicketListPage() {
       { ids: selectedIds },
       {
         onSuccess: () => {
-          setSelection([])
+          selection.clear()
           setIsConfirmingDelete(false)
         },
       },
@@ -210,10 +196,14 @@ export function TicketListPage() {
               <BulkActionsBar
                 selectedCount={selectedIds.length}
                 isBusy={isBulkBusy}
-                onApplyStatus={applyBulkStatus}
+                onApplyMove={applyBulkMove}
                 onDelete={() => setIsConfirmingDelete(true)}
               />
             ) : null}
+
+            {/* Outside the bar, because a move that reaches every ticket in the
+                selection empties it and takes the bar with it. */}
+            <BulkMoveReport result={bulkMove} />
 
             {loadError ? (
               <Alert
@@ -234,8 +224,8 @@ export function TicketListPage() {
               isLoading={tickets.isPending}
               selectable={canManageTickets}
               selectedIds={selectedIds}
-              onToggleTicket={toggleTicket}
-              onToggleAll={toggleAll}
+              onToggleTicket={selection.toggle}
+              onToggleAll={selection.toggleAll}
             />
 
             <Pagination

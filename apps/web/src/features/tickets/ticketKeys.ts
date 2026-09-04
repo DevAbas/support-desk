@@ -18,10 +18,20 @@ const lists = [...all, 'list'] as const
 
 const details = [...all, 'detail'] as const
 
+const moves = [...all, 'moves'] as const
+
 export const ticketKeys = {
   all: () => all,
   lists: () => lists,
   list: (query: ListTicketsQuery) => [...lists, query] as const,
   details: () => details,
   detail: (id: string) => [...details, id] as const,
+  /**
+   * What a ticket's available moves are cached under — a key of its own rather
+   * than part of the detail, because the two answers go stale for different
+   * reasons. A comment changes the ticket and not what can be done to it; a
+   * reassignment changes both.
+   */
+  moves: () => moves,
+  movesFor: (id: string) => [...moves, id] as const,
 }

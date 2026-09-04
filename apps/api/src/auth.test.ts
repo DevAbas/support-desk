@@ -292,9 +292,9 @@ describe('the routes that require an administrator', () => {
     )
 
     await expectError(
-      await app.request('/api/tickets/bulk', {
-        ...jsonRequest({ ids: ['TCK-0001'], status: 'closed' }),
-        method: 'PATCH',
+      await app.request('/api/tickets/bulk/moves', {
+        ...jsonRequest({ ids: ['TCK-0004'], move: 'start' }),
+        method: 'POST',
       }),
       403,
       'forbidden',
@@ -328,11 +328,21 @@ describe('the routes that require an administrator', () => {
     expect((await app.request('/api/tickets')).status).toBe(200)
 
     const patched = await app.request('/api/tickets/TCK-0001', {
-      ...jsonRequest({ status: 'pending' }),
+      ...jsonRequest({ assignee: 'Marco Ellis' }),
       method: 'PATCH',
     })
 
     expect(patched.status).toBe(200)
+
+    // And moving a ticket through the queue one at a time, which is the whole
+    // of the job. Only the bulk endpoints and reopening a settled ticket are
+    // not an agent's; the moves themselves are.
+    const moved = await app.request('/api/tickets/TCK-0004/moves', {
+      ...jsonRequest({ move: 'start' }),
+      method: 'POST',
+    })
+
+    expect(moved.status).toBe(200)
   })
 
   it('refused the agent without touching the queue', async () => {

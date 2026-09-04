@@ -12,6 +12,10 @@ function makeTicket(overrides: Partial<Ticket> = {}): Ticket {
     assignee: 'Dana Cole',
     createdAt: '2026-03-05T09:15:00.000Z',
     comments: [],
+    // The export has no history column and should not grow one: a CSV of the
+    // queue is what the table shows plus the assignee, and a ticket's moves are
+    // a record read on the ticket.
+    history: [],
     ...overrides,
   }
 }

@@ -1,4 +1,10 @@
-import type { Ticket, TicketComment, TicketPriority, TicketStatus } from '@support-desk/shared'
+import {
+  UNASSIGNED,
+  type Ticket,
+  type TicketComment,
+  type TicketPriority,
+  type TicketStatus,
+} from '@support-desk/shared'
 
 /**
  * The seed data is generated deterministically: the same 40 tickets, in the same
@@ -239,7 +245,7 @@ const ASSIGNEES: readonly string[] = [
   'Tomas Lindqvist',
   'Aisha Bello',
   'Ren Nakamura',
-  'Unassigned',
+  UNASSIGNED,
 ]
 
 const REPORTERS: readonly string[] = [
@@ -319,6 +325,12 @@ export function createSeedTickets(): Ticket[] {
       assignee: pick(ASSIGNEES, random),
       createdAt: createdAt.toISOString(),
       comments,
+      // No history, deliberately. A seeded ticket is put straight into the
+      // status it is in — nobody moved it there — and inventing the moves that
+      // would have got it there means inventing who made them and when, on
+      // tickets whose assignee is sometimes `Unassigned`, which is a path the
+      // workflow would not have allowed. The history starts when the moves do.
+      history: [],
     }
   })
 }

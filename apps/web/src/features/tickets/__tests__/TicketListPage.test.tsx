@@ -1,4 +1,4 @@
-import { screen, waitForElementToBeRemoved } from '@testing-library/react'
+import { screen, waitForElementToBeRemoved, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -95,24 +95,71 @@ describe('TicketListPage', () => {
     expect(screen.queryByText('Could not reach the server.')).not.toBeInTheDocument()
   })
 
-  it('applies a bulk status change and shows the updated rows', async () => {
+  it('applies a bulk move and shows the updated rows', async () => {
     await renderList('admin')
 
-    // Eleven pending tickets, so closing the ten on this page leaves one.
+    // Thirteen resolved tickets, so closing the ten on this page leaves three.
+    // Close carries no conditions, so every row on the page can take it.
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'resolved')
+    await screen.findByText('Showing 1–10 of 13')
+
+    await userEvent.click(screen.getByLabelText('Select all tickets on this page'))
+    await userEvent.selectOptions(screen.getByLabelText('Move'), 'close')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    // The rows that were on screen are no longer resolved, so the list the
+    // mutation invalidated comes back shorter.
+    expect(await screen.findByText('Showing 1–3 of 3')).toBeInTheDocument()
+    expect(await screen.findByText('10 tickets moved.')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Bulk actions' })).not.toBeInTheDocument()
+  })
+
+  it('moves what it can, leaves the rest ticked, and says which condition failed', async () => {
+    await renderList('admin')
+
+    // Eleven pending tickets. Ten are on this page and three of those are
+    // unassigned, so Resolve applies to seven of the selection and not to the
+    // other three — which is the mixed selection a bulk bar has to answer for.
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'pending')
     await screen.findByText('Showing 1–10 of 11')
 
     await userEvent.click(screen.getByLabelText('Select all tickets on this page'))
-    await userEvent.selectOptions(screen.getByLabelText('Set status to'), 'closed')
     await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
 
-    // The rows that were on screen are no longer pending, so the list the
-    // mutation invalidated comes back shorter.
-    expect(await screen.findByText('Showing 1–1 of 1')).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: 'Bulk actions' })).not.toBeInTheDocument()
+    expect(await screen.findByText('7 tickets moved. 3 were left where they were.'))
+      .toBeInTheDocument()
+    expect(
+      screen.getByText(/A ticket needs an owner before it can be worked/),
+    ).toBeInTheDocument()
+
+    // The three that could not move are still ticked, because they are the ones
+    // that still need something doing to them.
+    expect(await screen.findByText('3 tickets selected')).toBeInTheDocument()
   })
 
-  it('drops only the tickets the apply acted on, and puts the status back', async () => {
+  it('asks why before a move that takes tickets backwards', async () => {
+    await renderList('admin')
+
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'resolved')
+    await screen.findByText('Showing 1–10 of 13')
+
+    await userEvent.click(screen.getByLabelText('Select all tickets on this page'))
+    await userEvent.selectOptions(screen.getByLabelText('Move'), 'reject')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+
+    // Nothing has moved yet: the dialog is the move, and it has not been
+    // answered.
+    const dialog = await screen.findByRole('dialog', { name: 'Not fixed' })
+    expect(screen.getByText('Showing 1–10 of 13')).toBeInTheDocument()
+
+    await userEvent.type(within(dialog).getByLabelText('Why'), 'Customer says it is back.')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Not fixed' }))
+
+    expect(await screen.findByText('10 tickets moved.')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('drops only the tickets the apply acted on, and puts the move back', async () => {
     // Held open so a row can be ticked while the request is in flight, which is
     // the only sequence that tells "drop what was applied" apart from "clear
     // everything".
@@ -122,13 +169,18 @@ describe('TicketListPage', () => {
     })
 
     mswServer.use(
-      http.patch('/api/tickets/bulk', async ({ request }) => {
+      http.post('/api/tickets/bulk/moves', async ({ request }) => {
         await held
         return forwardToApi(request)
       }),
     )
 
     await renderList('admin')
+
+    // Filtered, so one move applies to every row that is ticked: which tickets
+    // a move reaches is the next test's subject and would only obscure this one.
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'resolved')
+    await screen.findByText('Showing 1–10 of 13')
 
     const [applied, alsoApplied, tickedMeanwhile] = screen
       .getAllByRole('checkbox', { name: /^Select ticket/ })
@@ -137,7 +189,7 @@ describe('TicketListPage', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: applied }))
     await userEvent.click(screen.getByRole('checkbox', { name: alsoApplied }))
 
-    await userEvent.selectOptions(screen.getByLabelText('Set status to'), 'closed')
+    await userEvent.selectOptions(screen.getByLabelText('Move'), 'close')
     await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
 
     // Ticked after the request went out, so it was not part of what was done.
@@ -148,11 +200,11 @@ describe('TicketListPage', () => {
 
     expect(await screen.findByText('1 ticket selected')).toBeInTheDocument()
     expect(screen.getByRole('checkbox', { name: tickedMeanwhile })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: applied })).not.toBeChecked()
+    expect(screen.queryByRole('checkbox', { name: applied })).not.toBeInTheDocument()
 
-    // And the select is back on the status a bulk edit opens on, rather than
+    // And the select is back on the move a bulk edit opens on, rather than
     // holding the one that has already been applied.
-    expect(screen.getByLabelText('Set status to')).toHaveValue('resolved')
+    expect(screen.getByLabelText('Move')).toHaveValue('resolve')
   })
 
   describe('CSV export', () => {

@@ -77,6 +77,23 @@ with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`. Below is the
   `canReachNavigationTarget`. Gating a screen there gates the nav item, the route and
   every search result that lives on it, in one edit.
 
+## A ticket status is a position, not a value
+
+- Never set a status. There is no field for one — `updateTicketBodySchema` carries a
+  priority and an assignee — because a status changes by making a *named move*
+  through `POST /api/tickets/:id/moves`.
+- `packages/shared/src/workflow.ts` is the whole workflow: which moves exist, who may
+  make each, and what has to be true first. It is three tables and four pure
+  functions, and both ends read it. Adding a fifth status is an entry in
+  `TICKET_STATUSES` plus the moves that reach it; no screen that draws a status has to
+  change, and a status nothing reaches fails `workflow.test.ts`.
+- Never branch on a status to work out what can be done to a ticket. Ask
+  `ticketMoveOffers` — and in the interface, ask the server: it may hide a move it has
+  been told is unavailable, and it never decides availability, because a condition
+  reads ticket state a browser can hold a stale copy of.
+- Where a move is refused, say which condition failed rather than that it was refused.
+  The sentence is the guard's `requirement`, and both ends show the same one.
+
 ## When a rule here is broken repeatedly
 
 Move it into `internal/eslint-plugin-harness`: a rule that needs restating is one prose

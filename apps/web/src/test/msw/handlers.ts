@@ -116,11 +116,16 @@ export const handlers = [
   http.get('/api/search', forward),
   http.get('/api/tickets', forward),
   http.post('/api/tickets', forward),
-  http.patch('/api/tickets/bulk', forward),
+  // Ahead of the `:id` handlers, so `bulk` is matched as the collection
+  // operation it is rather than as a ticket id — the same order the API
+  // registers them in.
+  http.post('/api/tickets/bulk/moves', forward),
   http.delete('/api/tickets/bulk', forward),
   http.get('/api/tickets/:id', forward),
   http.patch('/api/tickets/:id', forward),
   http.delete('/api/tickets/:id', forward),
+  http.get('/api/tickets/:id/moves', forward),
+  http.post('/api/tickets/:id/moves', forward),
   http.post('/api/tickets/:id/comments', forward),
   http.get('/api/customers', forward),
   http.patch('/api/customers/bulk', forward),

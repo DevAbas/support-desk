@@ -1,5 +1,6 @@
 export * from './types'
 export * from './contract'
+export * from './workflow'
 export * from './customers'
 export * from './navigation'
 export * from './search'

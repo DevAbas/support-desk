@@ -1,24 +1,60 @@
-import type {
-  AddCommentBody,
-  CreateTicketBody,
-  ListTicketsQuery,
-  ListTicketsResponse,
-  Ticket,
-  TicketStatus,
-  UpdateTicketBody,
+import {
+  evaluateTicketMove,
+  ticketMoveNeedsReason,
+  ticketMoveOffers,
+  type AddCommentBody,
+  type BulkTicketMoveResponse,
+  type CreateTicketBody,
+  type ListTicketsQuery,
+  type ListTicketsResponse,
+  type Role,
+  type Ticket,
+  type TicketMove,
+  type TicketMoveOffer,
+  type TicketMoveRefusal,
+  type TicketTransitionId,
+  type UpdateTicketBody,
 } from '@support-desk/shared'
 import { createSeedTickets } from './seed'
 
 /**
  * The in-memory ticket store.
  *
- * It is not role-aware and does not need to be: the routes in `app.ts` decide
- * who may call `remove` and `bulkRemove` before either is reached. A store that
- * also checked would be a second place to keep that decision correct.
+ * Route-level permissions are not its business: `app.ts` decides who may call
+ * `remove` and `bulkRemove` before either is reached, and a store that also
+ * checked would be a second place to keep that decision correct.
+ *
+ * **A move is the exception, and it is one on purpose.** Who may make a move is
+ * not a gate over an endpoint — `POST /moves` is every agent's daily work — it
+ * is part of what each move *is*, declared beside the move in
+ * `packages/shared/src/workflow.ts`. So a move command carries whoever is making
+ * it, the store hands the whole request to `evaluateTicketMove`, and the answer
+ * comes back from the one table both sides read. The alternative was a route
+ * that decided and a store that applied whatever it was told, which would mean
+ * exposing a raw status setter — the thing the workflow exists to remove.
  *
  * Everything that leaves the store is cloned. Callers hold the response, not a
  * handle on the row, so a mutation cannot reach back through one.
  */
+
+/**
+ * A move, as it is asked for.
+ *
+ * `by` is for the record and `role` is for the rules, and they are separate
+ * because they answer different questions: the history says who moved a ticket,
+ * and the workflow says whether they could.
+ */
+export interface TicketMoveCommand {
+  move: TicketTransitionId
+  /** Whatever was typed, where the move asked. */
+  reason: string | undefined
+  by: string
+  role: Role
+}
+
+export type TicketMoveResult =
+  | { ok: true; ticket: Ticket }
+  | { ok: false; refusal: TicketMoveRefusal }
 
 /** A page of matches, and how many there were to page. */
 export interface TicketSearchResult {
@@ -53,14 +89,35 @@ export interface TicketStore {
   update: (id: string, patch: UpdateTicketBody) => Ticket | undefined
   addComment: (id: string, input: AddCommentBody) => Ticket | undefined
   remove: (id: string) => boolean
-  bulkUpdateStatus: (ids: readonly string[], status: TicketStatus) => number
+  /**
+   * Every move this role may make on this ticket, and whether each can be made
+   * right now. `undefined` when there is no such ticket.
+   *
+   * This is what makes the interface an interface rather than a second
+   * implementation: it draws what comes back from here.
+   */
+  movesFor: (id: string, role: Role) => TicketMoveOffer[] | undefined
+  /** One named move. `undefined` when there is no such ticket. */
+  move: (id: string, command: TicketMoveCommand) => TicketMoveResult | undefined
+  /**
+   * The same move across a selection.
+   *
+   * Ids that name no ticket are neither moved nor reported: a selection is made
+   * on a page that may have moved on since, and a ticket that is gone is not a
+   * condition anybody can meet.
+   */
+  bulkMove: (ids: readonly string[], command: TicketMoveCommand) => BulkTicketMoveResponse
   bulkRemove: (ids: readonly string[]) => number
   /** Restores the seed state. Tests call this between cases. */
   reset: () => void
 }
 
 function cloneTicket(ticket: Ticket): Ticket {
-  return { ...ticket, comments: ticket.comments.map((comment) => ({ ...comment })) }
+  return {
+    ...ticket,
+    comments: ticket.comments.map((comment) => ({ ...comment })),
+    history: ticket.history.map((move) => ({ ...move })),
+  }
 }
 
 function byNewestFirst(a: Ticket, b: Ticket): number {
@@ -86,6 +143,40 @@ function byBestMatch(term: string): (a: Ticket, b: Ticket) => number {
 
 function formatTicketId(sequence: number): string {
   return `TCK-${String(sequence).padStart(4, '0')}`
+}
+
+/**
+ * Asks the workflow, and writes the move down if the answer is yes.
+ *
+ * Mutates the row in place — it is only ever handed one this module owns — and
+ * the ticket it answers with is a clone, like everything else that leaves.
+ *
+ * The reason is only kept where the move asked for one. A sentence sent with a
+ * move that required none is dropped rather than recorded: it would sit in the
+ * history against the one kind of move nobody goes looking for a reason on.
+ */
+function applyMove(ticket: Ticket, command: TicketMoveCommand): TicketMoveResult {
+  const reason = command.reason ?? ''
+  const verdict = evaluateTicketMove(command.move, { ticket, reason }, command.role)
+
+  if (!verdict.allowed) {
+    return { ok: false, refusal: verdict.refusal }
+  }
+
+  const move: TicketMove = {
+    id: `m-${ticket.id}-${String(ticket.history.length + 1)}`,
+    transition: verdict.transition.id,
+    from: ticket.status,
+    to: verdict.transition.to,
+    by: command.by,
+    reason: ticketMoveNeedsReason(verdict.transition.id) ? reason.trim() : null,
+    at: new Date().toISOString(),
+  }
+
+  ticket.status = verdict.transition.to
+  ticket.history = [...ticket.history, move]
+
+  return { ok: true, ticket: cloneTicket(ticket) }
 }
 
 export function createTicketStore(): TicketStore {
@@ -165,6 +256,9 @@ export function createTicketStore(): TicketStore {
         assignee: input.assignee,
         createdAt: new Date().toISOString(),
         comments: [],
+        // A ticket that has just been raised has not moved anywhere yet. Being
+        // raised is not a move: there is no status it came from.
+        history: [],
       }
 
       nextSequence += 1
@@ -182,10 +276,9 @@ export function createTicketStore(): TicketStore {
 
       // Written field by field: spreading the patch would copy the `undefined`
       // that an absent field parses to over a value that is already set.
-      if (patch.status !== undefined) {
-        ticket.status = patch.status
-      }
-
+      //
+      // There is no `status` branch, and there is no longer a body that could
+      // carry one: a status is reached through `move` below.
       if (patch.priority !== undefined) {
         ticket.priority = patch.priority
       }
@@ -224,18 +317,39 @@ export function createTicketStore(): TicketStore {
       return tickets.length < before
     },
 
-    bulkUpdateStatus(ids, status) {
-      const targets = new Set(ids)
-      let updated = 0
+    movesFor(id, role) {
+      const ticket = find(id)
 
-      for (const ticket of tickets) {
-        if (targets.has(ticket.id)) {
-          ticket.status = status
-          updated += 1
+      return ticket ? ticketMoveOffers(ticket, role) : undefined
+    },
+
+    move(id, command) {
+      const ticket = find(id)
+
+      return ticket ? applyMove(ticket, command) : undefined
+    },
+
+    bulkMove(ids, command) {
+      const moved: string[] = []
+      const left: BulkTicketMoveResponse['left'] = []
+
+      for (const id of ids) {
+        const ticket = find(id)
+
+        if (!ticket) {
+          continue
+        }
+
+        const result = applyMove(ticket, command)
+
+        if (result.ok) {
+          moved.push(id)
+        } else {
+          left.push({ id, requirement: result.refusal.requirement })
         }
       }
 
-      return updated
+      return { moved, left }
     },
 
     bulkRemove(ids) {

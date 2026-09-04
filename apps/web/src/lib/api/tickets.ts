@@ -1,24 +1,28 @@
 import {
   addCommentBodySchema,
   bulkDeleteBodySchema,
-  bulkUpdateBodySchema,
+  bulkTicketMoveBodySchema,
+  bulkTicketMoveResponseSchema,
   createTicketBodySchema,
   deletedCountSchema,
   listTicketsQuerySchema,
   listTicketsResponseSchema,
+  ticketMoveBodySchema,
+  ticketMoveOffersResponseSchema,
   ticketSchema,
   updateTicketBodySchema,
-  updatedCountSchema,
   type AddCommentBody,
   type BulkDeleteBody,
-  type BulkUpdateBody,
+  type BulkTicketMoveBody,
+  type BulkTicketMoveResponse,
   type CreateTicketBody,
   type DeletedCount,
   type ListTicketsQuery,
   type ListTicketsResponse,
   type Ticket,
+  type TicketMoveBody,
+  type TicketMoveOffersResponse,
   type UpdateTicketBody,
-  type UpdatedCount,
 } from '@support-desk/shared'
 import { apiRequest } from './http'
 
@@ -77,11 +81,41 @@ export function deleteTicket(id: string): Promise<DeletedCount> {
   })
 }
 
-export function bulkUpdateStatus(body: BulkUpdateBody): Promise<UpdatedCount> {
-  return apiRequest('/tickets/bulk', {
-    method: 'PATCH',
-    body: bulkUpdateBodySchema.parse(body),
-    schema: updatedCountSchema,
+/**
+ * What this role may do to this ticket right now.
+ *
+ * Asked rather than worked out. The workflow is shared code and the screen
+ * could read it, but availability turns on ticket state the cache may be a
+ * moment behind on and on a role rule that must not have a second
+ * implementation in the browser — so the server answers, and the screen draws
+ * the answer. What the screen still reads out of the shared tables is each
+ * move's label and whether committing it asks for a reason, which is
+ * presentation and never was the server's to send.
+ */
+export function listTicketMoves(
+  id: string,
+  signal?: AbortSignal,
+): Promise<TicketMoveOffersResponse> {
+  return apiRequest(`/tickets/${encodeURIComponent(id)}/moves`, {
+    schema: ticketMoveOffersResponseSchema,
+    signal,
+  })
+}
+
+/** Answers with the whole moved ticket, history included. */
+export function moveTicket(id: string, body: TicketMoveBody): Promise<Ticket> {
+  return apiRequest(`/tickets/${encodeURIComponent(id)}/moves`, {
+    method: 'POST',
+    body: ticketMoveBodySchema.parse(body),
+    schema: ticketSchema,
+  })
+}
+
+export function bulkMoveTickets(body: BulkTicketMoveBody): Promise<BulkTicketMoveResponse> {
+  return apiRequest('/tickets/bulk/moves', {
+    method: 'POST',
+    body: bulkTicketMoveBodySchema.parse(body),
+    schema: bulkTicketMoveResponseSchema,
   })
 }
 

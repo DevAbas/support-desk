@@ -5,7 +5,6 @@ import {
   listTicketsResponseSchema,
   meResponseSchema,
   ticketSchema,
-  updatedCountSchema,
 } from '@support-desk/shared'
 import { createApp, createSignedOutApp } from './test/support'
 import { SEED_AGENT_EMAIL } from './userSeed'
@@ -167,14 +166,30 @@ describe('PATCH /api/tickets/:id', () => {
 
     const response = await app.request(
       '/api/tickets/TCK-0002',
-      jsonRequest('PATCH', { status: 'closed' }),
+      jsonRequest('PATCH', { priority: 'low' }),
     )
     const after = ticketSchema.parse(await response.json())
 
     expect(response.status).toBe(200)
-    expect(after.status).toBe('closed')
-    expect(after.priority).toBe(before.priority)
+    expect(after.priority).toBe('low')
+    expect(after.status).toBe(before.status)
     expect(after.assignee).toBe(before.assignee)
+  })
+
+  // The patch that used to be here set a status, which is the defect the
+  // workflow exists for: a status is a position now, reached by a named move
+  // through `POST /api/tickets/:id/moves`, and the body has no field for it.
+  it('has no status field to set, whatever a caller sends', async () => {
+    const app = createApp()
+
+    await expectError(
+      await app.request('/api/tickets/TCK-0002', jsonRequest('PATCH', { status: 'open' })),
+      400,
+      'validation_failed',
+    )
+
+    const after = ticketSchema.parse(await (await app.request('/api/tickets/TCK-0002')).json())
+    expect(after.status).toBe('resolved')
   })
 
   it('rejects a patch that asks for nothing', async () => {
@@ -184,12 +199,15 @@ describe('PATCH /api/tickets/:id', () => {
       'validation_failed',
     )
 
-    expect(details).toEqual(['Provide at least one of status, priority or assignee.'])
+    expect(details).toEqual(['Provide at least one of priority or assignee.'])
   })
 
   it('is a 404 for a ticket that does not exist', async () => {
     await expectError(
-      await createApp().request('/api/tickets/TCK-9999', jsonRequest('PATCH', { status: 'open' })),
+      await createApp().request(
+        '/api/tickets/TCK-9999',
+        jsonRequest('PATCH', { priority: 'high' }),
+      ),
       404,
       'not_found',
     )
@@ -229,20 +247,6 @@ describe('POST /api/tickets/:id/comments', () => {
 })
 
 describe('the bulk endpoints', () => {
-  it('updates the status of several tickets and reports how many changed', async () => {
-    const app = createApp()
-    const response = await app.request(
-      '/api/tickets/bulk',
-      jsonRequest('PATCH', { ids: ['TCK-0001', 'TCK-0002', 'TCK-9999'], status: 'closed' }),
-    )
-
-    expect(response.status).toBe(200)
-    expect(updatedCountSchema.parse(await response.json())).toEqual({ updated: 2 })
-
-    const ticket = ticketSchema.parse(await (await app.request('/api/tickets/TCK-0001')).json())
-    expect(ticket.status).toBe('closed')
-  })
-
   it('deletes several tickets and reports how many went', async () => {
     const app = createApp()
     const response = await app.request(
@@ -262,10 +266,32 @@ describe('the bulk endpoints', () => {
   it('reads `bulk` as the collection operation rather than as a ticket id', async () => {
     // A 404 here would mean the request had fallen through to /api/tickets/:id.
     await expectError(
-      await createApp().request('/api/tickets/bulk', jsonRequest('PATCH', { ids: [] })),
+      await createApp().request('/api/tickets/bulk', jsonRequest('DELETE', { ids: [] })),
       400,
       'validation_failed',
     )
+  })
+
+  // The bulk status route that used to sit beside these is gone: applying a
+  // status to a selection was the same defect as setting one on a ticket, done
+  // forty at a time. `moves.test.ts` covers what replaced it.
+  it('has no bulk status route left to apply a status with', async () => {
+    const app = createApp()
+
+    // Nothing answers `PATCH /api/tickets/bulk` any more, so `bulk` falls
+    // through to `:id` and a body of ids and a status is a patch with no field
+    // in it that this API will write.
+    await expectError(
+      await app.request(
+        '/api/tickets/bulk',
+        jsonRequest('PATCH', { ids: ['TCK-0004'], status: 'closed' }),
+      ),
+      400,
+      'validation_failed',
+    )
+
+    const ticket = ticketSchema.parse(await (await app.request('/api/tickets/TCK-0004')).json())
+    expect(ticket.status).toBe('open')
   })
 })
 

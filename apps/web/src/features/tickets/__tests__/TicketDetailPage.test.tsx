@@ -1,10 +1,11 @@
-import { screen, waitForElementToBeRemoved } from '@testing-library/react'
+import { screen, waitForElementToBeRemoved, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import type { Role } from '@/features/roles/role.types'
 import { Route, Routes } from 'react-router-dom'
-import { mswServer } from '@/test/msw/server'
+import { SEED_AGENT_EMAIL } from '@support-desk/api/userSeed'
+import { mswServer, signInTestUser } from '@/test/msw/server'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { TicketDetailPage } from '@/features/tickets/TicketDetailPage'
 
@@ -26,26 +27,32 @@ describe('TicketDetailPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Cannot sign in after password reset' }))
       .toBeInTheDocument()
-    expect(screen.getByLabelText('Current status')).toHaveValue('closed')
+    expect(screen.getByText('This ticket is Closed.')).toBeInTheDocument()
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
   })
 
-  it('saves a status change without going back for the ticket', async () => {
-    let requests = 0
-    mswServer.events.on('request:start', () => {
-      requests += 1
+  it('makes a move without going back for the ticket', async () => {
+    const paths: string[] = []
+    mswServer.events.on('request:start', ({ request }) => {
+      paths.push(`${request.method} ${new URL(request.url).pathname}`)
     })
 
-    await renderDetail('TCK-0001')
-    const loadRequests = requests
+    // Pending and assigned, so Resolve is available and asks for nothing.
+    await renderDetail('TCK-0032')
+    await userEvent.click(await screen.findByRole('button', { name: 'Resolve' }))
 
-    await userEvent.selectOptions(screen.getByLabelText('Current status'), 'resolved')
+    expect(await screen.findByText('This ticket is Resolved.')).toBeInTheDocument()
 
-    await vi.waitFor(() => expect(screen.getByLabelText('Current status')).toHaveValue('resolved'))
+    // The POST answered with the whole moved ticket, so the page has the newest
+    // version already and never asks for it again. It does ask what the ticket
+    // can do *next*, because that is a different question and only the server
+    // has the answer.
+    const after = paths.slice(paths.indexOf('POST /api/tickets/TCK-0032/moves'))
+    expect(after).toEqual([
+      'POST /api/tickets/TCK-0032/moves',
+      'GET /api/tickets/TCK-0032/moves',
+    ])
 
-    // The PATCH answered with the updated ticket, so the page has the newest
-    // version already: exactly one request, with no refetch behind it.
-    expect(requests).toBe(loadRequests + 1)
     mswServer.events.removeAllListeners()
   })
 
@@ -131,5 +138,113 @@ describe('TicketDetailPage', () => {
   it('offers deletion to an admin and not to an agent', async () => {
     await renderDetail('TCK-0001', 'agent')
     expect(screen.queryByRole('button', { name: 'Delete ticket' })).not.toBeInTheDocument()
+  })
+
+  describe('the moves', () => {
+    it('draws a blocked move disabled, with the condition it is waiting on', async () => {
+      // Open, and nobody owns it.
+      await renderDetail('TCK-0038')
+
+      const start = await screen.findByRole('button', { name: 'Start work' })
+
+      expect(start).toBeDisabled()
+      // The condition is the button's description rather than a sentence that
+      // happens to sit under it, so a disabled control is not a dead end for
+      // anybody who cannot see the layout.
+      expect(start).toHaveAccessibleDescription(
+        /A ticket needs an owner before it can be worked/,
+      )
+    })
+
+    it('offers nothing an agent may not do, and asks the server which those are', async () => {
+      // The role gate is the session's, not the provider's: this card renders
+      // what `GET /moves` came back with, so signing in as an agent is what
+      // makes the test about an agent.
+      signInTestUser(SEED_AGENT_EMAIL)
+      await renderDetail('TCK-0001', 'agent')
+
+      expect(
+        await screen.findByText('There is nowhere to take a closed ticket from here.'),
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Reopen' })).not.toBeInTheDocument()
+    })
+
+    it('asks why before reopening, refuses an empty reason, and keeps the one it gets', async () => {
+      await renderDetail('TCK-0001', 'admin')
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Reopen' }))
+
+      const dialog = await screen.findByRole('dialog', { name: 'Reopen' })
+
+      // Submitting nothing is refused in the browser with the same sentence the
+      // server would have answered with, and the ticket has not moved.
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Reopen' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        /A move that takes a ticket backwards needs a reason/,
+      )
+      expect(screen.getByText('This ticket is Closed.')).toBeInTheDocument()
+
+      await userEvent.type(
+        within(dialog).getByLabelText('Why'),
+        'Same fault reported again on Tuesday.',
+      )
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Reopen' }))
+
+      expect(await screen.findByText('This ticket is Open.')).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+      // And the sentence is kept, which is the only thing that makes asking for
+      // it worth anything.
+      expect(screen.getByText('Reopen by Dana Whitfield')).toBeInTheDocument()
+      expect(screen.getByText('Same fault reported again on Tuesday.')).toBeInTheDocument()
+      expect(screen.getByText('Closed to Open')).toBeInTheDocument()
+    })
+
+    it('asks again after a reassignment, because that changes what can be done', async () => {
+      await renderDetail('TCK-0032')
+
+      expect(await screen.findByRole('button', { name: 'Resolve' })).toBeEnabled()
+
+      const field = screen.getByLabelText('Assigned to')
+      await userEvent.clear(field)
+      await userEvent.type(field, 'Unassigned')
+      await userEvent.click(screen.getByRole('button', { name: 'Reassign' }))
+
+      // Handing a ticket back to nobody is the one edit on this screen that
+      // moves a condition, so the card has to hear about it rather than keep
+      // offering a move the server would now refuse.
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Resolve' })).toBeDisabled(),
+      )
+      expect(screen.getByRole('button', { name: 'Resolve' })).toHaveAccessibleDescription(
+        /A ticket needs an owner before it can be worked/,
+      )
+    })
+
+    it('reports a refused move with the condition that failed', async () => {
+      await renderDetail('TCK-0032')
+
+      // A ticket can move under somebody while they are reading it, so a
+      // correct screen still has to render a refusal.
+      mswServer.use(
+        http.post('/api/tickets/:id/moves', () =>
+          HttpResponse.json(
+            {
+              error: {
+                code: 'conflict',
+                message: 'Resolve is a move out of Pending, and this ticket is Resolved.',
+              },
+            },
+            { status: 409 },
+          ),
+        ),
+      )
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Resolve' }))
+
+      expect(
+        await screen.findByText('Resolve is a move out of Pending, and this ticket is Resolved.'),
+      ).toBeInTheDocument()
+    })
   })
 })

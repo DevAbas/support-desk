@@ -1,32 +1,60 @@
 import { useState } from 'react'
-import { Button, Select, Toolbar } from '@support-desk/ui'
-import { TICKET_STATUSES, TICKET_STATUS_LABELS, type TicketStatus } from '@support-desk/shared'
-
-const statusOptions = TICKET_STATUSES.map((status) => ({
-  value: status,
-  label: TICKET_STATUS_LABELS[status],
-}))
+import { Button, Select, Toolbar, type SelectOption } from '@support-desk/ui'
+import {
+  ticketMoveNeedsReason,
+  ticketTransition,
+  TICKET_STATUS_LABELS,
+  TICKET_TRANSITION_IDS,
+  type TicketTransition,
+  type TicketTransitionId,
+} from '@support-desk/shared'
+import { TicketMoveReasonDialog } from './TicketMoveReasonDialog'
 
 /**
- * The status a bulk edit opens on, and goes back to once one has landed.
+ * Every move, named by where it starts.
+ *
+ * A selection spans statuses, so "Resolve" on its own does not say which of the
+ * ticked rows it is about. Naming the status it comes out of turns the option
+ * into a sentence about a subset — "Resolve (from Pending)" is exactly the rows
+ * it will reach — which is why this bar does not need to work out counts in
+ * advance to be honest about a mixed selection. It applies the move where the
+ * move applies, and `BulkMoveReport` says what that turned out to be.
+ *
+ * Every move is offered, because this bar is administrators' only: the bulk
+ * endpoint is behind the same gate as the other two, and an admin may make all
+ * six. A role that could make some but not others would read this list off the
+ * server, the way the detail card does.
+ */
+const moveOptions: readonly SelectOption<TicketTransitionId>[] = TICKET_TRANSITION_IDS.map((id) => {
+  const transition = ticketTransition(id)
+
+  return {
+    value: id,
+    label: `${transition.label} (from ${TICKET_STATUS_LABELS[transition.from]})`,
+  }
+})
+
+/**
+ * The move a bulk edit opens on, and goes back to once one has landed.
  *
  * A default is safe here where `CustomersBulkActionsBar` deliberately has none.
  * That bar opens on a placeholder because a default there is one click from
- * moving accounts onto Free — a billing change nobody asked for, and no plan is
- * the obvious one to land on. A status is none of those things: it is reversible
- * from the same bar, and working a queue in bulk is nearly always working it
- * down to resolved. The reasoning still holds, so the default stays.
+ * moving accounts onto Free — a billing change nobody asked for. A move is not
+ * that: it is reversible from the same bar, it is refused where it does not
+ * apply, and working a queue in bulk is nearly always working it down to
+ * resolved. The reasoning still holds; it is a move now rather than a status.
  */
-const DEFAULT_STATUS: TicketStatus = 'resolved'
+const DEFAULT_MOVE: TicketTransitionId = 'resolve'
 
 interface BulkActionsBarProps {
   selectedCount: number
   /**
-   * Handed the status to apply and a callback to run once it has landed, which
-   * is when the select goes back to `DEFAULT_STATUS`. A status left on screen
-   * after the rows have moved reads as a change still waiting to be applied.
+   * Handed the move to make and whatever reason was collected for it.
+   *
+   * What the move turned out to do is not handed back: it is reported from the
+   * mutation by `BulkMoveReport`, which outlives this bar — see the note there.
    */
-  onApplyStatus: (status: TicketStatus, onApplied: () => void) => void
+  onApplyMove: (move: TicketTransitionId, reason: string | undefined) => void
   onDelete: () => void
   isBusy?: boolean
 }
@@ -34,42 +62,67 @@ interface BulkActionsBarProps {
 /** Admin-only. The caller decides whether to render it; see TicketListPage. */
 export function BulkActionsBar({
   selectedCount,
-  onApplyStatus,
+  onApplyMove,
   onDelete,
   isBusy = false,
 }: BulkActionsBarProps) {
-  const [status, setStatus] = useState<TicketStatus>(DEFAULT_STATUS)
+  const [move, setMove] = useState<TicketTransitionId>(DEFAULT_MOVE)
+  const [asking, setAsking] = useState<TicketTransition | null>(null)
+
+  function apply(reason?: string) {
+    setAsking(null)
+    onApplyMove(move, reason)
+    // A move left on screen after the rows have gone reads as a change still
+    // waiting to be applied.
+    setMove(DEFAULT_MOVE)
+  }
+
+  function handleApply() {
+    if (ticketMoveNeedsReason(move)) {
+      setAsking(ticketTransition(move))
+      return
+    }
+
+    apply()
+  }
 
   return (
-    <Toolbar
-      aria-label="Bulk actions"
-      role="group"
-      className="items-end justify-between bg-primary-subtle"
-    >
-      <p className="text-body font-medium text-primary-subtle-fg">
-        {selectedCount} {selectedCount === 1 ? 'ticket' : 'tickets'} selected
-      </p>
+    <>
+      <Toolbar
+        aria-label="Bulk actions"
+        role="group"
+        className="items-end justify-between bg-primary-subtle"
+      >
+        <p className="text-body font-medium text-primary-subtle-fg">
+          {selectedCount} {selectedCount === 1 ? 'ticket' : 'tickets'} selected
+        </p>
 
-      <div className="flex flex-wrap items-end gap-2">
-        <Select
-          label="Set status to"
-          options={statusOptions}
-          value={status}
-          onChange={(event) => setStatus(event.target.value as TicketStatus)}
-          className="w-40"
-          disabled={isBusy}
+        <div className="flex flex-wrap items-end gap-2">
+          <Select
+            label="Move"
+            options={moveOptions}
+            value={move}
+            onChange={(event) => setMove(event.target.value as TicketTransitionId)}
+            className="w-56"
+            disabled={isBusy}
+          />
+          <Button size="md" onClick={handleApply} disabled={isBusy}>
+            Apply
+          </Button>
+          <Button variant="danger" size="md" onClick={onDelete} disabled={isBusy}>
+            Delete selected
+          </Button>
+        </div>
+      </Toolbar>
+
+      {asking ? (
+        <TicketMoveReasonDialog
+          transition={asking}
+          isBusy={isBusy}
+          onConfirm={(reason) => apply(reason)}
+          onClose={() => setAsking(null)}
         />
-        <Button
-          size="md"
-          onClick={() => onApplyStatus(status, () => setStatus(DEFAULT_STATUS))}
-          disabled={isBusy}
-        >
-          Apply
-        </Button>
-        <Button variant="danger" size="md" onClick={onDelete} disabled={isBusy}>
-          Delete selected
-        </Button>
-      </div>
-    </Toolbar>
+      ) : null}
+    </>
   )
 }

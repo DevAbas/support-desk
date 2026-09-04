@@ -8,33 +8,24 @@ import {
   ConfirmDialog,
   Heading,
   Icon,
-  Select,
   StateMessage,
   Text,
 } from '@support-desk/ui'
 import { toErrorMessage } from '@/lib/api/http'
 import { formatDateTime } from '@/lib/format'
-import {
-  TICKET_STATUSES,
-  TICKET_STATUS_LABELS,
-  type TicketStatus,
-} from '@support-desk/shared'
 import { ROLE_LABELS } from '@/features/roles/role.types'
 import { useRole } from '@/features/roles/useRole'
 import { AssigneeForm } from './components/AssigneeForm'
 import { CommentForm } from './components/CommentForm'
 import { CommentList } from './components/CommentList'
+import { TicketHistoryCard } from './components/TicketHistoryCard'
+import { TicketMovesCard } from './components/TicketMovesCard'
 import { TicketPriorityBadge } from './components/TicketPriorityBadge'
 import { TicketStatusBadge } from './components/TicketStatusBadge'
 import { useAddComment } from './hooks/useAddComment'
 import { useDeleteTicket } from './hooks/useDeleteTicket'
 import { useTicket } from './hooks/useTicket'
 import { useUpdateTicket } from './hooks/useUpdateTicket'
-
-const statusOptions = TICKET_STATUSES.map((status) => ({
-  value: status,
-  label: TICKET_STATUS_LABELS[status],
-}))
 
 export function TicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>()
@@ -58,12 +49,6 @@ export function TicketDetailPage() {
       : query.isError
         ? toErrorMessage(query.error, 'Could not load this ticket.')
         : null
-
-  function handleStatusChange(nextStatus: TicketStatus) {
-    if (ticket) {
-      updateTicket.mutate({ id: ticket.id, patch: { status: nextStatus } })
-    }
-  }
 
   async function handleReassign(assignee: string) {
     if (ticket) {
@@ -169,19 +154,10 @@ export function TicketDetailPage() {
         </div>
 
         <div className="flex h-fit flex-col gap-6">
-          <Card>
-            <CardHeader title="Status" />
-            <CardBody>
-              <Select
-                label="Current status"
-                options={statusOptions}
-                value={ticket.status}
-                disabled={updateTicket.isPending}
-                hint={updateTicket.isPending ? 'Saving…' : 'Changes are saved immediately.'}
-                onChange={(event) => handleStatusChange(event.target.value as TicketStatus)}
-              />
-            </CardBody>
-          </Card>
+          {/* Where the ticket is and what can be done to it next. The card
+              owns its own query and mutation, because what a ticket can do is
+              one question asked in one place rather than state passed down. */}
+          <TicketMovesCard ticket={ticket} />
 
           <Card>
             <CardHeader title="Assignee" description="Hand this ticket to someone else." />
@@ -193,6 +169,8 @@ export function TicketDetailPage() {
               />
             </CardBody>
           </Card>
+
+          <TicketHistoryCard history={ticket.history} />
         </div>
       </div>
 

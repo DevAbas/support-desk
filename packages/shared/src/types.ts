@@ -4,6 +4,18 @@ export const ROLES = ['agent', 'admin'] as const
 
 export type Role = (typeof ROLES)[number]
 
+/**
+ * The four statuses, **in workflow order**.
+ *
+ * They were always written in this order and it was always the order support
+ * work happens in; what changed is that the order is now load-bearing —
+ * `ticketStatusRank` in `workflow.ts` reads position out of this array, and a
+ * move that lowers the rank is a move that has to say why.
+ *
+ * Nothing that reads this array for its members has to know that. The filters,
+ * the bulk bar, the saved views, the reports and the CSV export all want the set
+ * of statuses, and the set is unchanged.
+ */
 export const TICKET_STATUSES = ['open', 'pending', 'resolved', 'closed'] as const
 
 export type TicketStatus = (typeof TICKET_STATUSES)[number]
@@ -11,6 +23,67 @@ export type TicketStatus = (typeof TICKET_STATUSES)[number]
 export const TICKET_PRIORITIES = ['low', 'medium', 'high'] as const
 
 export type TicketPriority = (typeof TICKET_PRIORITIES)[number]
+
+/**
+ * The assignee a ticket carries when nobody owns it.
+ *
+ * An assignee is free text in this domain — there is no roster to pick from — so
+ * "nobody" has to be a value that string can take rather than an absent field,
+ * and the queue has always spelled it this way. It is a constant now because the
+ * workflow reads it: `assigned` is the condition that stops a ticket being
+ * worked before someone owns it, and a condition comparing against a literal
+ * typed out in three places stops holding the day one of them is spelled
+ * differently.
+ */
+export const UNASSIGNED = 'Unassigned'
+
+/**
+ * The named moves between statuses, in the order an interface should offer them.
+ *
+ * The names are domain vocabulary the same way the statuses are — a support desk
+ * talks about resolving a ticket and reopening one — so they live here, beside
+ * them. What each move connects, who may make it and what has to be true first
+ * is the workflow, and that is `workflow.ts`.
+ *
+ * Forward moves come first within each status, so a screen offering the moves out
+ * of `resolved` puts Close ahead of Not fixed without deciding an order of its own.
+ */
+export const TICKET_TRANSITION_IDS = [
+  'start',
+  'resolve',
+  'close',
+  'reject',
+  'release',
+  'reopen',
+] as const
+
+export type TicketTransitionId = (typeof TICKET_TRANSITION_IDS)[number]
+
+/**
+ * One move a ticket has made, as it is kept.
+ *
+ * The history exists because of the moves that go backwards. A ticket that is
+ * reopened, or whose resolution is rejected, is a ticket somebody has to pick up
+ * again, and the only useful answer to "why is this open again?" is the sentence
+ * the person who reopened it was made to write. Keeping the sentence is what
+ * makes asking for it worth anything, and the next person to open the ticket is
+ * who it is kept for.
+ *
+ * `reason` is null where the move required none. It is not the empty string,
+ * because "no reason was asked for" and "a reason was asked for and left blank"
+ * are different facts and the second one cannot be stored.
+ */
+export interface TicketMove {
+  id: string
+  transition: TicketTransitionId
+  from: TicketStatus
+  to: TicketStatus
+  /** Whoever made it, by name — the same names the queue assigns tickets to. */
+  by: string
+  reason: string | null
+  /** ISO 8601 timestamp. */
+  at: string
+}
 
 export interface TicketComment {
   id: string
@@ -30,6 +103,14 @@ export interface Ticket {
   /** ISO 8601 timestamp. */
   createdAt: string
   comments: TicketComment[]
+  /**
+   * Every move this ticket has made, oldest first.
+   *
+   * Empty on a ticket that has not moved since it was raised, which includes
+   * every seeded ticket: the seed puts tickets straight into the status they are
+   * in, and a history invented for them would be a record of moves nobody made.
+   */
+  history: TicketMove[]
 }
 
 export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {

@@ -3,8 +3,10 @@ import {
   ROLES,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
+  TICKET_TRANSITION_IDS,
   type Ticket,
   type TicketComment,
+  type TicketMove,
 } from './types'
 
 /**
@@ -24,6 +26,18 @@ export const ticketPrioritySchema = z.enum(TICKET_PRIORITIES)
 
 export const roleSchema = z.enum(ROLES)
 
+/**
+ * The named moves, on the wire.
+ *
+ * It is here rather than in `workflow.ts` beside the workflow itself for the
+ * same reason `ticketStatusSchema` is here: a ticket carries its history, so the
+ * ticket schema needs this one, and a contract that imported the workflow while
+ * the workflow imported the contract would be a cycle. The wire enum for a
+ * domain union lives with the other wire enums; what the moves connect lives
+ * with the workflow.
+ */
+export const ticketTransitionIdSchema = z.enum(TICKET_TRANSITION_IDS)
+
 /** `all` is the widening the list screen uses for "do not filter on this". */
 export const statusFilterSchema = z.enum([...TICKET_STATUSES, 'all'] as const)
 
@@ -41,6 +55,16 @@ export const ticketCommentSchema: z.ZodType<TicketComment> = z.object({
   createdAt: z.iso.datetime(),
 })
 
+export const ticketMoveSchema: z.ZodType<TicketMove> = z.object({
+  id: z.string(),
+  transition: ticketTransitionIdSchema,
+  from: ticketStatusSchema,
+  to: ticketStatusSchema,
+  by: z.string(),
+  reason: z.string().nullable(),
+  at: z.iso.datetime(),
+})
+
 export const ticketSchema: z.ZodType<Ticket> = z.object({
   id: z.string(),
   title: z.string(),
@@ -50,6 +74,7 @@ export const ticketSchema: z.ZodType<Ticket> = z.object({
   assignee: z.string(),
   createdAt: z.iso.datetime(),
   comments: z.array(ticketCommentSchema),
+  history: z.array(ticketMoveSchema),
 })
 
 /**
@@ -94,15 +119,22 @@ export const createTicketBodySchema = z.object({
 
 export type CreateTicketBody = z.infer<typeof createTicketBodySchema>
 
-/** A patch. Every field is optional, but an empty patch is not a valid request. */
+/**
+ * A patch. Every field is optional, but an empty patch is not a valid request.
+ *
+ * **There is no `status` here, and that is the point of the workflow.** A status
+ * is a position rather than a field, so it is reached by making a named move —
+ * `POST /api/tickets/:id/moves`, in `workflow.ts` — and not by writing a value
+ * over the one that is there. Leaving a second door open that set it directly
+ * would make every condition in the workflow a suggestion.
+ */
 export const updateTicketBodySchema = z
   .object({
-    status: ticketStatusSchema.optional(),
     priority: ticketPrioritySchema.optional(),
     assignee: z.string().trim().min(1).max(120).optional(),
   })
   .refine((patch) => Object.values(patch).some((value) => value !== undefined), {
-    message: 'Provide at least one of status, priority or assignee.',
+    message: 'Provide at least one of priority or assignee.',
   })
 
 export type UpdateTicketBody = z.infer<typeof updateTicketBodySchema>
@@ -114,15 +146,12 @@ export const addCommentBodySchema = z.object({
 
 export type AddCommentBody = z.infer<typeof addCommentBodySchema>
 
-const bulkIdsSchema = z.object({
+/** Exported so `workflow.ts` extends the same bound rather than restating it. */
+export const bulkTicketIdsSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(MAX_PAGE_SIZE),
 })
 
-export const bulkUpdateBodySchema = bulkIdsSchema.extend({ status: ticketStatusSchema })
-
-export type BulkUpdateBody = z.infer<typeof bulkUpdateBodySchema>
-
-export const bulkDeleteBodySchema = bulkIdsSchema
+export const bulkDeleteBodySchema = bulkTicketIdsSchema
 
 export type BulkDeleteBody = z.infer<typeof bulkDeleteBodySchema>
 
