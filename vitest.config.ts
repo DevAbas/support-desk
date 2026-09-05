@@ -19,6 +19,18 @@ export default defineConfig({
           include: ['src/**/*.test.js'],
         },
       },
+      // The duplication check is the other harness tool with logic of its own,
+      // and the one whose threshold is a number somebody chose. Its tests pin
+      // both halves: that a copied-and-renamed file is found, and — measured, in
+      // named pairs — what the threshold is set too high to see.
+      {
+        test: {
+          name: 'duplication-check',
+          root: './internal/duplication-check',
+          environment: 'node',
+          include: ['src/**/*.test.js'],
+        },
+      },
     ],
   },
 })

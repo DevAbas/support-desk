@@ -111,6 +111,10 @@ Promotion is one edit to `ROLLOUT` in `src/index.js`, visible in a diff.
 | `no-glyph-icons` | 3 | `warn` | `warn` | when the count reaches 0 |
 | `no-raw-type-classes` | 0 | `warn` | **`error`** | promoted |
 | `no-primitive-class-copying` | 0 | `warn` | **`error`** | promoted |
+| `require-list-role` | 0 | `warn` | **`error`** | promoted, four fixed |
+| `aria-modal-needs-focus-trap` | 0 | `warn` | **`error`** | promoted |
+| `doc-path-exists` | 0 | `warn` | **`error`** | promoted, six fixed |
+| `doc-symbol-exists` | 0 | `warn` | **`error`** | promoted |
 | `harness/max-lines-per-function` | 0 | `warn` | **`error`** | promoted |
 | `harness/complexity` | 0 | `warn` | **`error`** | promoted |
 | `harness/max-depth` | 0 | `warn` | **`error`** | promoted |
@@ -120,6 +124,14 @@ Promotion is one edit to `ROLLOUT` in `src/index.js`, visible in a diff.
 The four counting rules are at zero because their thresholds were chosen to put
 them there — see [Thresholds](#thresholds) below. That is the ratchet's starting
 position, not a clean bill of health.
+
+Three of the four rules added with the sensor layer reached zero the same way
+`no-raw-type-classes` did — by the violations being fixed in the change that
+added the rule. `require-list-role` found four, `doc-path-exists` found six, and
+both are recorded in `ROLLOUT` with what they were. `aria-modal-needs-focus-trap`
+and `doc-symbol-exists` were clean on their first run and are ratchets rather
+than cleanups; that is a fair thing for a rule to be, and the entry says which it
+is.
 
 `no-raw-type-classes` is the first rule to reach zero the other way, by the
 violations being fixed, and it is now an error in `strict`. The order that
@@ -314,6 +326,211 @@ Only raw elements are matched. `<Card className="... px-5 py-4">` is composition
 — `StatCard` pads a `Card` to the card scale, which is the scale used by the
 thing it belongs to. The files that define `Card` and `StateMessage` are exempt,
 because writing the class string is what a primitive is.
+
+---
+
+# The sensor rules
+
+The three rules above read the design system. These four read something else: two
+of them read what the markup will mean to somebody not looking at the screen, and
+two read whether the prose beside the code still describes it. They arrived with
+the sensor layer, alongside the mutation run, the duplication check and the axe
+sweeps, and the argument for all of it is in the root README.
+
+## `require-list-role`
+
+**A list element whose own layout CSS has taken its list semantics away.**
+
+`packages/ui/README.md` has stated this rule in prose since `List` was built, and
+stated it about one component:
+
+> `List` … also sets `role="list"` explicitly, because taking the bullets off
+> takes the list semantics with them in some browsers.
+
+`List` does set it. Four hand-written lists in `apps/web` did not — the main
+navigation, the saved views sidebar, the comment list and the ticket history —
+and every one of them carried a `flex` class, which does the same thing to a
+`<ul>` in the same browsers that `list-style: none` does. So the app's navigation
+announced itself as four unrelated links rather than a list of four, and a
+ticket's history as loose paragraphs rather than an ordered list of moves.
+
+```tsx
+// Bad
+<ul className="flex items-center gap-1">{items}</ul>
+
+// Good
+<ul role="list" className="flex items-center gap-1">{items}</ul>
+<List label="Customers">{rows}</List>
+```
+
+**Prose stated about one component does not travel to the four places that never
+imported it.** That is the whole reason this is a rule and not a paragraph, and
+it is the same lesson `no-raw-type-classes` learned about scope.
+
+All four are fixed on the branch that added the rule, so it ships promoted.
+
+**Known limitations.** The attribute has to be written literally: `<ul {...props}>`
+is reported even where the spread carries a role, because a semantic that is not
+visible where the element is was the defect in the first place. Any explicit
+`role` satisfies it — `listbox`, `menu`, `none` — since writing one is a decision
+somebody made, and this rule catches the absence of a decision rather than a
+wrong one. It does not read CSS, so a `<ul>` with default styling is reported
+too; telling the two apart means resolving Tailwind through a theme at lint time,
+and requiring the word everywhere costs one attribute. And it does not check that
+the list has a *name*, which `List` requires and which sixty unattributed rows
+need as much as they need the role.
+
+**And axe does not catch this**, which is worth knowing before trusting either
+layer alone. Its `list` rule checks that a `<ul>` contains `<li>` children, and
+all four of these did. The failure is a browser behaviour rather than an ARIA
+error, so it is only visible in the source.
+
+## `aria-modal-needs-focus-trap`
+
+**A claim that the page behind is gone, with nothing making it so.**
+
+`aria-modal="true"` does one thing: it tells a screen reader that everything
+outside this element is not there. It does not make that true for anybody else. A
+keyboard walks straight out of a dialog that only says it is modal, into a page
+the reader has just been told does not exist, with no way back except finding the
+dialog again — and nothing on screen changes to say it happened.
+
+`packages/ui/README.md` puts it exactly:
+
+> The trap is the other half of `aria-modal`, which says the rest of the page is
+> inert: without it that is a claim the keyboard immediately contradicts.
+
+This repository has been on both sides of it. `Modal` and `Drawer` each carried
+their own `aria-modal` with no trap under it; the fix collapsed both onto
+`Dialog`, which sets the attribute once and calls `useFocusTrap` eleven lines
+earlier. The attribute now appears in exactly one source file, and that file
+traps.
+
+**So this rule catches nothing today, and that is the point of it.** The defect
+was written twice, was closed by a refactor rather than by a rule, and nothing
+stopped the third time — a component that needs a dialog and reaches for the
+attribute instead of the primitive. The pairing is invisible to `tsc`, invisible
+to a screenshot, and invisible to axe, which reads the attribute and cannot press
+Tab.
+
+**Known limitations.** It checks the file, not the element: a file containing
+both an `aria-modal` and a `useFocusTrap` passes even if the trap belongs to
+something else. Following a ref from an attribute to a hook call is a data-flow
+question this pass cannot answer, and the looser check still forces the two to be
+written where a reviewer sees both. `useFocusTrap` is matched by name, so a trap
+implemented another way — `inert` on the page behind, a library — is reported,
+and the honest fix is an exemption in the rule file with the reason attached. And
+it says nothing about the rest of the dialog contract: Escape, focus moved in on
+open, focus restored on close, the accessible name. Those are asserted against
+the real DOM in `Dialog.test.tsx`, which is the layer that can.
+
+## `doc-path-exists`
+
+**A comment or a README citing a file that is not there.**
+
+Prose contradicting the code beside it is the largest recurring category of
+defect in this repository and was the only one with nothing watching it. Most of
+it cannot be caught — "a glance should not be a history entry" is a claim about
+behaviour, and no tool is going to check it. A file path is the exception: it is
+a *reference*, it either resolves or it does not, and when it stops resolving the
+sentence holding it has almost always gone stale with it.
+
+Six were wrong, and every one dated from a structural move the prose was not
+moved with. Five in the root README, which still described the `src/design-system/`
+and `src/lib/` of the pre-workspace layout — one of them a Markdown link, so the
+README's own "read this first" pointer was a 404. One in
+`apps/web/vite.config.ts`, which said its port was kept in step with a file under
+`server/` two commits after `server/` became `apps/api/`. All six are corrected on
+the branch that added the rule.
+
+It runs over TypeScript and JavaScript comments and over Markdown, through
+`@eslint/markdown`'s `commonmark` language — the same rule file returns visitors
+for a Markdown `root` as well as a `Program`. A rule that read docblocks and
+stopped at the README would report zero for the four files it was mostly written
+for.
+
+**Resolution is deliberately generous**, and this is the setting to argue with if
+the rule is ever wrong. Five tiers are tried: the file's own directory, the
+nearest `src/`, the nearest package root, the repo root, and finally a suffix
+match against the whole tracked list. Prose has never written repo-relative paths
+— `packages/ui/README.md` says `primitives/Avatar/Avatar.tsx` and this plugin's
+README says `src/index.js` — and insisting on one form would turn a documentation
+convention into a hundred violations. Measured on this repository: 45 path tokens
+checked, 6 unresolved, 0 false positives.
+
+**Known limitations.** It checks that a file exists, not that the sentence is
+true — the root README's opening claim that this repository has "no `AGENTS.md`,
+no `CLAUDE.md`, no lint rule that enforces the design system" is three times
+false and cites nothing, and that is most of the category. The suffix tier
+accepts a path whose tail matches some other file. A path needs a slash and an
+extension to be seen at all, so a bare `package.json` and a bare
+`src/features/` are invisible, and so is `@support-desk/ui`, which is a package
+rather than a file. And it reads text, not code: a real import is
+`dependency-cruiser`'s and the module resolver's.
+
+## `doc-symbol-exists`
+
+**A docblock or a README naming a symbol that no longer resolves.**
+
+This codebase resolves its branching with lookup tables and then tells every
+reader to go and edit them. From AGENTS.md: "Adding a fifth status is an entry in
+`TICKET_STATUSES`, a label in `TICKET_STATUS_LABELS`…"; "`NAVIGATION_TARGETS` in
+the shared contract is the one, and the header nav, the route guard and the
+global search all read it." Those sentences are the instructions an agent
+follows. Twenty-five such citations exist across AGENTS.md, both READMEs and the
+docblocks, and a rename breaks all of them at once and silently — with `tsc`, the
+tests and the lint pass all clean, and the next agent reading the instruction and
+finding no such export.
+
+Clean on its first run: twenty-five cited, twenty-five resolve. A ratchet against
+a rename, not a cleanup after one.
+
+**Why only SCREAMING_SNAKE_CASE, with the numbers.** Because it is the only shape
+that can be resolved without an allowlist. Measured over every backticked token
+in every comment and Markdown file here, against every identifier appearing
+anywhere in the code:
+
+| Shape | Cited | Unresolved | Of those, real |
+| --- | --- | --- | --- |
+| SCREAMING_SNAKE_CASE | 25 | 0 | — |
+| PascalCase | 426 | 30 | **0** |
+| camelCase | 193 | 71 | **0** |
+
+Every one of the hundred-and-one is prose citing something that is not this
+codebase's to declare: the platform (`Map`, `Date`, `AbortSignal`), a library
+(`MemoryRouter`, `useQuery`, `isPending`, `RuleTester`), the DOM (`className`,
+`htmlFor`), a keyboard (`Cmd`, `Ctrl`), a cookie attribute (`Strict`, `Secure`),
+or the *value* of a string rather than a name (`Unassigned`). Resolving those
+needs every symbol of every dependency, and **a rule that needs a hand-maintained
+allowlist to stay quiet is a rule that will be turned off.**
+
+SCREAMING_SNAKE_CASE is the shape this codebase reserves for its own tables. The
+restriction is not a heuristic about names; it is a statement about which
+citations this repository is in a position to check.
+
+**Known limitations.** It sees a quarter of the symbols cited and does not try
+for the rest: a renamed component, hook or function named in prose is not caught.
+Resolution is repo-wide rather than scoped, because AGENTS.md legitimately names
+`TICKET_STATUSES` and imports nothing. It needs the backticks — a backtick is
+what says "this is a name in this repository", and prose that backticks a
+convention, an acronym or a shell word is telling the rule something untrue. And
+it checks that the name exists, not that the sentence around it is true.
+
+## What both document rules index, and one thing worth knowing
+
+Both read one index, built in `src/docIndex.js` from
+`git ls-files --cached --others --exclude-standard`: every file a reader could
+open that git has not been told to ignore. `--others` is there deliberately —
+without it the index is what has been *committed*, and a file written five
+minutes ago does not exist yet, so a correct citation reads as stale until it is
+staged. That is the one behaviour guaranteed to get a sensor switched off.
+
+Two things are left out of the symbol index. **Comments**, because a name kept
+alive only by a second comment must not be what vouches for the first — that is a
+rename leaving two stale sentences agreeing with each other. And **test files**,
+for the sharper version of the same problem: a rule's own cases are strings, and
+a case asserting that some removed table no longer resolves would put that very
+name into the index and start passing for the wrong reason.
 
 ---
 

@@ -12,7 +12,7 @@ export function CommentList({ comments }: CommentListProps) {
   }
 
   return (
-    <ol className="flex flex-col gap-4">
+    <ol role="list" className="flex flex-col gap-4">
       {comments.map((comment) => (
         <li key={comment.id} className="rounded-element border border-border bg-surface-muted p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">

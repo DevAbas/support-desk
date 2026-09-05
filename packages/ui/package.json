@@ -17,6 +17,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@support-desk/a11y": "*",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.6",

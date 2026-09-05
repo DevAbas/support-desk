@@ -8,5 +8,10 @@
     "module": "nodenext",
     "allowImportingTsExtensions": true
   },
-  "include": ["vitest.config.ts", "apps/web/vite.config.ts", "packages/ui/vitest.config.ts"]
+  "include": [
+    "vitest.config.ts",
+    "vitest.mutation.config.ts",
+    "apps/web/vite.config.ts",
+    "packages/ui/vitest.config.ts"
+  ]
 }

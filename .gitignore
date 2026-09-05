@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Sensor output: coverage, the mutation report, and Stryker's sandbox.
+coverage
+reports
+.stryker-tmp
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

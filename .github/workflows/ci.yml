@@ -1,0 +1,93 @@
+# The slow half of the gate.
+#
+# Until this file existed, nothing in this repository ran automatically. Every
+# check was a hand-run npm script — and `eslint.config.js` has been promoting its
+# rules to errors on `process.env.CI === 'true'` for four commits against a CI
+# that did not exist, so the strict tier had never once run. That is the gap this
+# closes, and it is why the lint step below is a plain `npm run lint`: GitHub
+# sets `CI=true`, which is what makes it strict.
+#
+# What is here and what is not
+# ----------------------------
+# The two fast checks — typecheck and lint — also run in `.claude/hooks/check-file.mjs`
+# after an agent writes a file, because a failure that arrives while the agent is
+# still working is one it corrects itself. They run again here because a hook is
+# a courtesy to whoever has it installed, not a gate.
+#
+# Everything else is here only. Each reads the whole repository at once and means
+# nothing about a single file: the test suite is twelve seconds, the boundary
+# graph and the duplication check are cross-file by definition, and the mutation
+# run is minutes. README.md has the table.
+#
+# There is no commit hook, deliberately. See README.md for the argument.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    name: typecheck, lint, boundaries, duplication, tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # `CI=true` is set by the runner, so this is the strict tier: every rule
+      # the codebase already passes is an error here. See the rollout table in
+      # internal/eslint-plugin-harness/README.md for which are not yet.
+      - name: Lint
+        run: npm run lint
+
+      - name: Workspace boundaries
+        run: npm run lint:boundaries
+
+      - name: Structural duplication
+        run: npm run lint:duplication
+
+      - name: Tests
+        run: npm test
+
+  mutation:
+    name: mutation score
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # A job of its own because it is the only check measured in tens of
+      # minutes: it runs the whole suite once per mutant, ~77 tests each. The
+      # five-minute proxy — `npm run test:mutation:fast` — is for the loop; this
+      # is the measurement, and the gate runs the measurement. See
+      # stryker.config.json for what it asks that coverage cannot.
+      - name: Mutation testing
+        run: npm run test:mutation
+        timeout-minutes: 120
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: reports/mutation
+          if-no-files-found: ignore

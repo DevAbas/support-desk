@@ -3,11 +3,24 @@
 A small support-tickets admin panel built on its own design system. It exists as a
 reference codebase for a video series on harness engineering for frontend projects.
 
-The point of the repo is what it *does not* have. There is no `AGENTS.md`, no
-`CLAUDE.md`, no lint rule that enforces the design system, and no other machine-readable
-guidance. The rules for working in this codebase are written in prose in
-[`src/design-system/README.md`](src/design-system/README.md), and nothing forces anyone
-— human or agent — to read them.
+It started as a repo whose point was what it *did not* have: no `AGENTS.md`, no
+lint rule that enforced the design system, no machine-readable guidance at all. The
+rules were written in prose in [`packages/ui/README.md`](packages/ui/README.md), and
+nothing forced anyone — human or agent — to read them.
+
+The harness is what has been added to it since, one layer at a time, each one
+answering a defect that the last layer could not see:
+
+| Layer | What it constrains | Where it lives |
+| --- | --- | --- |
+| Primitives and tokens | what there is to reach for | `packages/ui` |
+| Lint rules and boundaries | what can be written | `internal/eslint-plugin-harness`, `.dependency-cruiser.cjs` |
+| AGENTS.md | the decisions no tool can check | `AGENTS.md` |
+| **Sensors** | **whether what was written does what it claims** | see [Sensors](#sensors) |
+
+The first three constrain the writing. None of them asks whether the result is
+correct, accessible, original or honestly described, which is what the fourth is
+for.
 
 ## Stack
 
@@ -34,13 +47,223 @@ proxies `/api` to it.
 | `npm run lint` | ESLint, warnings only |
 | `npm run lint:strict` | ESLint with the rules CI enforces as errors |
 | `npm run lint:boundaries` | dependency-cruiser: the workspace boundaries |
+| `npm run lint:duplication` | Structural duplication: files copied and renamed |
 | `npm run test` | Run the test suite once |
 | `npm run test:watch` | Run the test suite in watch mode |
+| `npm run test:mutation` | Stryker: whether the tests would notice the code being wrong |
+| `npm run test:mutation:fast` | The same, over a smaller test surface — five minutes rather than eighty |
 
 `lint` and `lint:strict` run the same rules at two severities. `internal/eslint-plugin-harness`
 holds the ones specific to this codebase, and its README says what each is for
 and why — every one of them comes from a defect that was recorded here more than
 once and caught by nothing.
+
+`lint:duplication` and `test:mutation` are the two sensors that are not lint rules;
+`internal/duplication-check/README.md` and `stryker.config.json` say what each
+measures and what it cannot. Neither is a check you should have to remember: the
+fast ones run after every file an agent writes, and all of them run in CI. See
+[Sensors](#sensors).
+
+## Sensors
+
+The primitives, the lint rules and `AGENTS.md` all constrain what gets *written*.
+Nothing checked whether what was written does what it claims. These five do, and
+each one exists because there is a class of defect that passes `tsc`, passes the
+tests, passes the lint pass and passes review.
+
+| Sensor | The failure it catches | Tool |
+| --- | --- | --- |
+| Mutation testing | A test runs a line, asserts nothing that pins it, and the line reports as covered. | Stryker, `stryker.config.json` |
+| Accessibility, static | ARIA written but not wired, where the source is what shows it. | Two rules in `internal/eslint-plugin-harness` |
+| Accessibility, rendered | The same, where only the DOM shows it. | axe-core, `internal/a11y` |
+| Duplication | A file written by copying another and changing the names. | `internal/duplication-check` |
+| Document freshness | Prose beside code that the code has moved out from under. | Two rules in `internal/eslint-plugin-harness` |
+
+Each has a README or a config comment saying what it catches, what it cannot, and
+what was found on its first run. Those limitation sections are the load-bearing
+part: a sensor whose blind spots are undocumented gets read as covering
+everything.
+
+### Where each one runs, and why there
+
+A check is worth what it costs to act on, and that cost is set by when it
+arrives. There are two moments here and they take different checks.
+
+| Check | Agent hook | CI | Why |
+| --- | --- | --- | --- |
+| `tsc -b` | ✔ | ✔ | Incremental; a quarter of a second warm |
+| `eslint <file>` | ✔ | ✔ | ~1.3s for one file, 5s for the tree |
+| `npm test` | | ✔ | 12s, 703 tests. Too slow per write, too fast to skip on merge |
+| `lint:boundaries` | | ✔ | Whole module graph; meaningless for one file |
+| `lint:duplication` | | ✔ | Cross-file by definition — a copy needs both halves |
+| `test:mutation` | | ✔ | 81 minutes: it runs the suite once per mutant |
+
+**The fast two run in the agent's own loop**, from a `PostToolUse` hook in
+`.claude/settings.json` that calls `.claude/hooks/check-file.mjs` after every
+Write or Edit. An agent that finishes a task and hands back work that does not
+compile has already stopped; somebody reads the failure, comes back, and pays for
+a second trip through a context that has moved on. The same failure delivered one
+tool call after the file was written is a correction the agent makes itself,
+while it still remembers why it wrote the line.
+
+The hook runs the **strict** tier, because `internal/eslint-plugin-harness/README.md`
+already decided that: "an agent has no excuse for violating a stated rule, a human
+mid-edit does". Warnings do not block at either tier — a warning is a rule the
+codebase has not caught up with, recorded in `ROLLOUT`, and stopping an agent on
+one would teach it to fix somebody else's backlog mid-task.
+
+**Everything slow runs in CI**, in `.github/workflows/ci.yml`. That file also
+closes a gap that had been open for four commits: `eslint.config.js` promotes
+every rule to an error when `process.env.CI === 'true'`, and there was no CI to
+set it, so the strict tier had never once run.
+
+### Why there is no commit hook
+
+A commit hook is the obvious third place and it is the wrong one here, for two
+reasons.
+
+**It would not show up in a diff.** A `pre-commit` hook lives in `.git/hooks/`,
+which is not tracked — so nobody reviews it, and a fresh clone silently has no
+gate. That is exactly the failure this whole harness is built against. Making it
+tracked means adding husky or lefthook: a dependency whose entire job is to
+re-run, once, checks that CI is about to run anyway.
+
+**And the timing is wrong for the reader it would be for.** Nothing here commits
+during the work. An agent writes twenty files and commits at the end, if at all,
+so a pre-commit check fires after everything is already written — which is the
+moment the `PostToolUse` hook exists to beat. It would turn a correction the
+agent makes mid-task into a wall of failures at the point it was trying to stop.
+
+If this repository ever grew a workflow where a human commits repeatedly through
+a change, the argument would be worth revisiting. It does not have one.
+
+### What none of them see
+
+Worth stating plainly, because five green checks read as more than they are.
+
+- **Anything visual.** jsdom has no layout, so colour contrast, focus visibility,
+  target size and reflow are unchecked here and unchecked anywhere else in this
+  repository. `internal/a11y/README.md` names the rules this rules out.
+- **Whether prose is *true*.** The document rules check that a path resolves and
+  that a name is declared. A sentence that cites nothing and is simply wrong is
+  invisible, and that is most of the category.
+- **A partial copy.** The duplication check reports a file that is mostly another
+  file. One real finding sits below its threshold, measured and named in
+  `internal/duplication-check/README.md`.
+- **A defect in a test fixture.** Mutation testing mutates source. Where a
+  fixture's own shape makes a branch unreachable, no mutant can surface it — and
+  this repository has an instance, recorded below.
+- **Whether any of it is usable.** axe finds violations of rules. A screen can
+  pass every rule and still be impossible to work through.
+
+### What the first run of each found
+
+Recorded rather than fixed, except where noted, so that the sensors could ship
+without a refactor riding along inside them.
+
+| Sensor | Found | Status |
+| --- | --- | --- |
+| `require-list-role` | 4 lists laid out with `flex` and no `role="list"` | fixed on this branch |
+| `doc-path-exists` | 6 dead path citations, 5 in the root README | fixed on this branch |
+| `aria-modal-needs-focus-trap` | 0 | ratchet |
+| `doc-symbol-exists` | 0 of 25 citations unresolved | ratchet |
+| axe, screens | `region` on the two auth screens: they render outside `AppLayout`, so outside any landmark | recorded in `internal/a11y` |
+| axe, components | 0 | — |
+| Duplication | 12 pairs over the line; 3 of them real copies | recorded in `internal/duplication-check` |
+| Mutation | see below | recorded |
+
+### The mutation score, and what it found
+
+`npm run test:mutation` changes the code to be wrong — flips a comparison, empties
+a block, replaces a string — and reruns the tests. A change no test noticed is a
+line nothing was actually checking. Coverage asks whether a line ran; this asks
+whether anything would have minded it being wrong, which is the question a
+coverage percentage cannot ask and is routinely read as answering.
+
+Scoped to `packages/shared` plus the two files in `packages/ui` that are logic
+rather than markup. **487 mutants, 84.39% killed** on the first clean run, and the
+threshold is set from that rather than chosen: `break: 82`, with two points of
+slack because a few mutants in `workflow.ts` time out rather than being killed
+outright and a timeout scores as a kill.
+
+It costs **81 minutes**, at ~77 tests per mutant, because `packages/shared` is
+imported by very nearly every file in `apps/web`. That is a CI job of its own and
+it is not something to wait for while working, so there is a second tier beside
+it — `npm run test:mutation:fast`, the same mutants against `api`, `shared` and
+`ui` but not `web`, in **five minutes**. Two tiers of one check for two readers,
+which is what `lint` and `lint:strict` already are.
+
+**What the fast tier costs is measured, not assumed: 77.21% against 84.39%**, and
+`vitest.mutation.config.ts` has the per-file delta. It is worth reading, because
+the seven points are not spread evenly — `types.ts` goes from 100% to 33% and
+`navigation.ts` from 57% to 43%, while `reports.ts` and `contract.ts` do not move
+at all. Those two files are mostly *labels*, which are rendered and never served,
+so no API test can see them being wrong. The guess when that config was written
+was that the web tests were redundant; the numbers said otherwise, and they are
+in the file because a proxy whose error nobody has measured is just a smaller
+number.
+
+| File | Score | Survived |
+| --- | --- | --- |
+| `types.ts` | 100.00 | 0 |
+| `workflow.ts` | 96.73 | 5 |
+| `reports.ts` | 93.33 | **2** |
+| `search.ts` | 93.33 | 1 |
+| `customers.ts` | 93.02 | 3 |
+| `auth.ts` | 92.31 | 1 |
+| `contract.ts` | 88.24 | 6 |
+| `TabsContext.ts` | 90.00 | 1 |
+| `useFocusTrap.ts` | 68.75 | **22, and 3 unreachable** |
+| `cn.ts` | 63.16 | 7 |
+| `navigation.ts` | 56.90 | 25 |
+
+Two of those survivors are the reason this sensor exists, and **neither is fixed
+on this branch**: they are the evidence that it works, and a sensor shipped with
+nothing to catch has never been seen catching anything. Both are recorded here
+for a separate change.
+
+**`reports.ts:49` — a defect on a line reported at 100% statement coverage.**
+
+```
+-  return (Date.parse(range.to) - Date.parse(range.from)) / DAY_IN_MS <= MAX_REPORT_RANGE_DAYS
++  return (Date.parse(range.to) - Date.parse(range.from)) / DAY_IN_MS < MAX_REPORT_RANGE_DAYS
+```
+
+The range is inclusive at both ends — the file's own docstring says so — so its
+length in days is the difference plus one. The `+ 1` is missing, and the correct
+version of the same expression is eleven files away in
+`apps/web/src/features/reports/reportRanges.ts`. A 367-day range is accepted by a
+validator whose error message says the limit is 366. The line is executed on three
+API routes; the only test that touches it uses a range of about 912 days, so
+nothing pins the boundary, and `<=` → `<`, `366` → `365` and `366` → `367` all
+survive. The sibling predicate on line 45 has the same hole in miniature, and is
+the other survivor.
+
+**`useFocusTrap.ts:58-63` — a test that runs and cannot fail.** Reported not as
+survived but as **no coverage**: no test reaches those lines at all, so the block
+can be emptied and both calls in it deleted. There is a test named for it,
+`Dialog.test.tsx`'s "holds focus on itself when there is nothing in it to
+focus" — and `Dialog` always renders a close button, so "nothing to focus" is
+unreachable through its public API. Its own comment gives it away: "Only the close
+button, so every Tab lands back on it". Both its assertions are satisfied by the
+ordinary wrap path. The guard it is named for has never run.
+
+The rest of the survivors are honest test gaps rather than defects, and
+`navigation.ts` at 56.90% is where to start.
+
+### The one this cannot see
+
+`DateRangeField.test.tsx` declares two presets, and both end on the same date. The
+component compares ranges with `a.from === b.from && a.to === b.to`; delete the
+second half and every test still passes, because no two presets in the fixture
+differ only in their end date. **No mutant can surface this**, because the defect
+is in the fixture rather than the source, and mutation testing mutates source.
+
+It is not reachable from the real app either: the three presets in
+`reportRanges.ts` all end today, and `aria-pressed` appears in zero assertions
+across `apps/web`. So a comparison exists that nothing in this repository can
+distinguish from its own deletion — which is the shape of blind spot worth
+knowing about before reading 84% as 84% of anything.
 
 ## How it is laid out
 
@@ -60,12 +283,12 @@ presentation value; the mapping between them lives in the feature layer.
 ## Data
 
 `server/` is a Hono API over an in-memory store, seeded with the same 40 tickets from
-`src/lib/seed.ts`, generated deterministically so the list is identical on every
+`apps/api/src/seed.ts`, generated deterministically so the list is identical on every
 restart. Changes persist while the server is up and are lost when it restarts.
 
 Every request body and query string is validated at the boundary with zod, and every
 failure comes back in one shape: `{ error: { code, message, details? } }`. The schemas
-live in `src/lib/api/contract.ts` and are imported by both ends, so the server validates
+live in `packages/shared/src/contract.ts` and are imported by both ends, so the server validates
 requests and the client parses responses against the same definitions.
 
 The sixty seeded customers are generated the same way, from the same PRNG. They are
@@ -110,7 +333,7 @@ selection is bounded by the page it was made on, so select-all is a header cell.
 customer selection spans every page loaded so far and keeps spanning them as more
 arrive, so select-all lives on the actions bar and says how many it will tick.
 
-`src/design-system/README.md` covers why `Table` and
+`packages/ui/README.md` covers why `Table` and
 `List`, `Modal` and `Drawer`, `Select` and `MultiSelect` are pairs of primitives rather
 than one primitive with a prop.
 

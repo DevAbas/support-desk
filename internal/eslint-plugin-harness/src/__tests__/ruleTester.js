@@ -9,7 +9,10 @@
  */
 
 import { RuleTester } from 'eslint'
+import markdown from '@eslint/markdown'
 import tsParser from '@typescript-eslint/parser'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterAll, describe, it } from 'vitest'
 
 RuleTester.afterAll = afterAll
@@ -26,6 +29,36 @@ export function createRuleTester() {
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   })
+}
+
+/**
+ * A `RuleTester` for Markdown, through the language the config gives prose.
+ *
+ * The two document rules return visitors for a Markdown `root` as well as for a
+ * TypeScript `Program`, and both halves are exercised: a rule that reads
+ * docblocks and silently stops at the README is a rule that reports zero for the
+ * four files it was mostly written for.
+ */
+export function createMarkdownRuleTester() {
+  return new RuleTester({
+    plugins: { markdown },
+    language: 'markdown/commonmark',
+  })
+}
+
+/**
+ * The checkout this test file is in.
+ *
+ * The document rules resolve against the real repository — that is what they
+ * are — so their cases are given real paths and synthetic contents, rather than
+ * a fixture tree that would have to be kept in step with the real one to mean
+ * anything.
+ */
+export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..')
+
+/** An absolute path to a real file in this checkout. */
+export function repoFile(relative) {
+  return path.join(REPO_ROOT, relative)
 }
 
 /** A path inside `apps/web/src/features`, where feature code lives. */

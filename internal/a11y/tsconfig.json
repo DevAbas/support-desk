@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "../../node_modules/.tmp/ui.tsbuildinfo",
+    "tsBuildInfoFile": "../../node_modules/.tmp/a11y.tsbuildinfo",
     "noEmit": false,
     "emitDeclarationOnly": true,
     "declaration": true,
@@ -9,19 +9,10 @@
     "rootDir": "src",
     "outDir": "dist",
     "lib": ["ES2023", "DOM"],
-    "jsx": "react-jsx",
 
     /* Bundler mode */
     "module": "esnext",
     "moduleResolution": "bundler"
   },
-  "include": ["src"],
-  "references": [
-    {
-      "path": "../shared"
-    },
-    {
-      "path": "../../internal/a11y"
-    }
-  ]
+  "include": ["src"]
 }

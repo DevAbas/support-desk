@@ -33,7 +33,7 @@ export function TicketHistoryCard({ history }: TicketHistoryCardProps) {
         <StateMessage>Nothing yet. This ticket has not been moved.</StateMessage>
       ) : (
         <CardBody>
-          <ol className="flex flex-col gap-4">
+          <ol role="list" className="flex flex-col gap-4">
             {[...history].reverse().map((move) => (
               <TicketHistoryRow key={move.id} move={move} />
             ))}

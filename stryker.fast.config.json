@@ -1,0 +1,57 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": [
+    "The five-minute mutation run. `npm run test:mutation:fast`.",
+    "",
+    "Same mutants as stryker.config.json and a smaller test surface: api, shared and ui, but not",
+    "web. vitest.mutation.config.ts argues for that and measures what it costs \u2014 77.21% here",
+    "against 84.39% for the full run, with the whole gap in the two files that are mostly labels",
+    "and therefore only readable by a screen.",
+    "",
+    "It is for the loop, not the gate: five minutes is short enough to run after changing a",
+    "guard, and eighty-one is not. `break` is 75 rather than 82 because it is measuring less;",
+    "the number it is under is its own first clean run, the same way every other threshold in",
+    "this repository was set. CI runs the full one."
+  ],
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "packages/shared/src/**/*.ts",
+    "!packages/shared/src/index.ts",
+    "!packages/shared/src/**/*.test.ts",
+    "packages/ui/src/components/Dialog/useFocusTrap.ts",
+    "packages/ui/src/components/Tabs/TabsContext.ts"
+  ],
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "reports",
+    ".stryker-tmp",
+    "node_modules"
+  ],
+  "reporters": [
+    "progress",
+    "clear-text",
+    "html"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation-fast/index.html"
+  },
+  "clearTextReporter": {
+    "maxTestsToLog": 0
+  },
+  "tempDirName": ".stryker-tmp",
+  "timeoutMS": 20000,
+  "concurrency": 8,
+  "inPlace": true,
+  "thresholds": {
+    "high": 85,
+    "low": 77,
+    "break": 75
+  },
+  "dryRunTimeoutMinutes": 15,
+  "vitest": {
+    "configFile": "vitest.mutation.config.ts"
+  }
+}

@@ -4,7 +4,29 @@ Support Desk, a support-tickets admin panel on its own design system: `packages/
 renders, `apps/web` composes, `packages/shared` holds the contract. Everything a machine
 can check is enforced — `internal/eslint-plugin-harness/README.md` has the lint rules and
 the defect behind each, `packages/ui/README.md` the design system in full; check your work
-with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`. Below is the rest.
+with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`, `lint:duplication`.
+Typecheck and lint also run automatically after every file you write, so read what they
+say and fix it there rather than at the end. Below is the rest.
+
+## What the sensors ask of you
+
+Four checks read the result rather than the source, and each has a habit attached.
+`README.md` says where each one runs and what it cannot see.
+
+- Write the assertion that would fail. `npm run test:mutation:fast` changes the code to
+  be wrong and reports every change no test noticed, so a test that renders something and
+  asserts nothing raises coverage and scores zero. Five minutes; CI runs the full one.
+  Two things neither can see: a defect in a *fixture*, and anything outside `packages/`.
+- Give a fixture varied data. Where every row of a fixture carries the same value, the
+  comparison that reads it can be deleted and nothing fails. `DateRangeField.test.tsx`
+  has two presets ending on the same date, and half of `isSameRange` is unreachable
+  because of it.
+- Never copy a file to start a new one. `npm run lint:duplication` compares shape with
+  the names erased, so renaming does not hide it, and every pair over the line has to be
+  written down with an argument for why.
+- Cite a path, or a table by name — `TICKET_STATUSES`, `NAVIGATION_TARGETS` — only if it
+  still resolves. Both are lint errors, in Markdown as well as in a comment, and both are
+  how the root README came to describe a layout two refactors out of date.
 
 ## Button variants
 

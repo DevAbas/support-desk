@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-/** Kept in step with the port `server/main.ts` defaults to. */
+/** Kept in step with the port `apps/api/src/main.ts` defaults to. */
 const API_PORT = 8787
 
 // https://vite.dev/config/

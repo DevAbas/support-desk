@@ -21,6 +21,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@support-desk/a11y": "*",
     "@support-desk/api": "*",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",

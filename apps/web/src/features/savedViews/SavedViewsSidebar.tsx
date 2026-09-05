@@ -54,7 +54,7 @@ export function SavedViewsSidebar({
         <CardHeader title="Saved views" description="Filter combinations you come back to." />
 
         <CardBody className="p-2">
-          <ul className="flex flex-col gap-1">
+          <ul role="list" className="flex flex-col gap-1">
             <li className="flex items-center gap-1">
               <ViewButton
                 name={allLabel}

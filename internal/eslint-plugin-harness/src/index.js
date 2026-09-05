@@ -25,9 +25,13 @@
  * this table, visible in a diff.
  */
 
+import ariaModalNeedsFocusTrap from './rules/aria-modal-needs-focus-trap.js'
+import docPathExists from './rules/doc-path-exists.js'
+import docSymbolExists from './rules/doc-symbol-exists.js'
 import noGlyphIcons from './rules/no-glyph-icons.js'
 import noPrimitiveClassCopying from './rules/no-primitive-class-copying.js'
 import noRawTypeClasses from './rules/no-raw-type-classes.js'
+import requireListRole from './rules/require-list-role.js'
 import { thresholdRules } from './thresholdRules.js'
 
 /**
@@ -65,6 +69,47 @@ const ROLLOUT = {
     violations: 0,
     strict: 'error',
   },
+  'require-list-role': {
+    // Four when the rule was written — the main navigation, the saved views
+    // sidebar, the comment list and the ticket history — all four laid out with
+    // `flex`, which takes a list's semantics off in the same browsers that
+    // removing the bullets does. `packages/ui/README.md` has stated this rule in
+    // prose since `List` was built, and stated it only about `List`; none of the
+    // four ever imported `List`, so none of them ever read it. All four are
+    // fixed on the branch that added this rule, which is why it ships promoted.
+    violations: 0,
+    strict: 'error',
+  },
+  'aria-modal-needs-focus-trap': {
+    // Clean, and never anything else. `Modal` and `Drawer` each carried an
+    // unbacked `aria-modal` before they were collapsed onto `Dialog`, which now
+    // holds the only one in the codebase and calls `useFocusTrap` beside it.
+    // The rule is here because that pairing was restored by a refactor rather
+    // than by anything that would notice it coming apart again.
+    violations: 0,
+    strict: 'error',
+  },
+  'doc-path-exists': {
+    // Six when the rule was written, and every one of them the residue of a
+    // structural move the prose was not moved with: five in the root README,
+    // which still describes the `src/design-system/` and `src/lib/` of the
+    // pre-workspace layout — including the Markdown link on line 9, so the
+    // README's own "read this first" pointer was a 404 — and one in
+    // `apps/web/vite.config.ts`, which said its port was kept in step with a
+    // file under `server/` two commits after `server/` became `apps/api/`.
+    // All six are corrected on the branch that added this rule.
+    violations: 0,
+    strict: 'error',
+  },
+  'doc-symbol-exists': {
+    // Clean on the first run: twenty-five citations of a SCREAMING_SNAKE_CASE
+    // table across AGENTS.md, both READMEs and the docblocks, and all twenty-five
+    // resolve. It is a ratchet against a rename, not a cleanup after one — a
+    // rename of `TICKET_STATUSES` would leave every instruction that tells an
+    // agent to edit it pointing at nothing, with typecheck, tests and lint clean.
+    violations: 0,
+    strict: 'error',
+  },
 }
 
 const plugin = {
@@ -76,6 +121,10 @@ const plugin = {
     'no-glyph-icons': noGlyphIcons,
     'no-raw-type-classes': noRawTypeClasses,
     'no-primitive-class-copying': noPrimitiveClassCopying,
+    'require-list-role': requireListRole,
+    'aria-modal-needs-focus-trap': ariaModalNeedsFocusTrap,
+    'doc-path-exists': docPathExists,
+    'doc-symbol-exists': docSymbolExists,
     ...thresholdRules,
   },
   configs: {},

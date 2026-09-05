@@ -1,0 +1,90 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": [
+    "Mutation testing. `npm run test:mutation`, and see README.md for what it is for.",
+    "",
+    "The question coverage cannot ask. Coverage asks whether a line ran; mutation asks",
+    "whether anything would have noticed it being wrong. A test that renders a component",
+    "and asserts nothing about it takes the coverage of every line it touched to 100%, and",
+    "this repository has both halves of that already: a test named for a guard it cannot",
+    "reach, and an off-by-one on a line reported at 100% statements.",
+    "",
+    "Scope. `packages/shared` is the pure logic and the small surface, plus the two files in",
+    "`packages/ui` that are logic rather than markup. The 83 component files are out on",
+    "purpose: mutating a className string produces survivors by the hundred, all of them",
+    "the mutation score punishing a design system for having strings in it.",
+    "",
+    "The whole suite runs, and that is what makes this the measurement rather than a proxy.",
+    "packages/shared scores 90% statements under its own project and 100% under the full run,",
+    "because customers.ts, navigation.ts and reports.ts are covered second-hand through apps/api",
+    "and apps/web. It costs 81 minutes at ~77 tests per mutant, which is why it is a CI job of",
+    "its own and why there is a five-minute proxy beside it \u2014 `npm run test:mutation:fast`,",
+    "stryker.fast.config.json, and vitest.mutation.config.ts, which measures what that costs.",
+    "",
+    "inPlace, and it is not optional here. Stryker's default is to copy the repository into a",
+    "sandbox and mutate the copy. This is an npm-workspaces monorepo, so node_modules/@support-desk/*",
+    "are symlinks pointing back out at packages/ and apps/ \u2014 which means every test that imports",
+    "@support-desk/shared runs against the ORIGINAL file and never sees the mutant. The first full",
+    "run scored 39% with 186 mutants reported as having no coverage, including every mutant in",
+    "reports.ts, a file the API suite exercises on three routes. That number was not a weak test",
+    "suite; it was a sensor measuring the wrong copy of the code, and it is exactly the sort of",
+    "confidently-wrong figure a harness is supposed to stop rather than produce.",
+    "",
+    "In place, reports.ts goes from 0% with 30 uncovered to 93% with two survivors. The cost is",
+    "real: Stryker edits the working tree and restores it from .stryker-tmp/backup-* when it",
+    "finishes, so a run killed halfway leaves mutants in the source. Run it on a clean tree.",
+    "",
+    "The threshold is set from the first run rather than chosen, the same way the four counting",
+    "rules in eslint.config.js were set just above the worst function in the repository. The",
+    "first clean run scored 84.39%. `break` is 82 rather than 84 because a handful of mutants in",
+    "workflow.ts time out rather than being killed outright \u2014 a mutated transition table can make",
+    "the reachability test loop \u2014 and a timeout is scored as killed, so the total moves a point or",
+    "so between runs. Two points of slack, and the ratchet is lowering it, not raising it.",
+    "",
+    "This is the slowest thing in the repository: ~77 tests per mutant, because packages/shared is",
+    "imported by the whole web suite. It is a CI job of its own and it is not in the agent hook.",
+    "",
+    "dryRunTimeoutMinutes is raised from the default 5 because the initial pass runs all 703",
+    "tests once, instrumented for per-test coverage, and that is what makes the per-mutant runs",
+    "cheap afterwards. It timed out at the default and Stryker's message for that \u2014 'something",
+    "went wrong in the initial test run' \u2014 does not say so."
+  ],
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "packages/shared/src/**/*.ts",
+    "!packages/shared/src/index.ts",
+    "!packages/shared/src/**/*.test.ts",
+    "packages/ui/src/components/Dialog/useFocusTrap.ts",
+    "packages/ui/src/components/Tabs/TabsContext.ts"
+  ],
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "reports",
+    ".stryker-tmp",
+    "node_modules"
+  ],
+  "reporters": [
+    "progress",
+    "clear-text",
+    "html"
+  ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "clearTextReporter": {
+    "maxTestsToLog": 0
+  },
+  "tempDirName": ".stryker-tmp",
+  "timeoutMS": 20000,
+  "concurrency": 4,
+  "inPlace": true,
+  "thresholds": {
+    "high": 90,
+    "low": 84,
+    "break": 82
+  },
+  "dryRunTimeoutMinutes": 15
+}

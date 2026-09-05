@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import markdown from '@eslint/markdown'
 import globals from 'globals'
 import harness from '@support-desk/eslint-plugin-harness'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -21,6 +22,27 @@ const strict = process.env.CI === 'true' || process.env.HARNESS_STRICT_LINT === 
 
 /** The severity for a rule the codebase already passes. */
 const level = strict ? 'error' : 'warn'
+
+/** The harness config this run gets, and the two rules that also read prose. */
+const harnessConfig = strict ? harness.configs.strict : harness.configs.recommended
+
+/*
+ * The two document-freshness rules, at whatever severity the rollout gives them.
+ *
+ * They are the only rules here that are not about code, so they are the only
+ * ones that have to be named twice: once for TypeScript, where they read
+ * comments and arrive with the rest of the plugin, and once for Markdown, which
+ * is a different language and gets a config block of its own. The severities are
+ * read back off the plugin's own config rather than restated, so a rule demoted
+ * in `ROLLOUT` cannot stay an error over prose by being forgotten here.
+ *
+ * Only these two. Every other harness rule reads JSX and would be enabled and
+ * inert over Markdown, which reads as coverage that does not exist.
+ */
+const documentRules = {
+  'harness/doc-path-exists': harnessConfig.rules['harness/doc-path-exists'],
+  'harness/doc-symbol-exists': harnessConfig.rules['harness/doc-symbol-exists'],
+}
 
 /*
  * Thresholds for the four counting rules.
@@ -49,14 +71,23 @@ const thresholds = {
 }
 
 export default tseslint.config(
-  { ignores: ['**/dist', '**/coverage'] },
+  /*
+   * Build and sensor output. `dist` and `coverage` were already here; the other
+   * two arrive with the mutation run, and leaving them out is not a cosmetic
+   * miss. Stryker's `.stryker-tmp/backup-*` is a verbatim copy of the whole
+   * repository with `// @ts-nocheck` at the top of every file, so a lint run
+   * after a mutation run reports several hundred errors in files that are not
+   * the codebase. ESLint's flat config ignores `node_modules` and `.git` and
+   * nothing else by default — a leading dot is not enough.
+   */
+  { ignores: ['**/dist', '**/coverage', '**/reports', '**/.stryker-tmp'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
       ...tseslint.configs.recommended,
       reactRefresh.configs.vite,
-      strict ? harness.configs.strict : harness.configs.recommended,
+      harnessConfig,
     ],
     plugins: { 'react-hooks': reactHooks },
     languageOptions: {
@@ -115,10 +146,32 @@ export default tseslint.config(
     // build step. It was unlinted before, since the config only matched `.ts`.
     files: ['internal/**/*.js', 'eslint.config.js'],
     extends: [js.configs.recommended],
+    plugins: { harness: harnessConfig.plugins.harness },
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'module',
       globals: globals.node,
     },
+    // The harness tools carry more prose per line than anything else here, and
+    // it is prose about paths and table names. They are the last place a stale
+    // citation should be allowed to sit.
+    rules: documentRules,
+  },
+  {
+    /*
+     * Markdown is prose about the code, and this repository keeps four files of
+     * it — AGENTS.md, the root README, the design system's and this plugin's.
+     * They are read by every agent that works here and by nothing that checks
+     * them, which is how the root README came to describe a directory layout two
+     * refactors out of date while reading exactly like one that was current.
+     *
+     * `@eslint/markdown` supplies the language; the rules are the same two rule
+     * files, which return visitors for a Markdown `root` as well as for a
+     * TypeScript `Program`.
+     */
+    files: ['**/*.md'],
+    language: 'markdown/commonmark',
+    plugins: { markdown, harness: harnessConfig.plugins.harness },
+    rules: documentRules,
   },
 )

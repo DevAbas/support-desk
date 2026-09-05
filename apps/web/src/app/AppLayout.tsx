@@ -75,7 +75,7 @@ export function AppLayout() {
                 the nav beside it, which is what a wordmark is for. */}
             <span className="text-section text-fg">Support Desk</span>
             <nav aria-label="Main">
-              <ul className="flex items-center gap-1">
+              <ul role="list" className="flex items-center gap-1">
                 {navigation.map((item) => (
                   <li key={item.id}>
                     <NavLink

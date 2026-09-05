@@ -8,6 +8,9 @@
       "path": "./packages/ui"
     },
     {
+      "path": "./internal/a11y"
+    },
+    {
       "path": "./apps/api"
     },
     {
