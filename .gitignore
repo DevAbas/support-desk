@@ -29,6 +29,11 @@ dist-ssr
 /coverage
 /reports
 /.stryker-tmp
+# Stryker's Vitest runner writes its sandbox setup file to the repository root
+# rather than under tempDirName — one per worker, so eight on this machine. It is
+# a known upstream limitation (stryker-js issue 5305); the file's own comment says
+# it is copied into the sandbox and must not import anything local.
+/stryker-setup-*.js
 
 # Editor directories and files
 .vscode/*
