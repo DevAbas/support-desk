@@ -1,11 +1,12 @@
-import type {
-  Customer,
-  CustomerPlan,
-  CustomerSummary,
-  CustomerTicketRef,
-  ListCustomersQuery,
-  ListCustomersResponse,
-  Ticket,
+import {
+  CUSTOMER_PLANS,
+  type Customer,
+  type CustomerPlan,
+  type CustomerSummary,
+  type CustomerTicketRef,
+  type ListCustomersQuery,
+  type ListCustomersResponse,
+  type Ticket,
 } from '@support-desk/shared'
 import { createSeedCustomers, type CustomerRecord } from './customerSeed'
 import type { TicketStore } from './store'
@@ -39,6 +40,16 @@ import type { TicketStore } from './store'
 export interface CustomerStore {
   list: (query: ListCustomersQuery) => ListCustomersResponse
   get: (id: string) => Customer | undefined
+  /**
+   * How many customers are on each plan right now, every plan included.
+   *
+   * Here rather than counted from `list` by whoever wants it, because the answer
+   * is over the whole list and `list` serves a page of it: a caller counting
+   * rows would have to walk the cursor to the end to count sixty of them. Keyed
+   * by the union with zeroes filled in, so a plan nobody is on is a row reading
+   * nought rather than a row missing from the catalogue.
+   */
+  countByPlan: () => Record<CustomerPlan, number>
   /** How many of the ids named a customer that is actually here. */
   bulkUpdatePlan: (ids: readonly string[], plan: CustomerPlan) => number
   bulkRemove: (ids: readonly string[]) => number
@@ -180,6 +191,19 @@ export function createCustomerStore(tickets: TicketStore): CustomerStore {
       const queue = ticketsById()
 
       return { ...toSummary(record, queue), tickets: ownedTickets(record, queue) }
+    },
+
+    countByPlan() {
+      const counts = Object.fromEntries(CUSTOMER_PLANS.map((plan) => [plan, 0])) as Record<
+        CustomerPlan,
+        number
+      >
+
+      for (const record of customers) {
+        counts[record.plan] += 1
+      }
+
+      return counts
     },
 
     bulkUpdatePlan(ids, plan) {

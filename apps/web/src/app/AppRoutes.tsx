@@ -4,6 +4,7 @@ import { RegisterPage } from '@/features/auth/RegisterPage'
 import { RequireSession } from '@/features/auth/RequireSession'
 import { UnauthorizedRedirect } from '@/features/auth/UnauthorizedRedirect'
 import { CustomersPage } from '@/features/customers/CustomersPage'
+import { PlansPage } from '@/features/plans/PlansPage'
 import { ReportsPage } from '@/features/reports/ReportsPage'
 import { RequireRole } from '@/features/roles/RequireRole'
 import { NewTicketPage } from '@/features/tickets/NewTicketPage'
@@ -40,11 +41,11 @@ export function AppRoutes() {
                 target in `NAVIGATION_TARGETS` closes the nav item, the address
                 and the search result together.
 
-                Three of these four gates let both roles through today, which is
-                the point: they are what makes that edit one edit. A guard added
-                at the moment a screen is first narrowed is a guard somebody has
-                to remember, and the day it is forgotten the search is still
-                offering a door the header has closed. */}
+                Three of these five gates let both roles through today, which
+                is the point: they are what makes that edit one edit. A guard
+                added at the moment a screen is first narrowed is a guard
+                somebody has to remember, and the day it is forgotten the search
+                is still offering a door the header has closed. */}
             <Route element={<RequireRole target="tickets" />}>
               <Route path="tickets" element={<TicketListPage />} />
               {/* Not a screen of its own — it is where a ticket result goes, and
@@ -56,6 +57,9 @@ export function AppRoutes() {
             </Route>
             <Route element={<RequireRole target="customers" />}>
               <Route path="customers" element={<CustomersPage />} />
+            </Route>
+            <Route element={<RequireRole target="plans" />}>
+              <Route path="plans" element={<PlansPage />} />
             </Route>
             <Route element={<RequireRole target="reports" />}>
               <Route path="reports" element={<ReportsPage />} />

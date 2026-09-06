@@ -1,6 +1,7 @@
 import { http, type HttpResponseResolver } from 'msw'
 import { createApiApp } from '@support-desk/api/app'
 import { createCustomerStore } from '@support-desk/api/customerStore'
+import { createPlanStore } from '@support-desk/api/planStore'
 import { createSessionStore } from '@support-desk/api/sessionStore'
 import { createTicketStore } from '@support-desk/api/store'
 import { createUserStore } from '@support-desk/api/userStore'
@@ -31,12 +32,16 @@ export const apiTestCustomerStore = createCustomerStore(apiTestStore)
 
 export const apiTestUserStore = createUserStore()
 
+/** Held here for the same reason, now that a plan's price is something a test can change. */
+export const apiTestPlanStore = createPlanStore()
+
 export const apiTestSessionStore = createSessionStore()
 
 const app = createApiApp({
   store: apiTestStore,
   customers: apiTestCustomerStore,
   users: apiTestUserStore,
+  plans: apiTestPlanStore,
   sessions: apiTestSessionStore,
   latencyMs: [0, 0],
 })
@@ -131,6 +136,8 @@ export const handlers = [
   http.patch('/api/customers/bulk', forward),
   http.delete('/api/customers/bulk', forward),
   http.get('/api/customers/:id', forward),
+  http.get('/api/plans', forward),
+  http.patch('/api/plans/:plan', forward),
   http.get('/api/reports/summary', forward),
   http.get('/api/reports/breakdown', forward),
   http.get('/api/reports/assignees', forward),

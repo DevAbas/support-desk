@@ -139,9 +139,9 @@ describe('with nothing typed', () => {
     await openSearch()
 
     expect(groupNames()).toEqual(['Go to'])
-    expect(options()).toHaveLength(4)
+    expect(options()).toHaveLength(5)
 
-    for (const label of ['Tickets', 'New ticket', 'Customers', 'Reports']) {
+    for (const label of ['Tickets', 'New ticket', 'Customers', 'Plans', 'Reports']) {
       expect(
         within(palette()).getByRole('option', { name: new RegExp(`^${label}`) }),
       ).toBeInTheDocument()
@@ -302,8 +302,12 @@ describe('an agent and an admin do not see the same results', () => {
   it('does not offer an agent a screen they cannot reach', async () => {
     await openSearch('agent')
 
+    // Three of the five, and the two that are missing are the two gated in
+    // `NAVIGATION_TARGETS`: the reports, which are a view of the agents, and the
+    // plans, which are what the business charges.
     expect(options()).toHaveLength(3)
     expect(within(palette()).queryByRole('option', { name: /^Reports/ })).not.toBeInTheDocument()
+    expect(within(palette()).queryByRole('option', { name: /^Plans/ })).not.toBeInTheDocument()
   })
 
   it('offers an admin the same screen', async () => {

@@ -23,7 +23,13 @@ import { ROLES, type Role } from './types'
  * the feature layer.
  */
 
-export const NAVIGATION_TARGET_IDS = ['tickets', 'new-ticket', 'customers', 'reports'] as const
+export const NAVIGATION_TARGET_IDS = [
+  'tickets',
+  'new-ticket',
+  'customers',
+  'plans',
+  'reports',
+] as const
 
 export type NavigationTargetId = (typeof NAVIGATION_TARGET_IDS)[number]
 
@@ -59,11 +65,16 @@ export interface NavigationTarget {
 /**
  * The screens, in the order the header draws them.
  *
- * **Reports is administrators' work**, and it is the one gate here. It is the
- * only screen in this product whose subject is the agents rather than the queue:
+ * **Two of them are administrators' work**, and they are the gates here. Reports
+ * is the only screen whose subject is the agents rather than the queue:
  * `ReportAssigneeTable` ranks named people by how much they resolved, which is a
- * manager's view of a team and not a tool for working through it. Every other
- * screen is somebody's daily work and both roles have it.
+ * manager's view of a team and not a tool for working through it. Plans is the
+ * only screen whose subject is neither — a price list is what the business
+ * charges, and an agent working tickets has no reason to read it and no business
+ * changing it. Everything else is somebody's daily work and both roles have it.
+ *
+ * Plans sits after Customers because that is the order the two are reached in:
+ * somebody comes to the catalogue from having looked at who is on what.
  */
 export const NAVIGATION_TARGETS: readonly NavigationTarget[] = [
   {
@@ -91,6 +102,18 @@ export const NAVIGATION_TARGETS: readonly NavigationTarget[] = [
     path: '/customers',
     keywords: ['accounts', 'people', 'companies', 'plans'],
     roles: ROLES,
+    inHeader: true,
+  },
+  {
+    id: 'plans',
+    label: 'Plans',
+    description: 'What each plan costs, what it carries, and who is on it.',
+    path: '/plans',
+    // Not "plans", which is already how somebody finds the customer list and
+    // its plan filter. These are the words for the catalogue itself: what a
+    // plan costs and what it includes, rather than who is on one.
+    keywords: ['pricing', 'price', 'tiers', 'billing', 'seats'],
+    roles: ['admin'],
     inHeader: true,
   },
   {

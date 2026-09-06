@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import {
   apiTestCustomerStore,
+  apiTestPlanStore,
   apiTestSessionStore,
   apiTestStore,
   apiTestUserStore,
@@ -50,6 +51,8 @@ afterEach(() => {
   mswServer.resetHandlers()
   apiTestStore.reset()
   apiTestCustomerStore.reset()
+  // And the price list, which one test re-prices and the next one reads.
+  apiTestPlanStore.reset()
   // And the accounts a registration test added, with the sessions they were
   // given: a duplicate-email test that ran twice would otherwise pass for the
   // wrong reason the second time.

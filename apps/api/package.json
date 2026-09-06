@@ -7,6 +7,7 @@
     "./app": "./src/app.ts",
     "./auth": "./src/auth.ts",
     "./customerStore": "./src/customerStore.ts",
+    "./planStore": "./src/planStore.ts",
     "./sessionStore": "./src/sessionStore.ts",
     "./store": "./src/store.ts",
     "./userSeed": "./src/userSeed.ts",

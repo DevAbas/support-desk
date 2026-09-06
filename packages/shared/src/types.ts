@@ -178,6 +178,36 @@ export const CUSTOMER_PLAN_LABELS: Record<CustomerPlan, string> = {
 }
 
 /**
+ * What a plan costs and what it carries: the part of a plan an administrator
+ * edits.
+ *
+ * The plan itself is not in that part, and the split is the whole design.
+ * `CustomerPlan` is the *identity* — it is what a customer row stores, what the
+ * list filters on, what a saved view is written in and what an exported CSV
+ * says — so renaming Pro would rewrite yesterday's export and silently re-point
+ * a stored filter at a plan nobody chose. The terms are the commercial facts
+ * about that identity, and they are exactly what changes without the plan
+ * becoming a different plan. Which is why `CUSTOMER_PLAN_LABELS` above stays the
+ * one place a plan is named and there is no `name` field here.
+ *
+ * `seatLimit` is null on a plan that has no limit, rather than a very large
+ * number. "Unlimited" is not a quantity, and a sentinel is a number every reader
+ * has to know is not a number.
+ *
+ * The price is in pence and an integer, because money in a float is a rounding
+ * error waiting for something to be totalled over it. What it reads as on screen
+ * is the feature layer's, in `apps/web/src/features/plans/planFormat.ts`.
+ */
+export interface CustomerPlanTerms {
+  plan: CustomerPlan
+  monthlyPricePence: number
+  /** Null where the plan carries no seat limit at all. */
+  seatLimit: number | null
+  /** One line saying who the plan is for, shown beside it wherever it is drawn. */
+  description: string
+}
+
+/**
  * Someone who can sign in.
  *
  * Not every name the queue mentions is one of these: a ticket records its
