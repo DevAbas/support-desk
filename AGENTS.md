@@ -4,13 +4,14 @@ Support Desk, a support-tickets admin panel on its own design system: `packages/
 renders, `apps/web` composes, `packages/shared` holds the contract. Everything a machine
 can check is enforced — `internal/eslint-plugin-harness/README.md` has the lint rules and
 the defect behind each, `packages/ui/README.md` the design system in full; check your work
-with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`, `lint:duplication`.
+with `npm run lint:strict`, `typecheck`, `test`, `lint:boundaries`, `lint:duplication`,
+and — after `npm run build`, because it reads the stylesheet — `lint:classes`.
 Typecheck and lint also run automatically after every file you write, so read what they
 say and fix it there rather than at the end. Below is the rest.
 
 ## What the sensors ask of you
 
-Four checks read the result rather than the source, and each has a habit attached.
+Five checks read the result rather than the source, and each has a habit attached.
 `README.md` says where each one runs and what it cannot see.
 
 - Write the assertion that would fail. `npm run test:mutation:fast` changes the code to
@@ -27,6 +28,11 @@ Four checks read the result rather than the source, and each has a habit attache
 - Cite a path, or a table by name — `TICKET_STATUSES`, `NAVIGATION_TARGETS` — only if it
   still resolves. Both are lint errors, in Markdown as well as in a comment, and both are
   how the root README came to describe a layout two refactors out of date.
+- Check that a class *resolves*, not that it is spelled right. `npm run build && npm run
+  lint:classes` reads the stylesheet that shipped. Delete a radius or a colour from
+  `tokens.css` and every class built from it still compiles, still passes its tests and
+  draws nothing. So does an unanchored pattern in `.gitignore`: Tailwind's scanner honours
+  it, and a bare `reports` hid a whole feature.
 
 ## Button variants
 

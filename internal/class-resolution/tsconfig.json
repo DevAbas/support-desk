@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.tmp/class-resolution.tsbuildinfo",
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"],
+
+    /* The sensor is plain ESM JavaScript, like the two harness tools beside it,
+       so it runs under bare `node` with no build step. `checkJs` is what makes
+       that the same guarantee as TypeScript: strict, and no implicit `any`. */
+    "allowJs": true,
+    "checkJs": true,
+
+    "module": "nodenext",
+    "moduleResolution": "nodenext"
+  },
+  "include": ["src"]
+}

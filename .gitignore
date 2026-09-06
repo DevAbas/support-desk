@@ -13,9 +13,22 @@ dist-ssr
 *.local
 
 # Sensor output: coverage, the mutation report, and Stryker's sandbox.
-coverage
-reports
-.stryker-tmp
+#
+# Anchored with a leading slash, and that is load-bearing rather than tidiness.
+# An unanchored pattern matches a directory of that name at any depth, so a bare
+# `reports` also matched apps/web/src/features/reports — and Tailwind's source
+# scanner honours .gitignore, so the whole Reports feature was invisible to it and
+# `text-right`, `tabular-nums` and `xl:grid-cols-4` produced no CSS at all. The
+# bare pattern arrived in eb514d4, the commit that added the sensor layer, and
+# none of the five sensors in it could see what it broke. `npm run lint:classes`
+# is what sees it now.
+#
+# All three are written at the repository root: stryker.config.json sets
+# `htmlReporter.fileName` to reports/mutation/index.html and `tempDirName` to
+# .stryker-tmp, and Vitest writes coverage beside the config it ran from.
+/coverage
+/reports
+/.stryker-tmp
 
 # Editor directories and files
 .vscode/*

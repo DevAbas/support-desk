@@ -11,6 +11,9 @@
       "path": "./internal/a11y"
     },
     {
+      "path": "./internal/class-resolution"
+    },
+    {
       "path": "./apps/api"
     },
     {

@@ -19,6 +19,7 @@
     "lint:strict": "HARNESS_STRICT_LINT=1 eslint .",
     "lint:boundaries": "depcruise apps packages --config .dependency-cruiser.cjs",
     "lint:duplication": "node internal/duplication-check/src/cli.js",
+    "lint:classes": "node internal/class-resolution/src/cli.js",
     "test": "vitest run",
     "test:mutation": "stryker run",
     "test:mutation:fast": "stryker run stryker.fast.config.json",

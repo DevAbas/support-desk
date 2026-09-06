@@ -16,8 +16,9 @@
 #
 # Everything else is here only. Each reads the whole repository at once and means
 # nothing about a single file: the test suite is twelve seconds, the boundary
-# graph and the duplication check are cross-file by definition, and the mutation
-# run is minutes. README.md has the table.
+# graph and the duplication check are cross-file by definition, the class-
+# resolution check needs a build in front of it, and the mutation run is minutes.
+# README.md has the table.
 #
 # There is no commit hook, deliberately. See README.md for the argument.
 
@@ -30,7 +31,7 @@ on:
 
 jobs:
   checks:
-    name: typecheck, lint, boundaries, duplication, tests
+    name: typecheck, lint, boundaries, duplication, classes, tests
     runs-on: ubuntu-latest
 
     steps:
@@ -57,6 +58,20 @@ jobs:
 
       - name: Structural duplication
         run: npm run lint:duplication
+
+      # The only check here whose subject is a build artifact, so this is the
+      # only place a build has to happen — and until it did, nothing automated
+      # in this repository had ever compiled the stylesheet. `npm run build` is
+      # `tsc -b` again, which is warm by now, and a Vite build of about a second.
+      - name: Build
+        run: npm run build
+
+      # Reads the CSS that shipped rather than the CSS that should have: a class
+      # written in the source that the stylesheet cannot produce. It refuses a
+      # stylesheet older than the source it was built from, so the step above is
+      # not optional. See internal/class-resolution/README.md.
+      - name: Class resolution
+        run: npm run lint:classes
 
       - name: Tests
         run: npm test

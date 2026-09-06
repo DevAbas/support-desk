@@ -48,6 +48,7 @@ proxies `/api` to it.
 | `npm run lint:strict` | ESLint with the rules CI enforces as errors |
 | `npm run lint:boundaries` | dependency-cruiser: the workspace boundaries |
 | `npm run lint:duplication` | Structural duplication: files copied and renamed |
+| `npm run lint:classes` | Classes in the source that the built stylesheet cannot produce |
 | `npm run test` | Run the test suite once |
 | `npm run test:watch` | Run the test suite in watch mode |
 | `npm run test:mutation` | Stryker: whether the tests would notice the code being wrong |
@@ -58,16 +59,18 @@ holds the ones specific to this codebase, and its README says what each is for
 and why — every one of them comes from a defect that was recorded here more than
 once and caught by nothing.
 
-`lint:duplication` and `test:mutation` are the two sensors that are not lint rules;
-`internal/duplication-check/README.md` and `stryker.config.json` say what each
-measures and what it cannot. Neither is a check you should have to remember: the
-fast ones run after every file an agent writes, and all of them run in CI. See
-[Sensors](#sensors).
+`lint:duplication`, `lint:classes` and `test:mutation` are the three sensors that
+are not lint rules; `internal/duplication-check/README.md`,
+`internal/class-resolution/README.md` and `stryker.config.json` say what each
+measures and what it cannot. `lint:classes` reads the built stylesheet, so it
+wants a `npm run build` in front of it and says so rather than reading a stale
+one. None is a check you should have to remember: the fast ones run after every
+file an agent writes, and all of them run in CI. See [Sensors](#sensors).
 
 ## Sensors
 
 The primitives, the lint rules and `AGENTS.md` all constrain what gets *written*.
-Nothing checked whether what was written does what it claims. These five do, and
+Nothing checked whether what was written does what it claims. These six do, and
 each one exists because there is a class of defect that passes `tsc`, passes the
 tests, passes the lint pass and passes review.
 
@@ -78,6 +81,7 @@ tests, passes the lint pass and passes review.
 | Accessibility, rendered | The same, where only the DOM shows it. | axe-core, `internal/a11y` |
 | Duplication | A file written by copying another and changing the names. | `internal/duplication-check` |
 | Document freshness | Prose beside code that the code has moved out from under. | Two rules in `internal/eslint-plugin-harness` |
+| Class resolution | A class name the source still writes, after the token it was built from stopped existing. | `internal/class-resolution`, over the built stylesheet |
 
 Each has a README or a config comment saying what it catches, what it cannot, and
 what was found on its first run. Those limitation sections are the load-bearing
@@ -96,6 +100,8 @@ arrives. There are two moments here and they take different checks.
 | `npm test` | | ✔ | 12s, 703 tests. Too slow per write, too fast to skip on merge |
 | `lint:boundaries` | | ✔ | Whole module graph; meaningless for one file |
 | `lint:duplication` | | ✔ | Cross-file by definition — a copy needs both halves |
+| `npm run build` | | ✔ | A second, and the only thing that produces a stylesheet to check |
+| `lint:classes` | | ✔ | 0.3s, but it reads the build above; nothing in a hook can afford one |
 | `test:mutation` | | ✔ | 81 minutes: it runs the suite once per mutant |
 
 **The fast two run in the agent's own loop**, from a `PostToolUse` hook in
@@ -139,7 +145,7 @@ a change, the argument would be worth revisiting. It does not have one.
 
 ### What none of them see
 
-Worth stating plainly, because five green checks read as more than they are.
+Worth stating plainly, because six green checks read as more than they are.
 
 - **Anything visual.** jsdom has no layout, so colour contrast, focus visibility,
   target size and reflow are unchecked here and unchecked anywhere else in this
@@ -155,6 +161,11 @@ Worth stating plainly, because five green checks read as more than they are.
   this repository has an instance, recorded below.
 - **Whether any of it is usable.** axe finds violations of rules. A screen can
   pass every rule and still be impossible to work through.
+- **A class that resolves to the wrong value.** The class check asks whether a
+  class produces a declaration, not whether the declaration is right.
+  `--radius-element` changed from `0.1875rem` to `2rem` is a visible regression it
+  reports nothing about, and so is a class named only in prose:
+  `internal/class-resolution/README.md` has both, with the counts.
 
 ### What the first run of each found
 
@@ -170,6 +181,7 @@ without a refactor riding along inside them.
 | axe, screens | `region` on the two auth screens: they render outside `AppLayout`, so outside any landmark | recorded in `internal/a11y` |
 | axe, components | 0 | — |
 | Duplication | 12 pairs over the line; 3 of them real copies | recorded in `internal/duplication-check` |
+| Class resolution | 3 classes over 7 sites producing no CSS, all in the Reports feature, all from one unanchored `.gitignore` pattern | fixed on this branch |
 | Mutation | see below | recorded |
 
 ### The mutation score, and what it found

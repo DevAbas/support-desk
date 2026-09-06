@@ -31,6 +31,21 @@ export default defineConfig({
           include: ['src/**/*.test.js'],
         },
       },
+      // The class-resolution sensor is the third harness tool with logic of its
+      // own, and the only one whose subject is a build artifact. Its tests are
+      // over fixtures rather than over `apps/web/dist`, deliberately: the suite
+      // has to pass on a fresh clone that has never run a build, and the check
+      // over this checkout is `npm run lint:classes` in CI. What they pin is the
+      // half a fixture cannot reach — that the extractor still finds every one
+      // of the fourteen `rounded-element` sites in the real tree.
+      {
+        test: {
+          name: 'class-resolution',
+          root: './internal/class-resolution',
+          environment: 'node',
+          include: ['src/**/*.test.js'],
+        },
+      },
     ],
   },
 })
