@@ -6,6 +6,7 @@ export const mswServer = setupServer(...handlers)
 
 export {
   apiTestCustomerStore,
+  apiTestPlanStore,
   apiTestSessionStore,
   apiTestStore,
   apiTestUserStore,

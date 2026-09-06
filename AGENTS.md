@@ -125,6 +125,19 @@ Five checks read the result rather than the source, and each has a habit attache
 - Where a move is refused, say which condition failed rather than that it was refused.
   The sentence is the guard's `requirement`, and both ends show the same one.
 
+## A plan is a rung, not a row
+
+- Never add a plan, remove one, or rename one. `CUSTOMER_PLANS` is the set and a plan's
+  name is its identity — a customer row stores it, a saved view is written in it and an
+  exported CSV says it. What the plan screen edits is a plan's *terms*: the price, the
+  seat limit and the line saying who it is for. `CustomerPlanTerms` says why.
+- Never decide in the browser whether an edit is allowed. Price and seats both have to
+  run one way up `CUSTOMER_PLANS`, which is a fact about a plan *and its neighbours*, so
+  `customerPlanLadderIssue` takes the whole catalogue and the server is what asks it —
+  the same division the workflow makes. A field checks what was typed and nothing more.
+- Where an edit is refused, show the rule's own `requirement`. It names the two rungs
+  that are out of order, which is what a person can act on; "that was rejected" is not.
+
 ## When a rule here is broken repeatedly
 
 Move it into `internal/eslint-plugin-harness`: a rule that needs restating is one prose

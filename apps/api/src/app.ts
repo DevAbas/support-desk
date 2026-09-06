@@ -15,6 +15,8 @@ import { registerAuthRoutes, requireAdmin, requireSession } from './auth'
 import { createCustomerStore, type CustomerStore } from './customerStore'
 import { createLoginLimiter, type LoginLimiter } from './loginLimiter'
 import { registerTicketMoveRoutes } from './moves'
+import { registerPlanRoutes } from './plans'
+import { createPlanStore, type PlanStore } from './planStore'
 import { buildAssignees, buildBreakdown, buildSummary } from './reports'
 import { currentUser, fail, invalid, missing, readJsonBody, type AppEnv } from './respond'
 import { registerSearchRoute } from './search'
@@ -46,6 +48,8 @@ export interface ApiAppOptions {
   /** Defaults to a store reading the queue above, so the two cannot disagree. */
   customers?: CustomerStore
   users?: UserStore
+  /** Handed in by the web test suite, so a re-priced plan is reset between cases. */
+  plans?: PlanStore
   /** Handed in by the web test suite, which needs to mint a session of its own. */
   sessions?: SessionStore
   limiter?: LoginLimiter
@@ -82,6 +86,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     // through the routes below leaves its customer in the same breath.
     customers = createCustomerStore(store),
     users = createUserStore(),
+    plans = createPlanStore(),
     now = Date.now,
     sessions = createSessionStore(now),
     limiter = createLoginLimiter(now),
@@ -119,6 +124,10 @@ export function createApiApp(options: ApiAppOptions = {}) {
   // like the auth routes: this function is against a line ceiling, and what it
   // answers with spans both stores rather than belonging to either.
   registerSearchRoute(app, { store, customers })
+
+  // The plan catalogue, from its own module for the same reason: two stores,
+  // and a route file that is already long enough.
+  registerPlanRoutes(app, { plans, customers })
 
   // The workflow's three routes, from their own module for the same reason.
   // Registered ahead of the ticket routes below so that `POST /tickets/bulk/moves`

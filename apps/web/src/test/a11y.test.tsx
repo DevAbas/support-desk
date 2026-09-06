@@ -63,6 +63,11 @@ const SCREENS: Record<string, Screen> = {
     role: 'admin',
     settled: () => screen.queryByRole('list', { name: 'Customers' }),
   },
+  'the plan catalogue': {
+    path: '/plans',
+    role: 'admin',
+    settled: () => screen.queryByRole('table'),
+  },
   'the reports screen': {
     path: '/reports',
     role: 'admin',
@@ -97,7 +102,7 @@ describe('the screen sweep itself', () => {
     // Held against the route table by hand rather than derived from it: the
     // point of a sweep is that adding a screen and not adding it here is
     // visible, and a list generated from the routes could never be missing one.
-    expect(Object.keys(SCREENS)).toHaveLength(8)
+    expect(Object.keys(SCREENS)).toHaveLength(9)
   })
 
   it('records what it found rather than switching a rule off everywhere', () => {

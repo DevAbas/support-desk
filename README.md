@@ -312,6 +312,12 @@ something; the other fifty never have, which is also true of most customers of m
 products. A customer holds ticket *ids*, resolved through the ticket store on every
 request, so deleting a ticket removes it from the customer who raised it immediately.
 
+The four plans are the one thing here that is written out rather than generated, in
+`apps/api/src/planSeed.ts`. A price list is four facts somebody decided, not sixty rows
+that only have to look plausible — and the numbers are what the catalogue's own rules are
+demonstrated against, so a random price would make the screen's refusals depend on the
+seed.
+
 Requests are delayed by 150–400ms so that loading states are real states the UI has to
 handle. The knobs for working on those states:
 
@@ -428,15 +434,45 @@ and the bulk actions on both lists are admin-only, enforced on the server: an ag
 calling one is refused with a 403 rather than merely not shown the button. The UI hides
 them too, which is a courtesy rather than the enforcement.
 
-**Reports are admin-only as well**, and that is the one gate that is not about writing.
-It is the only screen whose subject is the agents rather than the queue — the assignee
-table ranks named people by how much each of them resolved — where every other screen is
-somebody's daily work. An agent is not offered it in the nav, is redirected away from the
-address, and is refused by all three endpoints behind it.
+**Two screens are admin-only as well**, and those are the gates that are not about
+writing. Reports is the only screen whose subject is the agents rather than the queue —
+the assignee table ranks named people by how much each of them resolved. Plans is the
+only screen whose subject is neither: a price list is what the business charges, and an
+agent working tickets has no reason to read it and no business changing it. Every other
+screen is somebody's daily work. An agent is not offered either in the nav, is redirected
+away from both addresses, and is refused by all five endpoints behind them.
 
 The role context carries `canManageTickets` and `canManageCustomers` separately, both
 true for an admin today: they are different powers, and a customer screen asking about
 tickets is a line that reads wrong.
+
+## A plan is a rung, not a row
+
+The four plans are a closed union in the shared contract — `CUSTOMER_PLANS` — and the
+catalogue screen does not add to it or take from it. What an administrator edits is a
+plan's *terms*: what it costs a month, how many seats it carries, and the line saying who
+it is for. The plan's own name is not among them, and that is the split the whole feature
+turns on. `pro` is the identity a customer row stores, a saved view is written in and an
+exported CSV says, so renaming it would rewrite yesterday's export and silently re-point a
+stored filter; what it costs is a commercial fact about that identity and changes without
+the plan becoming a different plan.
+
+**The rule is that the plans read as a ladder.** Going up `CUSTOMER_PLANS`, a price never
+falls and a seat limit never falls — unlimited being the top of that order rather than an
+absent value. Neither is a fact about the plan being edited. Whether Pro is priced
+correctly is a question about Starter and Enterprise, so the check cannot live on the
+field, cannot live in the schema, and cannot honestly live in a browser holding a copy of
+three plans it did not just fetch. `customerPlanLadderIssue` in
+`packages/shared/src/plans.ts` takes the whole catalogue an edit *would* produce, and the
+server is what asks it: a refused edit comes back as a 409 whose message is the rule's own
+sentence, naming the two rungs that are out of order rather than saying the edit was
+rejected. The dialog renders what it is handed, the same way the ticket screens render a
+guard's `requirement`.
+
+The other half is the count on each row, which is the join between this screen and the
+customer list and the whole of it — nothing here fetches a customer, and moving somebody
+onto a plan is still done from the list, because that is a fact about a customer rather
+than about a plan.
 
 ## A status is a position, not a value
 
