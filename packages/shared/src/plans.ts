@@ -41,10 +41,18 @@ import {
 /**
  * The bounds on the three editable fields.
  *
- * They are here rather than inline in the schema because the field that collects
- * each one reads them too — a `maxLength` on the description, a `max` on the
- * seat field — so a bound tightened here tightens the control as well as the
- * validation, instead of leaving a field that accepts what the server refuses.
+ * They are here rather than inline in the schema because `PlanEditDialog` reads
+ * them too, so a bound tightened here tightens what the form will send as well
+ * as what the server accepts, instead of leaving a field that accepts what the
+ * server refuses.
+ *
+ * What holds each one differs, and only the description's is the control's own
+ * doing: a `maxLength` on the textarea, so the browser refuses the character
+ * past it. Both figures are text inputs carrying an `inputMode` rather than
+ * `type="number"` — a number input drops what it cannot parse instead of
+ * reporting it, which is argued for at the price field — and `max` has no
+ * effect outside `type="number"`, so their ceilings are branches in that
+ * dialog's `handleSubmit`, each naming the bound in the message it shows.
  */
 export const MAX_PLAN_MONTHLY_PRICE_PENCE = 999_999
 
@@ -53,21 +61,17 @@ export const MAX_PLAN_SEAT_LIMIT = 100_000
 export const MAX_PLAN_DESCRIPTION_LENGTH = 160
 
 /**
- * Spread into all three schemas below rather than extended from one, so that
- * annotating the terms with their domain type — which is what makes a missing
- * field a compile error — does not cost the other two their fields. The same
- * arrangement as `customerSummaryShape` in `customers.ts`, for the same reason.
+ * Spread into both schemas below rather than one extending the other. The edit
+ * body and the catalogue row share these three fields but are not versions of
+ * each other — one is what a browser sends, the other what the screen reads —
+ * and extending would put a field added to either onto the other without
+ * anybody having asked for it.
  */
 const planTermsShape = {
   monthlyPricePence: z.number().int().min(0).max(MAX_PLAN_MONTHLY_PRICE_PENCE),
   seatLimit: z.number().int().min(1).max(MAX_PLAN_SEAT_LIMIT).nullable(),
   description: z.string().trim().min(1).max(MAX_PLAN_DESCRIPTION_LENGTH),
 }
-
-export const customerPlanTermsSchema: z.ZodType<CustomerPlanTerms> = z.object({
-  plan: customerPlanSchema,
-  ...planTermsShape,
-})
 
 /**
  * What a plan edit carries, which is the terms and not the plan.
@@ -144,6 +148,11 @@ export interface CustomerPlanRule {
    * what is wrong: lowering Pro below Starter and raising Starter above Pro are
    * the same broken rung reached from either end, and a message naming only the
    * field somebody just typed in would send half of them to the wrong screen.
+   *
+   * Which is why the remedy names both plans too, and neither of them "this
+   * one": the rule is handed a rung and not an edit, so it has no way to know
+   * which end of the rung the dialog reading it is open on — and half the time
+   * "this one" would be the plan that is not on screen.
    */
   requirement: (below: CustomerPlan, above: CustomerPlan) => string
 }
@@ -158,7 +167,7 @@ export const CUSTOMER_PLAN_RULES: Record<CustomerPlanRuleId, CustomerPlanRule> =
     id: 'price',
     measure: (terms) => terms.monthlyPricePence,
     requirement: (below, above) =>
-      `${CUSTOMER_PLAN_LABELS[above]} cannot cost less than ${CUSTOMER_PLAN_LABELS[below]}, because moving up the ladder would make a customer's bill go down. Lower ${CUSTOMER_PLAN_LABELS[below]} first, or price this one above it.`,
+      `${CUSTOMER_PLAN_LABELS[above]} cannot cost less than ${CUSTOMER_PLAN_LABELS[below]}, because moving up the ladder would make a customer's bill go down. Lower ${CUSTOMER_PLAN_LABELS[below]}'s price, or raise ${CUSTOMER_PLAN_LABELS[above]}'s.`,
   },
   seats: {
     id: 'seats',
@@ -166,7 +175,7 @@ export const CUSTOMER_PLAN_RULES: Record<CustomerPlanRuleId, CustomerPlanRule> =
     // one rather than being special-cased in the walk below.
     measure: (terms) => terms.seatLimit ?? Number.POSITIVE_INFINITY,
     requirement: (below, above) =>
-      `${CUSTOMER_PLAN_LABELS[above]} cannot carry fewer seats than ${CUSTOMER_PLAN_LABELS[below]}, because moving up the ladder would take a seat away. Lower ${CUSTOMER_PLAN_LABELS[below]} first, or raise this limit.`,
+      `${CUSTOMER_PLAN_LABELS[above]} cannot carry fewer seats than ${CUSTOMER_PLAN_LABELS[below]}, because moving up the ladder would take a seat away. Lower ${CUSTOMER_PLAN_LABELS[below]}'s seat limit, or raise ${CUSTOMER_PLAN_LABELS[above]}'s.`,
   },
 }
 

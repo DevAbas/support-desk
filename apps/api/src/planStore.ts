@@ -15,10 +15,9 @@ import { createSeedPlanCatalogue } from './planSeed'
  *
  * Four rows, keyed by a closed union, so this store has no create and no remove
  * — the set of plans is `CUSTOMER_PLANS` and changing it is a change to the
- * domain, not a request. `get` cannot miss and does not return `undefined`,
- * which is the difference between a table and a collection and is worth having
- * in the type: a route asking for a plan the schema has already accepted has
- * nothing to handle.
+ * domain, not a request. Nor is there a single-row read: both routes are over
+ * the whole catalogue, and a store method with no caller is a shape nobody has
+ * had to defend.
  *
  * **The rule is not here.** Whether an edit leaves a coherent ladder is
  * `customerPlanLadderIssue` in the shared contract, and this store's only job is
@@ -49,7 +48,6 @@ export type UpdatePlanResult =
 export interface PlanStore {
   /** Every plan's terms, in domain order. There is no page to ask for. */
   list: () => CustomerPlanTerms[]
-  get: (plan: CustomerPlan) => CustomerPlanTerms
   update: (plan: CustomerPlan, terms: UpdateCustomerPlanBody) => UpdatePlanResult
   /** Restores the seed catalogue. Tests call this between cases. */
   reset: () => void
@@ -61,10 +59,6 @@ export function createPlanStore(): PlanStore {
   return {
     list() {
       return customerPlanTermsInDomainOrder(catalogue).map((terms) => ({ ...terms }))
-    },
-
-    get(plan) {
-      return { ...catalogue[plan] }
     },
 
     update(plan, terms) {

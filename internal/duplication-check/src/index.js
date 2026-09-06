@@ -124,6 +124,24 @@ export const RECORDED = [
   },
   {
     kind: 'parallel',
+    left: 'apps/web/src/features/auth/sessionKeys.ts',
+    right: 'apps/web/src/features/plans/planKeys.ts',
+    // The same argument as the query hooks above, one layer down. Six features
+    // declare a key factory — `sessionKeys`, `customerKeys`, `planKeys`,
+    // `reportKeys`, `searchKeys`, `ticketKeys` — and every one is a private
+    // `all` tuple under an object of thunks that spread it, because that is what
+    // stops a key being written as an inline array at a call site and quietly
+    // splitting the cache. These two are the pair over the line because they are
+    // the only two with nothing to key on: the other four import a filter, a
+    // query or an id and take it as a parameter, and that is shape enough to put
+    // them under the threshold, where here the shared frame is the whole file.
+    // Collapsing the two into one factory taking a namespace would take the
+    // literal keys out of the feature that owns them, which is what this shape
+    // is for.
+    reason: 'one cache-key factory per feature, which is how every key here is written',
+  },
+  {
+    kind: 'parallel',
     left: 'apps/web/src/lib/api/reports.ts',
     right: 'apps/web/src/lib/api/search.ts',
     // The client half of the same thing: a function per endpoint, each parsing
