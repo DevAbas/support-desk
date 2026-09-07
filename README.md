@@ -1,7 +1,16 @@
 # Support Desk
 
-A small support-tickets admin panel built on its own design system. It exists as a
-reference codebase for a video series on harness engineering for frontend projects.
+A support-ticket admin panel — a queue, a customer directory, reports, sign-in,
+a plan catalogue — built on its own design system with no component library
+underneath it.
+
+It is not a product. It is the subject of a measurement experiment: a task is
+written, a coding agent builds it on a branch, and every defect it leaves is
+recorded against the mechanism that should have caught it. **The experiment —
+the protocol, the prompts, the findings and what they showed — is a separate
+repository: [DevAbas/harness-notes](https://github.com/DevAbas/harness-notes).**
+What is here is the other half of it: the code those measurements ran against,
+and the git history they left behind.
 
 It started as a repo whose point was what it *did not* have: no `AGENTS.md`, no
 lint rule that enforced the design system, no machine-readable guidance at all. The
@@ -21,6 +30,146 @@ answering a defect that the last layer could not see:
 The first three constrain the writing. None of them asks whether the result is
 correct, accessible, original or honestly described, which is what the fourth is
 for.
+
+## The branches
+
+Every measurement, scaffold and harness layer is still a branch pointing at the
+exact commit that work produced, so any state the notes cite can be checked out
+and read.
+
+The names do not line up with the notes on their own. The notes number the
+measurements **m01** to **m14**; the branches only started numbering at m07, the
+five before it are named after the task, and **m03 is on a `scaffold/` branch**
+because the API layer was scaffolding and a measurement at the same time. This
+is the mapping.
+
+### The measurements
+
+The branch tip is the commit the agent produced — unamended, defects included.
+Nothing was tidied before it was recorded.
+
+| # | Branch | The task | Ran against |
+| --- | --- | --- | --- |
+| m01 | `measure/export-csv` | CSV export, tickets | `baseline-small` |
+| m02 | `measure/saved-views` | Saved views | `baseline-small` |
+| m03 | `scaffold/api-layer` | HTTP API layer | `baseline-merged` |
+| m04 | `measure/assign-ticket` | Assign a ticket | `baseline-workspaces` |
+| m05 | `measure/status-admin` | Status/priority admin | `baseline-m04` |
+| m06 | `measure/customer-segments` | Customer segments | `baseline-customers` |
+| m07 | `remeasure/07-customers-export` | CSV export, customers | `harness-03` |
+| m08 | `measure/08-customers-bulk` | Bulk actions | `harness-03` |
+| m09 | `measure/09-redesign` | New visual identity | `harness-01c` |
+| m10 | `measure/10-global-search` | Global search | `fix-blind-audit` |
+| m11 | `measure/11-scope-rename` | Rename the npm scope | `fix-m10` |
+| m12 | `measure/12-workflow-engine` | Status as a workflow | `harness-06` |
+| m13 | `measure/13-saved-views-unified` | Unify saved views | `fix-m12` |
+| m14 | `measure/14-customer-plans-admin` | Plan catalogue admin | `harness-08` |
+
+The `remeasure/` prefix on m07 is deliberate rather than a slip: it is m01's
+task on a different screen, run again once the first three layers existed.
+
+**Two were never merged.** `measure/status-admin` (m05) and
+`measure/customer-segments` (m06) sit one commit off `main` and stay there.
+
+The other twelve *are* on `main`, and that is worth being exact about, because
+the useful property is not really the merge. No measurement commit was ever
+amended, squashed or rewritten. Where findings were closed, they were closed in
+a **separate commit stacked on top** — so the branch still points at the state
+the agent left, `git show` on it is the agent's diff and nothing else, and the
+commit immediately after it is exactly what those defects cost.
+
+### The scaffolds
+
+Screens added to give the next measurement somewhere to happen. Three were
+audited the way a measurement is, and their findings are under `scaffolds/` in
+the notes repository.
+
+| Branch | What it added | Ran against | Audited |
+| --- | --- | --- | --- |
+| `scaffold/workspaces` | npm workspaces: `apps/`, `packages/`, `internal/` | `baseline-api` | no |
+| `scaffold/reports` | The reports screen and five new primitives | `baseline-m04` | yes |
+| `scaffold/customers` | The customer directory | `baseline-reports` | yes |
+| `scaffold/auth` | Session-cookie authentication | `harness-01b` | yes |
+
+`scaffold/api-layer` is a fifth by name and m03 by role; it is in the
+measurement table above.
+
+Two refactors sit beside them. `refactor/ui-package` moved the design system
+into `packages/ui` in two layers. `refactor/design-system-layers` is a leftover
+pointer at the same commit as `scaffold/customers` and marks nothing of its own.
+
+### The harness
+
+Ten branches, one per layer or amendment, each answering something a measurement
+had just shown. They are not consecutive — layers went in between measurements,
+and the baseline column is where each one started.
+
+| Branch | What it added | Ran against |
+| --- | --- | --- |
+| `harness/01-primitives` | Layer 1: the primitives the features kept hand-building, and the design system's own type scale | `baseline-ui-package`, over three commits |
+| `harness/01b-primitives` | A `Checkbox` primitive and `Alert` variants | `harness-03` |
+| `harness/01c-token-structure` | Token structure: primitive type scale, role-named radius, size, focus, border and motion groups | `harness-04` |
+| `harness/02-guides` | Layer 2: the ESLint plugin, the boundaries and the thresholds | `harness-01` |
+| `harness/03-agents-md` | Layer 3: `AGENTS.md` | `harness-02` |
+| `harness/04-migrate-stragglers` | The ticket bulk bar and the deprecated form type, moved over | `baseline-auth` |
+| `harness/05-toolbar-tints-scope` | A `Toolbar` primitive, split subtle tints, a wider lint scope | `baseline-redesign` |
+| `harness/06-boundary-scope` | Build output excluded from the boundary check | `measure-11` |
+| `harness/07-sensors` | Layer 4: the mutation, accessibility, duplication and doc-freshness sensors, and a CI to run them | `fix-m13` |
+| `harness/08-class-resolution` | A sensor for Tailwind classes that no longer resolve | `harness-07` |
+
+`harness/01b` is the only one of the ten with no write-up in the notes.
+
+### The fixes
+
+What closed the findings. Each is one commit sitting directly on what it
+answers, so the diff between the pair is the cost of that measurement's defects.
+
+| Branch | Closes | Sits on |
+| --- | --- | --- |
+| `fix/blind-audit-findings` | Seven defects the first blind audit turned up in m08 | `harness-05` |
+| `fix/m10-findings` | Four findings from m10 | `measure/10-global-search` |
+| `fix/m12-findings` | Five findings from m12 | `measure/12-workflow-engine` |
+| `fix/m13-findings` | Four findings from m13 | `measure/13-saved-views-unified` |
+| `fix/m14-findings` | Three findings from m14, and a duplication entry | `measure/14-customer-plans-admin` |
+
+Not every measurement has one. m11 replaced 227 lines mechanically and produced
+a single finding. The early ones were answered by the harness instead: m09's
+finding was that nothing owned the padding on a strip, and `harness/05` is the
+`Toolbar` primitive that fixed it. And some were recorded and deliberately left
+— two survivors of the mutation sensor are still in the code, [for the reason
+given below](#the-mutation-score-and-what-it-found).
+
+## The tags
+
+Twenty-six, all lightweight, all on `main`. A tag marks a state that something
+else was then run against — the notes cite them by name in each measurement's
+`Baseline:` line, so `git checkout harness-03` is exactly the codebase m07 and
+m08 were measured in. They fall into four groups.
+
+**The baselines — ten.** The state before a layer existed, or before a piece of
+the app did. `baseline-small` is the root commit — the codebase with nothing
+enforcing anything, which is what m01 and m02 ran against — and `baseline-merged`
+is those first two measurements merged together. `baseline-api`,
+`baseline-workspaces`, `baseline-reports`, `baseline-customers` and
+`baseline-auth` each mark the state after the scaffold that names them.
+`baseline-m04` is measure 4, which two later runs started from.
+`baseline-ui-package` is the design system's move into `packages/ui`, and
+`baseline-redesign` is m09 — tagged because harness work continued on top of it.
+
+**The harness states — ten.** `harness-01` to `harness-08`, with `01b` and `01c`
+between the first and second, marking the codebase after each layer or amendment
+landed. These are what the later measurements were run against. `harness-01b` is
+a merge commit rather than a harness commit: it is where
+`measure/08-customers-bulk` came back into the trunk, and that merge is the state
+`scaffold/auth` started from.
+
+**The fix states — five.** `fix-blind-audit`, `fix-m10`, `fix-m12`, `fix-m13`
+and `fix-m14`: the codebase after a measurement's findings were closed. Three of
+them are what the next run began from. `fix-m14` sits on the merge commit rather
+than on the fix commit itself.
+
+**And one measurement — `measure-11`.** The only measurement tagged in its own
+right, because `harness/06` was built directly on top of it.
 
 ## Stack
 
